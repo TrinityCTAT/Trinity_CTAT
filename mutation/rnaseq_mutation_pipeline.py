@@ -10,6 +10,7 @@ __email__ = "ttickle@broadinstitute.org"
 __status__ = "Development"
 
 
+import datetime
 import os
 import sciedpiper.Command as Command
 import sciedpiper.Pipeline as Pipeline
@@ -34,7 +35,11 @@ LSTR_ALIGN_CHOICES = [ STR_ALIGN_STAR, STR_ALIGN_STAR_LIMITED ]
 # Choices for variant calling
 STR_VARIANT_GATK = "GATK"
 STR_VARIANT_SAMTOOLS = "SAM"
-LSTR_VARIANT_CALLING_CHOICES = [ STR_VARIANT_GATK, STR_VARIANT_SAMTOOLS ]
+LSTR_VARIANT_CALLING_CHOICES = [ STR_VARIANT_GATK ]
+
+# This mode is used in validating the method in teh context fo DNA-seq
+# It is not intended to be ran on biological samples for studies.
+STR_DNASEQ_VALIDATION = "DNASEQ"
 
 
 def func_do_star_alignment( args_call, str_unique_id, pline_cur, f_index_only = False ):
@@ -71,9 +76,7 @@ def func_do_star_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
     str_index_dir_1_change = os.path.join( "..", STR_INDEX_1 )
     str_index_dir_2 = os.path.join( args_call.str_file_base, STR_INDEX_2 )
     str_star_output_sam = os.path.join( str_align_dir_2, "Aligned.out.sam" )
-    print "**"
-    print args_call.str_file_base
-    print str_index_dir_1
+
     # Commands to build and return
     lcmd_commands = []
 
@@ -149,7 +152,7 @@ def func_do_top_hat_alignment( args_call, str_unique_id, pline_cur, f_index_only
               : Arguments used to run pipeline
               
     Return : List of commands
-           : List of commands to run for star alignment
+           : List of commands to run for top hat alignment
     """
     
     # Holds the commands which will eventually be returned.
@@ -212,7 +215,7 @@ def func_do_gsnp_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
               : Arguments used to run pipeline
               
     Return : List of commands
-           : List of commands to run for star alignment
+           : List of commands to run for gsnp alignment
     """
 
     # Holds the commands which will eventually be returned.
@@ -285,6 +288,59 @@ def func_do_gsnp_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
                                        lstr_cur_products = [ os.path.join( "..", "..", str_align_dir ) ] ),
                                Command.Command( str_cur_command = " ".join( [ "cd", os.path.join( "..", ".." ) ] ) ) ] )
     return { INDEX_CMD : lcmd_commands, INDEX_FILE : str_output_file , INDEX_FOLDER : str_align_dir }
+
+
+def func_do_BWA_alignment( args_call, str_unique_id, pline_cur, f_index_only = False ):
+    """
+    Manages the calls for aligning DNA-seq data with BWA.
+    Development use only, not intended to be used with studies.
+    Used to validate technical properties of the RNA-seq pipeline.
+    
+    args_call : Arguments
+              : Arguments used to run pipeline
+              
+    Return : List of commands
+           : List of commands to run for BWA alignment
+    """
+    
+    # Files
+    str_left_file_key = os.path.basename( os.path.splitext( args.str_sample_file_left_fq )[ 0 ] )
+    str_sam = os.path.join( args_call.str_file_base, ".".join( [ str_left_file_key, "sam" ] ) )
+    str_bam = os.path.join( args_call.str_file_base, ".".join( [ str_left_file_key, "bam" ] ) )
+    
+    lcmd_dna_mapping_commands = []
+    
+    # Pre-processing
+    ## Mapping and Dedupping
+    ### BWA, make coordinate ordered bam
+    #### Index reference
+    if f_index_only or not hasattr( args_call, "str_initial_index" ) or not args_call.str_initial_index:
+        cmd_bwa_index = Command.Command( str_cur_command = "".join( [ "bwa index -a bwtsw ", args.str_genome_fa ] ),
+                                            lstr_cur_dependencies = [ args.str_genome_fa ],
+                                            lstr_cur_products = [ args.str_genome_fa + ".amb",
+                                                                 args.str_genome_fa + ".ann",
+                                                                 args.str_genome_fa + ".bwt",
+                                                                 args.str_genome_fa + ".pac",
+                                                                 args.str_genome_fa + ".sa" ] )
+        if f_index_only:
+            return { INDEX_CMD: [ cmd_bwa_index ], INDEX_FOLDER: os.path.dirname( args.str_genome_fa ) }
+        else:
+            lcmd_dna_mapping_commands.append( cmd_bwa_index )
+
+    # Align both samples
+    # bwa sample ref.fasta fwd.sai rev.sai fwd.fq rev.fq > mydata.sam
+    cmd_bwa_sam = Command.Command( str_cur_command = "".join( [ "bwa mem -M -R \"@RG\\tID:", str_unique_id,"\\tSM:", str_unique_id,"\" ", 
+                                                               args.str_genome_fa, " ", args.str_sample_file_left_fq, " ", args.str_sample_file_right_fq, " > ", str_sam ] ),
+                                            lstr_cur_dependencies = [ args.str_genome_fa, args.str_sample_file_left_fq, args.str_sample_file_right_fq ],
+                                            lstr_cur_products = [ str_sam ] )
+    
+    # java -jar SortSam.jar I=Input.sam O=output.bam SO=coordinate
+    cmd_bwa_bam = Command.Command( str_cur_command = "".join( [ "java -jar SortSam.jar SO=coordinate I=", str_sam, " O=", str_bam ] ),
+                                            lstr_cur_dependencies = [ str_sam ],
+                                            lstr_cur_products = [ str_bam ] )
+    lcmd_dna_mapping_commands.extend( [ cmd_bwa_sam, cmd_bwa_bam ] )
+                                      
+    return { INDEX_CMD: lcmd_dna_mapping_commands, INDEX_FILE: str_bam, INDEX_FOLDER:args_call.str_file_base }
 
 
 def func_do_recalibration_gatk( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur ):
@@ -426,6 +482,114 @@ def func_do_variant_calling_gatk( args_call, str_align_file, str_unique_id, str_
     return lcmd_gatk_variants_commands
 
 
+def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur ):
+    """
+    Manages the calls for calling mutations in DNA-seq data in a similar way to the RNA-seq calls.
+    Development use only, not intended to be used with studies.
+    Used to validate technical properties of the RNA-seq pipeline.
+    
+    args_call : Arguments
+              : Arguments used to run pipeline
+              
+    Return : List of commands
+           : List of commands to run for BWA alignment
+    """
+    
+    str_dedup_bam = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedupped.bam" ] ) )
+    str_dedup_metrics = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.metrics" ] ) )
+    str_filtered_variants_file = os.path.join( str_project_dir, ".".join( [ str_unique_id, "filtered.variants.vcf" ] ) )
+    str_intervals = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "religner.intervals" ] ) )
+    str_raw_vcf = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "variants.vcf" ] ) )
+    str_realigned_bam = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.realigned.bam" ] ) )
+    str_realigned_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.realigned.bai" ] ) )
+    str_recal_plot = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal.pdf" ] ) )
+    str_recal_snp_bam = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal_snp.bam" ] ) )
+    str_recal_snp_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal_snp.bai" ] ) )
+    str_recal_table = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal.table" ] ) )
+    str_recal_table_2 = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal_2.table" ] ) )
+    str_replace_bam = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.bam" ] ) )
+    str_replace_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.bai" ] ) )
+
+
+    # DNA-seq best practices
+    # java -jar MarkDuplicates.jar I=input.sam O=output.bam
+    cmd_dedup = Command.Command( str_cur_command = "".join( [ "java -jar MarkDuplicates.jar I=", str_align_file,
+                                                             " M=", str_dedup_metrics, " O=", str_dedup_bam ] ),
+                                            lstr_cur_dependencies = [ str_align_file ],
+                                            lstr_cur_products = [ str_dedup_metrics, str_dedup_bam ] )
+    
+    # java -jar AddOrReplaceReadGroups.jar I=input.bam O=output.bam RGID=x RGLB=x RGPL=x RGPU=x RGSM=x RGCN=x RGDT=x
+    cmd_replace = Command.Command( str_cur_command = "".join( [ "java -jar AddOrReplaceReadGroups.jar I=", str_dedup_bam, " O=", str_replace_bam,
+                                                              " RGCN=RGCN RGID=", str_unique_id, " RGLB=library RGDT=", datetime.date.today().isoformat()," RGPL=",
+                                                                args_call.str_sequencing_platform, " RGPU=machine RGSM=", str_unique_id, " CREATE_INDEX=TRUE" ] ),
+                                            lstr_cur_dependencies = [ str_dedup_bam ],
+                                            lstr_cur_products = [ str_replace_bam, str_replace_bai ] )
+    ## Indel Realignment
+    # java -jar GenomeAnalysisTK.jar -T RealignerTargetCreator -R human.fasta -I original.bam -known indels.vcf -o religner.intervals
+    cmd_create_target = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T RealignerTargetCreator -R",
+                                                                args_call.str_genome_fa, "-I", str_replace_bam, "--out", str_intervals,
+                                                                "-known", args_call.str_vcf_file ] ),
+                                lstr_cur_dependencies = [ str_replace_bam, args_call.str_vcf_file ],
+                                lstr_cur_products = [ str_intervals ] )
+    
+    # java -jar GenomeAnalysisTK.jar -T IndelRealigner -R human.fasta -I orginal.bam -known indels.vcf -targetIntervals realigner.intervals -o realigned.bam
+    cmd_realign = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T IndelRealigner -R", 
+                                                args_call.str_genome_fa, "-I", str_replace_bam, "-targetIntervals",
+                                                str_intervals, "--out", str_realigned_bam, "-known", args_call.str_vcf_file ] ),
+                                lstr_cur_dependencies = [ args_call.str_genome_fa, str_replace_bam, str_intervals ],
+                                lstr_cur_products = [ str_realigned_bam, str_realigned_bai ] )
+    
+    ## Base Recalibration
+    # java -jar GenomeAnalysisTK.jar -T BaseRecalibrator -R human.fasta -I realigned.bam -knownSites x.vcf -o recal.table
+    cmd_recalibrate = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T BaseRecalibrator -R", 
+                                                args_call.str_genome_fa, "-I", str_realigned_bam, "--out", str_recal_table,
+                                                "-knownSites", args_call.str_vcf_file ] ),
+                                lstr_cur_dependencies = [ args_call.str_genome_fa, args_call.str_vcf_file, str_realigned_bam ],
+                                lstr_cur_products = [ str_recal_table ] )
+    
+    # java -jar GenomeAnalysisTK.jar -T PrintReads -R human.fasta -I realigned.bam -BQSR recal.table -o recal.bam
+    cmd_print = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T PrintReads -R", 
+                                                args_call.str_genome_fa, "-I", str_realigned_bam, "--out", str_recal_snp_bam,
+                                                "-BQSR", str_recal_table ] ),
+                                lstr_cur_dependencies = [ args_call.str_genome_fa, str_realigned_bam, str_realigned_bai, str_recal_table ],
+                                lstr_cur_products = [ str_recal_snp_bam, str_recal_snp_bai ] )
+
+    ### Make plots
+    # java -jar GenomeAnalysisTK.jar -T BaseRecalibrator -R human.fasta -I realigned.bam -knownSites x.vcf -BQSR recal.table -o after_recal.table
+    cmd_recalibrate_2 = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T BaseRecalibrator -R", 
+                                        args_call.str_genome_fa, "-I", str_realigned_bam, "--out", str_recal_table_2,
+                                        "-knownSites", args_call.str_vcf_file, "-BQSR", str_recal_table ] ),
+                                lstr_cur_dependencies = [ args_call.str_genome_fa, str_realigned_bam, str_realigned_bai, 
+                                                         args_call.str_vcf_file, str_recal_table ],
+                                lstr_cur_products = [ str_recal_table_2 ] )
+    
+    # java -jar GenomeAnalysisTK.jar -T AnalyzeCovariates -R human.fasta -before recal.table -after after_recal.tale -plots recal_plots.pdf
+    cmd_covariates = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T AnalyzeCovariates -R", 
+                                        args_call.str_genome_fa, "-before", str_recal_table, "-after", str_recal_table_2,
+                                        "-plots", str_recal_plot ] ),
+                                lstr_cur_dependencies = [ args_call.str_genome_fa, str_recal_table, str_recal_table_2 ],
+                                lstr_cur_products = [ str_recal_plot ] )
+    
+    # Call mutations - Single File, variant only calling in DNA-seq.
+    # https://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php
+    # java -jar GenomeAnalysisTk.jar -T HaplotypeCaller -R reference/file.fasta -I recal.bam -stand_call_conf 30 -stand_emit_conf -o output.vcf
+    cmd_haplotype_caller = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T HaplotypeCaller -R", args_call.str_genome_fa,
+                                                           "-I", str_recal_snp_bam, "-stand_call_conf 30.0 -stand_emit_conf 10.0 -o", str_raw_vcf] ),
+                                            lstr_cur_dependencies = [ args_call.str_genome_fa, str_recal_snp_bam, str_recal_snp_bai ],
+                                            lstr_cur_products = [ str_raw_vcf ] ).func_set_dependency_clean_level( [ str_recal_snp_bam, str_recal_snp_bai ], Command.CLEAN_NEVER )
+    
+    # Hard filter like the RNA-seq
+    cmd_variant_filteration = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T VariantFiltration -R", 
+                                                                     args_call.str_genome_fa, "-V", str_raw_vcf, "-window 35",
+                                                                     "-cluster 3 -filterName FS -filter \"FS > 30.0\" -filterName QD",
+                                                                     "-filter \"QD < 2.0\" --out", str_filtered_variants_file ] ),
+                                            lstr_cur_dependencies = [ args_call.str_genome_fa, str_raw_vcf ],
+                                            lstr_cur_products = [ str_filtered_variants_file ] ).func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER  )
+
+    return [ cmd_dedup, cmd_replace, cmd_create_target, cmd_realign, cmd_recalibrate, cmd_print, cmd_recalibrate_2,
+             cmd_covariates, cmd_haplotype_caller, cmd_variant_filteration ]
+
+
 def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur ):
     """
     Creates the commands for the SamTools variant calling pipeline.
@@ -500,6 +664,12 @@ def run( args_call, f_do_index = False ):
                  : True indicates ONLY the index will be performed.
     """
 
+    # Reset args if validating with DNA-seq data
+    if args.f_validate_by_dnaseq:
+        args.str_alignment_mode = STR_DNASEQ_VALIDATION
+        args.str_variant_call_mode = STR_DNASEQ_VALIDATION
+        args.f_recalibrate_sam = True
+
     # Constants
     # If not using a premade index and indexing only, do not update the name of the index dir with the sample name
     # Does not need to be unique. Otherwise update the name of the index directory so it is unique,
@@ -521,10 +691,12 @@ def run( args_call, f_do_index = False ):
     dict_align_funcs = { STR_ALIGN_GSNP : func_do_gsnp_alignment,
                         STR_ALIGN_STAR_LIMITED : func_do_star_alignment,
                         STR_ALIGN_STAR : func_do_star_alignment,
-                        STR_ALIGN_TOPHAT : func_do_top_hat_alignment }
+                        STR_ALIGN_TOPHAT : func_do_top_hat_alignment,
+                        STR_DNASEQ_VALIDATION : func_do_BWA_alignment }
     
     # Vary variant calling depending on arguments
-    dict_variant_calling_funcs = { STR_VARIANT_GATK : func_do_variant_calling_gatk,
+    dict_variant_calling_funcs = { STR_DNASEQ_VALIDATION : func_call_dnaseq_like_rnaseq,
+                                   STR_VARIANT_GATK : func_do_variant_calling_gatk,
                                    STR_VARIANT_SAMTOOLS : func_do_variant_calling_samtools }
 
     # If the output directory is not given, get the file base from a sample file
@@ -623,6 +795,7 @@ if __name__ == "__main__":
     prsr_arguments.add_argument( "-s", "--sequencing_platform", metavar = "Sequencing Platform", dest = "str_sequencing_platform", default = "ILLUMINA", choices = LSTR_SEQ_CHOICES, help = "The sequencing platform used to generate the samples choices include " + " ".join( LSTR_SEQ_CHOICES ) + "." )
     prsr_arguments.add_argument( "-t", "--test", dest = "f_Test", default = False, action = "store_true", help = "Will check the environment and display commands line but not run.")
     prsr_arguments.add_argument( "-u", "--update_command", dest = "str_update_classpath", default = None, help = "Allows a class path to be added to the jars. eg. 'command.jar:/APPEND/THIS/PATH/To/JAR,java.jar:/Append/Path'")
+    prsr_arguments.add_argument( "--validate_dnaseq", dest = "f_validate_by_dnaseq", default = False, action = "store_true", help = "Used for development only. Should not be used with biological samples.")
     prsr_arguments.add_argument( "-w", "--vcf", metavar = "Variant_calling_file_for_the_reference_genome", dest = "str_vcf_file", default = None, help = "Variant calling file for the reference genome.")
     prsr_arguments.add_argument( "-y", "--star_memory", metavar = "Star_memory", dest = "str_star_memory_limit", default = None, help = "Memory limit for star index. This should be used to increase memory if needed. Reducing memory consumption should be performed with the STAR Limited mod." )
     args = prsr_arguments.parse_args()
