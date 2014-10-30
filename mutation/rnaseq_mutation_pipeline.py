@@ -562,9 +562,11 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
                                 lstr_cur_dependencies = [ args_call.str_genome_fa, str_realigned_bam, str_realigned_bai, 
                                                          args_call.str_vcf_file, str_recal_table ],
                                 lstr_cur_products = [ str_recal_table_2 ] )
-    
-    # java -jar GenomeAnalysisTK.jar -T AnalyzeCovariates -R human.fasta -before recal.table -after after_recal.tale -plots recal_plots.pdf
-    cmd_covariates = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T AnalyzeCovariates -R", 
+   
+    # Optional plotting of recalibration
+    if args_call.f_optional_recalibration_plot:
+        # java -jar GenomeAnalysisTK.jar -T AnalyzeCovariates -R human.fasta -before recal.table -after after_recal.tale -plots recal_plots.pdf
+        cmd_covariates = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T AnalyzeCovariates -R", 
                                         args_call.str_genome_fa, "-before", str_recal_table, "-after", str_recal_table_2,
                                         "-plots", str_recal_plot ] ),
                                 lstr_cur_dependencies = [ args_call.str_genome_fa, str_recal_table, str_recal_table_2 ],
