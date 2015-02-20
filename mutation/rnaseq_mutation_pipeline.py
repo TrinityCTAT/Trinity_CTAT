@@ -574,7 +574,7 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
                                         "-plots", str_recal_plot ] ),
                                 lstr_cur_dependencies = [ args_call.str_genome_fa, str_recal_table, str_recal_table_2 ],
                                 lstr_cur_products = [ str_recal_plot ] )
-	ls_cmds.append( cmd_covariates )
+        ls_cmds.append( cmd_covariates )
     
     # Call mutations - Single File, variant only calling in DNA-seq.
     # https://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php
@@ -753,7 +753,12 @@ def run( args_call, f_do_index = False ):
     # Just do the initial indexing. No other part
     if f_do_index:
         # Run commands lcmd_commands, str_output_dir, i_clean_level = Command.CLEAN_NEVER, str_run_name = ""
-        if not pline_cur.func_run_commands( lcmd_commands = lcmd_commands, str_output_dir = args_call.str_file_base, f_clean = args_call.f_clean ):
+        if not pline_cur.func_run_commands( lcmd_commands = lcmd_commands,
+                                            str_output_dir = args_call.str_file_base,
+                                            lstr_copy = args_call.lstr_copy if args_call.lstr_copy else None,
+                                            str_move = args_call.str_move_dir if args_call.str_move_dir else None,
+                                            str_compression_mode = args_call.str_compress,
+                                            f_clean = args_call.f_clean ):
             exit( 4 )
         exit( 0 )
         
@@ -771,7 +776,12 @@ def run( args_call, f_do_index = False ):
                                                                                         logr_cur = pline_cur.logr_logger ) )
 
     # Run commands
-    if not pline_cur.func_run_commands( lcmd_commands = lcmd_commands, str_output_dir = args_call.str_file_base, f_clean = args_call.f_clean ):
+    if not pline_cur.func_run_commands( lcmd_commands = lcmd_commands, 
+                                        str_output_dir = args_call.str_file_base,
+                                        lstr_copy = args_call.lstr_copy if args_call.lstr_copy else None,
+                                        str_move = args_call.str_move_dir if args_call.str_move_dir else None,
+                                        str_compression_mode = args_call.str_compress,
+                                        f_clean = args_call.f_clean ):
         exit( 4 )
     exit( 0 )
 
@@ -785,6 +795,8 @@ if __name__ == "__main__":
     prsr_arguments.add_argument( "-a", "--realign", dest = "f_stop_optional_realignment", default = False, action = "store_true", help = "Turns off optional indel realignment step." )
     prsr_arguments.add_argument( "-b", "--bsub_queue", metavar = "BSUB_Queue", dest = "str_bsub_queue", default = None, help = "If given, each command will sequentially be ran on this queue with bsub." )
     prsr_arguments.add_argument( "-c", "--clean", dest = "f_clean", default = False, action="store_true", help = "Turns on (true) or off (false) cleaning of intermediary product files." ) 
+    prsr_arguments.add_argument( "--copy", metavar = "Copy_location", dest = "lstr_copy", default = None, action="append", help="Paths to copy the output directory after the pipeline is completed. Output directory must be specified; can be used more than once for multiple copy locations.")
+    prsr_arguments.add_argument( "--compress", dest = "str_compress", default = "none", choices = Pipeline.LSTR_COMPRESSION_HANDLING_CHOICES, help = "Turns on compression of products and intermediary files made by the pipeline. Valid choices include:" + str( Pipeline.LSTR_COMPRESSION_HANDLING_CHOICES ) )
     prsr_arguments.add_argument( "-d", "--alignment_mode", metavar = "Alignment_mode", dest = "str_alignment_mode", default = STR_ALIGN_STAR, choices = LSTR_ALIGN_CHOICES, help = "Specifies the alignment and indexing algorithm to use." )
     prsr_arguments.add_argument( "-e", "--variant_call_mode", metavar = "Call_mode", dest = "str_variant_call_mode", default = STR_VARIANT_GATK, choices = LSTR_VARIANT_CALLING_CHOICES, help = "Specifies the variant calling method to use." )
     prsr_arguments.add_argument( "-f", "--reference", metavar = "Reference_genome", dest = "str_genome_fa", required = True, help = "Path to the reference genome to use in the analysis pipeline." )
@@ -794,6 +806,7 @@ if __name__ == "__main__":
     prsr_arguments.add_argument( "-k", "--gtf", metavar = "Reference GTF", dest = "str_gtf_file_path", default = None, help = "GTF file for reference genome.")
     prsr_arguments.add_argument( "-l", "--left", metavar = "Left_sample_file", dest = "str_sample_file_left_fq", required = True, help = "Path to one of the two paired RNAseq samples ( left )" )
     prsr_arguments.add_argument( "-m", "--max_bsub_memory", metavar = "Max_BSUB_Mem", dest = "str_max_memory", default = "8", help = "The max amount of memory in GB requested when running bsub commands." )
+    prsr_arguments.add_argument( "--move", metavar = "Move_location", dest = "str_move_dir", default = None, help = "The path where to move the output directory after the pipeline ends. Can be used with the copy argument if both copying to one location(s) and moving to another is needed. Must specify output directory." )
     prsr_arguments.add_argument( "-n", "--threads", metavar = "Process_threads", dest = "i_number_threads", type = int, default = 1, help = "The number of threads to use for multi-threaded steps." )
     prsr_arguments.add_argument( "-o", "--out_dir", metavar = "Output_directory", dest = "str_file_base", default = None, help = "The output directory where results will be placed. If not given a directory will be created from sample names and placed with the samples." )
     prsr_arguments.add_argument( "-p", "--plot", dest = "f_optional_recalibration_plot", default = True, action = "store_false", help = "Turns off plotting recalibration of alignments." )
