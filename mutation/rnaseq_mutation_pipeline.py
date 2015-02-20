@@ -562,7 +562,10 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
                                 lstr_cur_dependencies = [ args_call.str_genome_fa, str_realigned_bam, str_realigned_bai, 
                                                          args_call.str_vcf_file, str_recal_table ],
                                 lstr_cur_products = [ str_recal_table_2 ] )
-   
+
+    # Commands so far
+    ls_cmds = [ cmd_dedup, cmd_replace, cmd_create_target, cmd_realign, cmd_recalibrate, cmd_print, cmd_recalibrate_2 ] 
+
     # Optional plotting of recalibration
     if args_call.f_optional_recalibration_plot:
         # java -jar GenomeAnalysisTK.jar -T AnalyzeCovariates -R human.fasta -before recal.table -after after_recal.tale -plots recal_plots.pdf
@@ -571,6 +574,7 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
                                         "-plots", str_recal_plot ] ),
                                 lstr_cur_dependencies = [ args_call.str_genome_fa, str_recal_table, str_recal_table_2 ],
                                 lstr_cur_products = [ str_recal_plot ] )
+	ls_cmds.append( cmd_covariates )
     
     # Call mutations - Single File, variant only calling in DNA-seq.
     # https://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php
@@ -588,8 +592,8 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
                                             lstr_cur_dependencies = [ args_call.str_genome_fa, str_raw_vcf ],
                                             lstr_cur_products = [ str_filtered_variants_file ] ).func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER  )
 
-    return [ cmd_dedup, cmd_replace, cmd_create_target, cmd_realign, cmd_recalibrate, cmd_print, cmd_recalibrate_2,
-             cmd_covariates, cmd_haplotype_caller, cmd_variant_filteration ]
+    ls_cmds.extend( [ cmd_haplotype_caller, cmd_variant_filteration ] )
+    return ls_cmds
 
 
 def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur ):
