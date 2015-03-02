@@ -1,0 +1,93 @@
+#!/usr/bin/env python
+
+# Constants
+CHR_COMMENT = "#"
+STR_VCF_DELIMITER = "\t"
+I_SINGLE_VCF_SAMPLE = 10
+I_REF_INDEX = 3
+I_ALT_INDEX = 4
+I_FILTER_INDEX = 6
+I_INFO_INDEX = 7
+STR_PASS = "pass"
+STR_VC_SNP = "snv"
+CHR_MONOMORPHIC_REFERENCE = "."
+CHR_INFO_DELIMITER = ";"
+
+import argparse
+import csv
+
+prsr_arguments = argparse.ArgumentParser( prog = "reduce_vcf_to_snps.py", description = "Extracts only snp entries from a vcf file", formatter_class = argparse.ArgumentDefaultsHelpFormatter )
+prsr_arguments.add_argument( "--reference", action = "store_true", dest = "f_reference_mode", help = "Reference vcf file mode. Does not check to see if the vcf feature passes." )
+prsr_arguments.add_argument( "str_input_file", help = "Input vcf file." )
+prsr_arguments.add_argument( "str_output_file", help = "Output SNP vcf file." )
+args = prsr_arguments.parse_args()
+
+# Stores the vcf info
+lstr_vcf = []
+
+i_write_amount = 1000
+
+# Read in vcf file
+if args.str_input_file:
+  with open( args.str_output_file, "w" ) as hndl_out:
+    with open( args.str_input_file, "r" ) as hndl_vcf:
+      for lstr_line in csv.reader( hndl_vcf, delimiter = STR_VCF_DELIMITER ):
+      
+        # Indicates the mutation type is known
+        f_mutation_type_known = False
+
+        # Keep comments
+        if lstr_line[0][0] == CHR_COMMENT:
+          lstr_vcf.append( STR_VCF_DELIMITER.join( lstr_line ) )
+          continue
+
+        # Look for reference vcf indication of mutation type
+        if args.f_reference_mode:
+          lstr_info = lstr_line[ I_INFO_INDEX ].split( CHR_INFO_DELIMITER )
+          for str_info in lstr_info:
+            lstr_info_token = str_info.split("=")
+            if lstr_info_token[ 0 ].lower() == "vc" and lstr_info_token[ 1 ].lower() == STR_VC_SNP:
+              f_mutation_type_known = True
+              break
+
+        # Store known mutation type or try to guess
+        if f_mutation_type_known:
+          lstr_vcf.append( STR_VCF_DELIMITER.join( lstr_line ) )
+        else:
+          # Guess the mutation type      
+          if not args.f_reference_mode:
+            # Make sure the line passes
+            if not lstr_line[ I_FILTER_INDEX ].lower() == STR_PASS:
+              continue
+
+          # Get ALT / REF
+          str_alt = lstr_line[ I_ALT_INDEX ]
+          str_ref = lstr_line[ I_REF_INDEX ]
+
+          # Skip monomorphic sites
+          if str_alt == CHR_MONOMORPHIC_REFERENCE or str_ref == CHR_MONOMORPHIC_REFERENCE:
+            continue
+
+          # Skip if not SNPs
+          # Want to keep anything that could be a SNP so
+          # if the reference and the alt both have 1 base entries they should be kept, even if there are none SNP entries
+          # Not removing the none snp information currently because the DBSNP info would have to be updated to reflect any indexing
+          # referring to the REF or ALT
+          if not min( [ len( str_alt_token ) for str_alt_token in str_alt.split( "," ) ] ) == 1:
+#            print "INFO::Skipping not SNP site. ALT = " + str_alt
+            continue
+          if not min( [ len( str_ref_token ) for str_ref_token in str_ref.split( "," ) ] ) == 1:
+#            print "INFO::Skipping not SNP site. REF = " + str_ref
+            continue
+    
+          # Store SNP
+          lstr_vcf.append( STR_VCF_DELIMITER.join( lstr_line ) )
+
+          # write to file
+          if len( lstr_vcf ) > lstr_vcf:
+            for lstr_out_line in lstr_vcf:
+              hndl_out.write( str_line + "\n" )
+              lstr_vcf = []
+
+    for str_out_line in lstr_vcf:
+      hndl_out.write( str_out_line + "\n" )
