@@ -6,58 +6,48 @@ use Carp;
 use Getopt::Long qw(:config no_ignore_case bundling pass_through);
 use FindBin;
 use Cwd;
-use File::Basename;
+use lib ("$FindBin::Bin/PerlLib");
+use Pipeliner;
 
-unless ($ENV{TRINITY_HOME}) {
-    die "Error, must have env var TRINITY_HOME set to your Trinity installation directory. ";
+
+BEGIN {
+    unless ($ENV{FUSION_ANNOTATOR_LIB}) {
+        die "Error, must have env var FUSION_ANNOTATOR_LIB set to the corresponding resource directory.";
+    }
 }
 
+my $FUSION_ANNOTATOR_LIB = $ENV{FUSION_ANNOTATOR_LIB};
+
 ## configuration:
-my $GENOME = "/seq/regev_genome_portal/RESOURCES/human/Hg19/Hg19.fa";
-my $GMAP_DB_DIR = "/seq/regev_genome_portal/RESOURCES/human/Hg19/";
+my $GENOME = "${FUSION_ANNOTATOR_LIB}/Hg19.fa";
+my $GMAP_DB_DIR = "${FUSION_ANNOTATOR_LIB}";
 my $GMAP_DB_NAME = "Hg19.fa.gmap";
-#my $REF_GENES_LIST = "/seq/regev_genome_portal/RESOURCES/human/tophat_fusion_resources/refGene.txt,/seq/regev_genome_portal/RESOURCES/human/tophat_fusion_resources/ensGene.txt";
-my $IGVTOOLS = "/seq/annotation/bio_tools/IGVtools/igvtools";
 
-#my $REF_GTF = "/seq/regev_genome_portal/RESOURCES/human/Hg19/Annotations/hg19_ucsc_genomeStudio_genes/hg19_ucsc_genomeStudio_genes.gtf.no_unmapped.gtf";
-#my $REF_GTF = "/seq/regev_genome_portal/RESOURCES/human/Hg19/gencode.v19/gencode.v19.rna_seq_pipeline.gtf";
-#my $REF_TRANS = "/seq/regev_genome_portal/RESOURCES/human/Hg19/gencode.v19/gencode.v19.rna_seq_pipeline.gtf.wGeneNames.cdna";
-
-my $REF_GTF = "/seq/regev_genome_portal/RESOURCES/human/Hg19/Annotations/Hg19_Gencode/gencode.v19.rna_seq_pipeline.gtf";
+my $REF_GTF = "${FUSION_ANNOTATOR_LIB}/gencode.v19.rna_seq_pipeline.gtf";
 
 ## end of configuration
 
-my $min_trans_length = 100;
 my $CPU = 4;
 my $MIN_TRANS_LEN_TRY_CHIM = 30;
+my $output_directory = "Trinity_Fusion";
 
 my $usage = <<__EOUSAGE__;
 
-##########################################################################
+############################################################################################################
 #
 #  Required:
 #
 #  --transcripts|T <string>        :Trinity transcript fasta file
 #
-#  --left <string>                 :left fq file (reads with /1 )
-#  --right <string>                :right fq file (reads with /2 )
-#
 #  Optional:
 #
-#  --min_length|L <int>            :minimum length for a Trinity transcript (default: $min_trans_length)
+#  --CPU <int>                     :number threads for GMAP (default $CPU)
 #
-#  --CPU <int>                     :number of threads (default: $CPU)
+#  --min_chim_len <int>            :minimum length for a chimeric alignment (default: $MIN_TRANS_LEN_TRY_CHIM)
 #
-#  --output|o <string>             :output directory
+#  --output|o <string>             :output directory name (default: $output_directory)
 #
-#
-#  --no_cleanup                    :by default, removes the rsem-generated bam file to conserve disk space.
-#
-#  --ref_GTF <string>              :reference GTF file to use.  default: $REF_GTF
-#
-#  --seqType <string>              : default fq (options: fq or fa)
-#
-##########################################################################
+##############################################################################################################
 
 
 __EOUSAGE__
@@ -65,40 +55,23 @@ __EOUSAGE__
     ;
 
 
-
 my $help_flag;
 my $transcripts_file;
-my $output_directory;
-
-my $left_fq;
-my $right_fq;
 
 my $DEBUG = 0;
-
-my $NO_CLEANUP_FLAG = 0;
-
-my $seqType = 'fq';
 
 &GetOptions ( 'help|h' => \$help_flag,
               
               'transcripts|T=s' => \$transcripts_file,
-              'left=s' => \$left_fq,
-              'right=s' => \$right_fq,
-               
-              'min_length|L=i' => \$min_trans_length,
               
               'output|o=s' => \$output_directory,
+
+              'min_chim_len=i' => \$MIN_TRANS_LEN_TRY_CHIM,
 
               'DEBUG' => \$DEBUG,
 
               'CPU=i' => \$CPU,
               
-              'ref_GTF=s' => \$REF_GTF,
-              #'ref_trans=s' => \$REF_TRANS,
-
-              'no_cleanup' => \$NO_CLEANUP_FLAG,
-              
-              'seqType=s' => \$seqType,
 );
 
 
@@ -106,14 +79,12 @@ if ($help_flag) {
     die $usage;
 }
 
-unless ($transcripts_file && $left_fq && $right_fq) {
+unless ($transcripts_file) {
     die $usage;
 }
 
 
 $transcripts_file = &ensure_full_path($transcripts_file);
-$left_fq = &ensure_full_path($left_fq);
-$right_fq = &ensure_full_path($right_fq);
 
 
 if ($output_directory) {
@@ -125,477 +96,41 @@ if ($output_directory) {
 }
 
 
-my $UTILDIR = "$FindBin::Bin/trinity_fusion_pipe";
+my $UTILDIR = "$FindBin::Bin/util";
 
 main: {
 
-    # rename the Trinity transcripts, filter on length, remove additional header info.
-    my $filtered_transcripts_file = basename($transcripts_file) . ".min${min_trans_length}.fasta";
-    my $filtered_fasta_checkpoint = "$filtered_transcripts_file.ok";
-    my $cmd = "$UTILDIR/filterTranscripts.py $transcripts_file $min_trans_length $filtered_transcripts_file";
-    unless (-e $filtered_fasta_checkpoint) {
-        &process_cmd($cmd);
-        &process_cmd("touch $filtered_fasta_checkpoint");
-    }
-    
+
+    my $pipeliner = new Pipeliner(-verbose => 1);
+
     ####################################################
     # run GMAP to identify potential fusion transcripts
     ####################################################
 
-    my $gmap_output_file = "$filtered_transcripts_file.GMAP.map";
-    my $gmap_nomap_output_file = "$filtered_transcripts_file.GMAP.nomap";
+    my $gmap_output_file = "gmap.map.gff3";
+    my $cmd = "gmap -D $GMAP_DB_DIR -d $GMAP_DB_NAME $transcripts_file -f 3 -n 0 -x $MIN_TRANS_LEN_TRY_CHIM -t $CPU  > $gmap_output_file 2>/dev/null";
     
-    if (0) { # no longer running this, run separately below generating gff3 file format.
-       
-        ## run using output format leveraged by Nathalie's code for identifying chimeras
-        ## eventually, migrate over to gff3 format.
+    $pipeliner->add_commands(new Command($cmd, ".${gmap_output_file}.ok"));
 
-        my $gmap_checkpoint = "$gmap_output_file.ok";
-        $cmd = "gmap -D $GMAP_DB_DIR -d $GMAP_DB_NAME $filtered_transcripts_file -x $MIN_TRANS_LEN_TRY_CHIM -n 0 -t $CPU > $gmap_output_file 2>$gmap_nomap_output_file";
-        unless (-e $gmap_checkpoint) {
-            &process_cmd($cmd);
-            &process_cmd("touch $gmap_checkpoint");
-        }
-    }
+    ###############################
+    ## generate initial chim report
+    ###############################
 
+    my $chims_described_outfile = "$gmap_output_file.gff3.chims_described";
+    $cmd = "$UTILDIR/gmap_genome_gff3_to_chim_summary.pl --gmap_gff3 $gmap_output_file.gff3 --annot_gtf $REF_GTF > $chims_described_outfile";
     
-    {
-        ## now, run again, generate gff output
-        my $cmd = "gmap -D $GMAP_DB_DIR -d $GMAP_DB_NAME $filtered_transcripts_file -f 3 -n 0 -x $MIN_TRANS_LEN_TRY_CHIM -t $CPU  > $gmap_output_file.gff3 2>$gmap_output_file.gff3.nomap";
-        my $checkpoint = "$gmap_output_file.gff3.ok";
-        unless (-e $checkpoint) {
-            &process_cmd($cmd);
-            &process_cmd("touch $checkpoint");
-        }
-        
-        ## generate chim report
-        $cmd = "$FindBin::Bin/chimera_simulation_toolkit/gmap_genome_gff3_to_chim_summary.pl --gmap_gff3 $gmap_output_file.gff3 --annot_gtf $REF_GTF > $gmap_output_file.gff3.chims_described";
-        $checkpoint = "$gmap_output_file.gff3.chims_described.ok";
-        unless (-e $checkpoint) {
-            &process_cmd($cmd);
-            &process_cmd("touch $checkpoint");
-        }
+    $pipeliner->add_commands(new Command($cmd, ".${chims_described_outfile}.ok") );
+    
+    #############################################################
+    ## filter the chimeras based on distance from exon junctions:
+    #############################################################
 
-        ## filter the chimeras:
-        $cmd = "$FindBin::Bin/chimera_simulation_toolkit/filter_gmap_chims.pl $gmap_output_file.gff3.chims_described 0 > $gmap_output_file.gff3.chims_described.D0";
-        $checkpoint = "$gmap_output_file.gff3.chims_described.D0.ok";
-        unless (-e $checkpoint) {
-            &process_cmd($cmd);
-            &process_cmd("touch $checkpoint");
-        }
-        
-        
-    }
+    my $chims_D0_outfile = "$chims_described_outfile.D0";
+    $cmd = "$UTILDIR/filter_gmap_chims_via_dist_from_exon_bounds.pl $chims_described_outfile 0 > $chims_D0_outfile";
+    
+    $pipeliner->add_commands(new Command($cmd, ".${chims_D0_outfile}.ok") );
     
     exit(0); ### stopping here now.
     
-    # run RSEM to both align reads to transcripts using bowtie and get transcript abundance estimates
-
-    my $rsem_checkpoint = "myRSEM.ok";
-    $cmd = "$ENV{TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts $filtered_transcripts_file "
-        . " --seqType $seqType --left $left_fq --right $right_fq  --thread_count $CPU "
-        . " --output_dir RSEM --est_method none --aln_method bowtie --prep_reference --coordsort_bam ";
-    unless (-e $rsem_checkpoint) {
-        &process_cmd($cmd);
-
-        if (-s "RSEM/bowtie.bam" && -s "RSEM/bowtie.csorted.bam") {
-            ## no longer hold on to the unsorted bam file.
-            unlink("RSEM/bowtie.bam"); # save disk space.
-        }
-
-        &process_cmd("touch $rsem_checkpoint");
-
-    }
-
-    
-
-    #if (0) {  # using new code for this.
-
-        # Associate gmap-identified fusion transcripts with reference gene annotations
-    #    my $fusions_file = "gmap_output_file.fusions.txt";
-    #    my $fusions_file_checkpoint = "$fusions_file.ok";
-    #    $cmd = "$UTILDIR/fusionDetection.step1.py $gmap_output_file $GENOME $REF_GENES_LIST $fusions_file";
-    #    unless (-e $fusions_file_checkpoint) {
-    #        &process_cmd($cmd);
-    #        &process_cmd("touch $fusions_file_checkpoint");
-    #    }  
-    #}
-    
-
-    my $fusions_file = "$gmap_output_file.gff3.chims_described";
-    # Grab the reads that support fusion junctions and prep python pickles
-    my $pickle_checkpoint = "$fusions_file.pickle.ok";
-    
-
-    my $bam_file_to_search = "RSEM/bowtie.csorted.bam";
-    if ( (! -s $bam_file_to_search) && -e "RSEM/bowtie.csorted.bam.breakpoint_overlap.bam.ok") {
-        # recovering from previous run
-        $bam_file_to_search = "RSEM/bowtie.csorted.bam.breakpoint_overlap.bam";
-    }
-    
-    $cmd = "$UTILDIR/fusionDetection.step2.py $fusions_file $bam_file_to_search RSEM/RSEM.isoforms.results";
-    unless (-e $pickle_checkpoint) {
-        &process_cmd($cmd);
-        &process_cmd("touch $pickle_checkpoint");
-    }
-    
-   
-    if (! -e "RSEM/bowtie.csorted.bam.breakpoint_overlap.bam.ok") {
-         
-         my $cmd = "samtools view -bT $filtered_transcripts_file RSEM/bowtie.csorted.bam.breakpoint_overlap.sam  > RSEM/bowtie.csorted.bam.breakpoint_overlap.bam";
-         &process_cmd($cmd);
-
-         &process_cmd("touch RSEM/bowtie.csorted.bam.breakpoint_overlap.bam.ok");
-     }
-    
-
-
-
-
-    # Annotate the fusions according to the read support.
-    $cmd = "$UTILDIR/fusionDetection.step3.py $fusions_file";
-    my $fusion_values_checkpoint = $fusions_file . ".values.ok";
-    unless (-e $fusion_values_checkpoint) {
-        &process_cmd($cmd);
-        &process_cmd("touch $fusion_values_checkpoint");
-    }
-    
-
-    # generate a cytoband file for the visualization tool
-    $cmd = "$UTILDIR/trinityFusion_to_cytoBand.pl $fusions_file.values2.txt > cytoBand.txt";
-    unless (-e "cytoBand.txt.ok") {
-        &process_cmd($cmd);
-        &process_cmd("touch cytoBand.txt.ok");
-    }
-    
-
-
-    # Extract the fusion and junction reads
-    {
-        my $cmd = "$UTILDIR/trinityFusion_junc_and_span_read_extractor.pl --junc_reads_descr junction_reads.descr --span_reads_descr spanning_reads.descr --breakpoint_sam RSEM/bowtie.csorted.bam.breakpoint_overlap.sam --out_prefix trinityFusion.reads --trinity_fasta $filtered_transcripts_file ";
-        unless (-e "trinityFusion.reads.ok") {
-            &process_cmd($cmd);
-            &process_cmd("touch trinityFusion.reads.ok");
-        }
-        
-        ## sam-to-bam conversions.
-        
-        
-
-    }
-
-        
-    
-
-    # Generate summary result file, combining fusion identity with read support data
-    $cmd = "$UTILDIR/fusionDetection.step4.py $fusions_file";
-    my $fusions_final_checkpoint = $fusion_values_checkpoint;
-    $fusions_final_checkpoint =~ s/\.values/\.final/ or die "Error, couldnt modify $fusions_final_checkpoint to final checkpoint";;
-    unless (-e $fusions_final_checkpoint) {
-        &process_cmd($cmd);
-        &process_cmd("touch $fusions_final_checkpoint");
-    }
-    
-    # filter them based on distance to known splice junctions:
-    
-    my $fusions_final_file = "$fusions_file.final.txt";
-    my $fusions_D0_checkpoint = "$fusions_final_file.D0.ok";
-    $cmd = "$FindBin::Bin/chimera_simulation_toolkit/filter_gmap_chims.pl $fusions_final_file 0 > $fusions_file.final.D0.txt";
-    unless (-e $fusions_D0_checkpoint) {
-        &process_cmd($cmd);
-        &process_cmd("touch $fusions_D0_checkpoint");
-    }
-    
-    
-    # Generate the fusion transcripts as separate fasta file:
-    $cmd = "$UTILDIR/createFusionsFasta.py $filtered_transcripts_file $fusions_file $fusions_file.fasta";
-    my $fusions_fasta_checkpoint = "$fusions_file.fasta.ok";
-    unless (-e $fusions_fasta_checkpoint) {
-        &process_cmd($cmd);
-        &process_cmd("touch $fusions_fasta_checkpoint");
-    }
-    
-
-    unless ($NO_CLEANUP_FLAG) {
-        
-        &process_cmd("rm -f RSEM/bowtie.csorted.bam RSEM/bowtie.csorted.bam.bai");
-
-    }
-    
-
-
-    ## takes too long, removing for now.
-    #
-    # prep visuals showing the reference transcripts matching the fusion transcripts:
-    #$cmd = "$UTILDIR/trinity_fusion_trans_to_ref_trans_matches.pl $filtered_transcripts_file.fusion_candidates.fa $fusions_file $REF_TRANS reftrans_blat";
-    #my $ref_trans_annot_checkpoint = "reftrans_annot.ok";
-    #unless (-e $ref_trans_annot_checkpoint) {
-    #    &process_cmd($cmd);
-    #    &process_cmd("touch $ref_trans_annot_checkpoint");
-
-    #}
-    
-    
-
-    exit(0);  ## stop here for now.
-
-
-
-
-
-
-
-
-
-=IGVprep
-
-    ##################
-    # prep for IGV
-    ##################
-
-    # run GMAP again to prep the IGV displays identify potential fusion transcripts
-    my $psl_file = "$filtered_transcripts_file.GMAP.psl";
-    my $psl_checkpoint = "$psl_file.ok";
-    $cmd = "gmap -D $GMAP_DB -d $GMAP_DB_NAME $filtered_transcripts_file -x 50 -n 0 -t $CPU -f psl > $psl_file";
-    unless (-e $psl_checkpoint) {
-        &process_cmd($cmd);
-        &process_cmd("touch $psl_checkpoint");
-    }
-    
-    # make genome bed output
-    $cmd = "$UTILDIR/transcriptDetection.step1.genome.py $psl_file";
-    my $genome_bed_checkpoint = $psl_file;
-    $genome_bed_checkpoint =~ s/\.psl$//;
-    $genome_bed_checkpoint .= ".genome.bed.ok";
-    unless (-e $genome_bed_checkpoint) {
-        &process_cmd($cmd);
-        &process_cmd("touch $genome_bed_checkpoint");
-    }
-    
-    # make transcriptome bed output
-    $cmd = "$UTILDIR/transcriptDetection.step2.transcriptome.py $psl_file";
-    my $transcriptome_bed_checkpoint = $psl_file;
-    $transcriptome_bed_checkpoint =~ s/\.psl$//;
-    $transcriptome_bed_checkpoint .= ".transcriptome.bed.ok";
-    unless (-e $transcriptome_bed_checkpoint) {
-        &process_cmd($cmd);
-        &process_cmd("touch $transcriptome_bed_checkpoint");
-    }
-    
-    # generate the transcriptome annotation bed file.
-    my $out_prefix = $psl_file;
-    $out_prefix =~ s/\.psl$//;
-    
-    my $trans_annot_checkpoint = $transcriptome_bed_checkpoint;
-    $trans_annot_checkpoint =~ s/\.bed\./\.annotation\.bed\./;
-    
-    $cmd = "$UTILDIR/transcriptDetection.step3.annotation.py $out_prefix.genome.bed $out_prefix.transcriptome.bed $out_prefix.transcriptome.annotation.bed $GENOME $REF_GENES_LIST";
-    unless (-e $trans_annot_checkpoint) {
-        &process_cmd($cmd);
-        &process_cmd("touch $trans_annot_checkpoint");
-    }
-    
-    # use a local tmpdir for sorting files via igvtools
-    my $tmpdir = "./tmp";
-    if (! -d $tmpdir) {
-        mkdir ($tmpdir) or die "Error, cannot mkdir $tmpdir";;
-    }
-    
-    # genome.bed file:
-    unless (-s "$out_prefix.genome.sorted.bed.idx") {
-        $cmd = "$IGVTOOLS sort -t $tmpdir $out_prefix.genome.bed $out_prefix.genome.sorted.bed";
-        &process_cmd($cmd);
-        $cmd = "$IGVTOOLS index $out_prefix.genome.sorted.bed";
-        &process_cmd($cmd);
-    }
-    
-    # transcriptome.bed file
-    unless (-s "$out_prefix.transcriptome.sorted.bed.idx") {
-        $cmd = "$IGVTOOLS sort -t $tmpdir $out_prefix.transcriptome.bed $out_prefix.transcriptome.sorted.bed";
-        &process_cmd($cmd);
-        $cmd = "sed -i '1i track name=Coordinates color=150,0,0 altColor=0,150,0 alternateExonColor=on' $out_prefix.transcriptome.sorted.bed";
-        &process_cmd($cmd);
-        $cmd = "$IGVTOOLS index $out_prefix.transcriptome.sorted.bed";
-        &process_cmd($cmd);
-    }
-    
-    # transcriptome.annotation.bed file
-    unless (-s "$out_prefix.transcriptome.annotation.sorted.bed.idx") {
-        $cmd = "$IGVTOOLS sort -t $tmpdir $out_prefix.transcriptome.annotation.bed $out_prefix.transcriptome.annotation.sorted.bed";
-        &process_cmd($cmd);
-        $cmd = "sed -i '1i track name=Annotations color=150,0,0 altColor=0,150,0 alternateExonColor=on' $out_prefix.transcriptome.annotation.sorted.bed";
-        &process_cmd($cmd);
-        $cmd = "$IGVTOOLS index $out_prefix.transcriptome.annotation.sorted.bed";
-        &process_cmd($cmd);
-    }
-    
-    ## Here's where we would generate IGV screenshots
-    
-    # ~/SVN/KCO/SOFTWARE/RNASEQ_FusionFinders/trinity_fusion_pipe/trinityFusion_IGV_screenshots.pl  --fasta gmap_output_file.fusions.txt.fasta --bam RSEM/bowtie.csorted.bam --bed TrinityOut.Trinity.fasta.min350.fasta.GMAP.transcriptome.annotation.sorted.bed --fusions gmap_output_file.fusions.final.txt --snapshot_dir snapshots &
-    
-    
-=cut
-    
-    exit(0);
-    
 }
-
-
-####
-sub process_cmd {
-    my ($cmd) = @_;
-
-    print STDERR "CMD: $cmd\n";
-
-    if ($DEBUG) { return; } # dry run
-    
-    my $ret = system($cmd);
-    if ($ret) {
-        die "Error, cmd: $cmd died with ret $ret";
-    }
-
-    return;
-}
-
-####
-sub ensure_full_path {
-    my ($file) = @_;
-    if ($file !~ /^\//) {
-        # ensure full path
-        $file = cwd() . "/$file";
-    }
-    return($file);
-}
-
-__END__
-
-# original pipeline text from Nathalie:
-
-###### Assembling transcriptome de novo, realigning reads and calculating expression levels
-### run Trinity
-# input: sample.r1.fastq and sample.r2.fastq, strand specificity, output folder
-# output: Trinity.fasta
-/seq/annotation/bio_tools/trinityrnaseq/current/Trinity.pl --seqType fq --kmer_method inchworm --SS_lib_type RF --left sample.r1.fastq --right sample.r2.fastq --output sample
-
-### rename and filter transcripts (after Trinity)
-# input: Trinity.fasta from Trinity and minimum transcript length in number of bases
-# output: Trinity.min350.fasta
-python /broad/sigmascratch/npochet/scripts/filterTranscripts.py Trinity.fasta 350
-
-### run GMAP asking for map and nomap output (after renaming and filtering transcripts)
-# input: organism database and genome reference fasta (create beforehand for many organisms?), Trinity.min350.fasta from previous step
-# output: Trinity.min350.GMAP.map and Trinity.min350.GMAP.nomap
-/seq/annotation/bio_tools/GMAP/current/bin/gmap -D /broad/sigmascratch/npochet/HsGenome/GMAP/hg19.fasta_gmapDB/ -d hg19.fasta Trinity.min350.fasta -x 50 -n 0 > Trinity.min350.GMAP.map 2>Trinity.min350.GMAP.nomap
-
-### run Bowtie with multiple hits (after renaming and filtering transcripts)
-# input: sample.r1.fastq and sample.r2.fastq, strand specificity, Trinity.min350.fasta, multiple hits, maximal distance between pairs
-# output: bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.bam
-/seq/annotation/bio_tools/trinityrnaseq/__devel/trinityrnaseq_latest/util/alignReads.pl --seqType fq --target Trinity.min350.fasta --left sample.r1.fastq --right sample.r2.fastq --seqType fq --aligner bowtie --num_top_hits 1000 --max_dist_between_pairs 2000 --SS_lib_type RF
-
-### convert Bowtie bam to sam (after Bowtie with multiple hits)
-# input: bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.bam
-# output: bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.sam
-samtools view bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.bam > bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.sam
-
-### run RSEM (after Bowtie with multiple hits)
-# input: bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.bam, Trinity.min350.fasta, strand specificity, paired
-# output: RSEM.isoforms.results
-/seq/annotation/bio_tools/trinityrnaseq/__devel/trinityrnaseq_latest/util/RSEM_util/run_RSEM.pl --name_sorted_bam bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.bam --transcripts Trinity.min350.fasta --paired --SS_lib_type RF > RSEM_sample.txt
-
-###### Fusion Detection Pipeline
-### run fusion detection step 1 (after GMAP asking for map and nomap output and converting Bowtie bam to sam and RSEM)
-# input: Trinity.min350.GMAP.map from GMAP and reference genome and gene models
-# output: Trinity.min350.GMAP.fusions.txt
-python /broad/sigmascratch/npochet/scripts/fusionDetection.step1.py Trinity.min350.GMAP.map /broad/sigmascratch/npochet/HsGenome/hg19.fasta /broad/sigmascratch/npochet/scripts/refGene.txt,/broad/sigmascratch/npochet/scripts/ensGene.txt
-
-### run fusion detection step 2 (after fusion detection step 1)
-# input: Trinity.min350.GMAP.fusions.txt and bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.sam and RSEM.isoforms.results
-# output: (many Python database files)
-python /broad/sigmascratch/npochet/scripts/fusionDetection.step2.py Trinity.min350.GMAP.fusions.txt bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.sam RSEM.isoforms.results
-
-### run fusion detection step 3 (after fusion detection step 2)
-# input: Trinity.min350.GMAP.fusions.txt (and many Python database files)
-# output: Trinity.min350.GMAP.fusions.values.txt
-python /broad/sigmascratch/npochet/scripts/fusionDetection.step3.py Trinity.min350.GMAP.fusions.txt
-
-### run fusion detection step 4 (after fusion detection step 3)
-# input: Trinity.min350.GMAP.fusions.txt (and Trinity.min350.GMAP.fusions.values.txt and many Python database files)
-# output: Trinity.min350.GMAP.fusions.final.txt
-python /broad/sigmascratch/npochet/scripts/fusionDetection.step4.py Trinity.min350.GMAP.fusions.txt
-
-###### Visualization in IGV - annotations
-### run GMAP asking for psl output (after renaming and filtering transcripts)
-# input: organism database and genome reference fasta (create beforehand for many organisms?), Trinity.min350.fasta from previous step
-# output: Trinity.min350.GMAP.map and Trinity.min350.GMAP.nomap
-/seq/annotation/bio_tools/GMAP/current/bin/gmap -D /broad/sigmascratch/npochet/HsGenome/GMAP/hg19.fasta_gmapDB/ -d hg19.fasta Trinity.min350.fasta -x 50 -f psl -n 0 > Trinity.min350.GMAP.map.blat.psl
-
-### run transcript detection step 1 (after GMAP asking for psl output)
-# input: Trinity.min350.GMAP.map.blat.psl from GMAP
-# output: Trinity.min350.GMAP.map.blat.genome.bed
-python /broad/sigmascratch/npochet/scripts/transcriptDetection.step1.genome.py Trinity.min350.GMAP.map.blat.psl
-
-### run transcript detection step 2 (after transcript detection step 1)
-# input: Trinity.min350.GMAP.map.blat.psl from GMAP
-# output: Trinity.min350.GMAP.map.blat.transcriptome.bed
-python /broad/sigmascratch/npochet/scripts/transcriptDetection.step2.transcriptome.py Trinity.min350.GMAP.map.blat.psl
-
-### file manipulation (after transcript detection step 2)
-sed -i 's/"//g' /broad/sigmascratch/npochet/scripts/refGene.txt
-sed -i 's/"//g' /broad/sigmascratch/npochet/scripts/ensGene.txt
-sed -i 's/"//g' Trinity.min350.GMAP.map.blat.genome.bed
-sed -i 's/"//g' Trinity.min350.GMAP.map.blat.transcriptome.bed
-
-### run transcript detection step 3 (after file manipulation after transcript detection step 2)
-# input: Trinity.min350.GMAP.map.blat.genome.bed and Trinity.min350.GMAP.map.blat.transcriptome.bed and reference genome and gene models
-# output: Trinity.min350.GMAP.map.blat.transcriptome.annotation.bed
-python /broad/sigmascratch/npochet/scripts/transcriptDetection.step3.annotation.py Trinity.min350.GMAP.map.blat.genome.bed Trinity.min350.GMAP.map.blat.transcriptome.bed Trinity.min350.GMAP.map.blat.transcriptome.annotation.bed /broad/sigmascratch/npochet/HsGenome/hg19.fasta /broad/sigmascratch/npochet/scripts/refGene.txt,/broad/sigmascratch/npochet/scripts/ensGene.txt
-
-### sort and index genome annotations (after transcript detection step 3)
-# input: Trinity.min350.GMAP.map.blat.genome.bed
-# output: Trinity.min350.GMAP.map.blat.genome.sorted.bed and Trinity.min350.GMAP.map.blat.genome.sorted.bed.idx
-/broad/sigmascratch/npochet/igvtools/IGVTools/igvtools sort -t /broad/sigmascratch/npochet/tmp/ Trinity.min350.GMAP.map.blat.genome.bed Trinity.min350.GMAP.map.blat.genome.sorted.bed
-/broad/sigmascratch/npochet/igvtools/IGVTools/igvtools index Trinity.min350.GMAP.map.blat.genome.sorted.bed
-
-### sort and index transcriptome annotations (after transcript detection step 3)
-# input: Trinity.min350.GMAP.map.blat.transcriptome.bed
-# output: Trinity.min350.GMAP.map.blat.transcriptome.sorted.bed and Trinity.min350.GMAP.map.blat.transcriptome.sorted.bed.idx
-sed -i '1i track name=Coordinates color=150,0,0 altColor=0,150,0 alternateExonColor=on' Trinity.min350.GMAP.map.blat.transcriptome.bed
-/broad/sigmascratch/npochet/igvtools/IGVTools/igvtools sort -t /broad/sigmascratch/npochet/tmp/ Trinity.min350.GMAP.map.blat.transcriptome.bed Trinity.min350.GMAP.map.blat.transcriptome.sorted.bed
-/broad/sigmascratch/npochet/igvtools/IGVTools/igvtools index Trinity.min350.GMAP.map.blat.transcriptome.sorted.bed
-
-### sort and index reference gene model transcriptome annotations (after transcript detection step 3)
-# input: Trinity.min350.GMAP.map.blat.transcriptome.annotation.bed
-# output: Trinity.min350.GMAP.map.blat.transcriptome.annotation.sorted.unique.bed and Trinity.min350.GMAP.map.blat.transcriptome.annotation.sorted.unique.bed.idx
-sed -i '1i track name=Annotations color=150,0,0 altColor=0,150,0 alternateExonColor=on' Trinity.min350.GMAP.map.blat.transcriptome.annotation.bed
-/broad/sigmascratch/npochet/igvtools/IGVTools/igvtools sort -t /broad/sigmascratch/npochet/tmp/ Trinity.min350.GMAP.map.blat.transcriptome.annotation.bed Trinity.min350.GMAP.map.blat.transcriptome.annotation.sorted.bed
-uniq Trinity.min350.GMAP.map.blat.transcriptome.annotation.sorted.bed > Trinity.min350.GMAP.map.blat.transcriptome.annotation.sorted.unique.bed
-/broad/sigmascratch/npochet/igvtools/IGVTools/igvtools index Trinity.min350.GMAP.map.blat.transcriptome.annotation.sorted.unique.bed
-
-###### Visualization in IGV - reference
-### create and index fusions fasta (after renaming and filtering transcripts)
-# input: Trinity.min350.fasta
-# output: Trinity.min350.fusions.fasta and Trinity.min350.fusions.fasta.fai
-python /broad/sigmascratch/npochet/scripts/createFusionsFasta.py Trinity.min350.fasta Trinity.min350.GMAP.fusions.txt Trinity.min350.fusions.fasta
-samtools faidx Trinity.min350.fusions.fasta
-
-###### Visualization in IGV - alignments
-### sort and index Bowtie alignments (after Bowtie with multiple hits)
-# input: bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.bam
-# output: bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.sorted.bam and bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.sorted.bam.bai
-samtools sort bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.bam bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.sorted
-samtools index bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.sorted.bam > bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.sorted.bam.bai
-
-###### Visualization in IGV - screenshot batch script
-### generate batch script for IGV that automatically takes screen shots for all fusions (after fusion detection step 4, perhaps even after manual selection)
-# input: Trinity.min350.GMAP.fusions.final.txt (or manual selection) and dir.txt
-# output: Trinity.min350.GMAP.fusions.final.IGVbatch.txt
-python /broad/sigmascratch/npochet/scripts/fusionDetection.step5.py Trinity.min350.GMAP.fusions.final.txt dir.txt
-
-###### Visualization in IGV
-load Trinity.min350.fusions.fasta and Trinity.min350.fusions.fasta.fai
-load bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.sorted.bam and bowtie_out.nameSorted.sam.+.sam.PropMapPairsForRSEM.sorted.bam.bai
-load Trinity.min350.GMAP.map.blat.transcriptome.annotation.sorted.unique.bed and Trinity.min350.GMAP.map.blat.transcriptome.annotation.sorted.unique.bed.idx
-load Trinity.min350.GMAP.map.blat.transcriptome.sorted.bed and Trinity.min350.GMAP.map.blat.transcriptome.sorted.bed.idx
-load Trinity.min350.GMAP.fusions.final.IGVbatch.txt
-
 
