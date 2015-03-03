@@ -151,6 +151,112 @@ class ScriptTester( ParentPipelineTester.ParentPipelineTester ):
         # Evaluate
         self.func_test_true( f_success )
 
+    def test_tabs_to_percent_mutations_for_one_tab_file( self ):
+        """
+        Test tabs_to_percent_mutations.py for reading in one tab file with mutations.
+        """
+        # Create test environment
+        str_count_mutations_script = os.path.join( self.str_script_dir, "tabs_to_percent_mutations.py" )
+        str_count_mutations_gtf_file = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations.gtf" )
+        str_count_mutations_key_genes = "Gene1,Gene3,Gene5"
+        str_count_mutations_input_tab_file = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_tab_1.tab" )
+        str_count_mutations_output_file_answer = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_for_one_tab_file_ANSWER.txt" )
+        str_count_mutations_output_file_result = os.path.join( self.str_test_data_dir_working, "tabs_to_percent_mutations_for_one_tab_file_RESULT.txt" )
+        str_count_mutations_output_file_pdf = os.path.join( self.str_test_data_dir_working, "tabs_to_percent_mutations_for_one_tab_file_RESULT.pdf" )
+        self.func_make_dummy_dir( self.str_test_data_dir_working )
+        # Call Example script
+        str_command = " ".join( [ str_count_mutations_script, "--gtf", str_count_mutations_gtf_file, "--key", str_count_mutations_key_genes,
+                                  "--tab", str_count_mutations_input_tab_file, "--out_file", str_count_mutations_output_file_pdf ] )
+        Commandline.Commandline().func_CMD( str_command )
+        # Check test environment for results
+        f_success = self.func_are_files_equivalent( str_count_mutations_output_file_answer, str_count_mutations_output_file_result )
+        # Destroy environment
+        self.func_remove_files( [ str_count_mutations_output_file_result, str_count_mutations_output_file_pdf ] )
+        self.func_remove_dirs( [ self.str_test_data_dir_working ] )
+        # Evaluate
+        self.func_test_true( f_success )
+
+    def test_tabs_to_percent_mutations_for_one_tab_file_secondary( self ):
+        """
+        Test tabs_to_percent_mutations.py for reading in one tab file with mutations, using secondary evidence.
+        """
+        # Create test environment
+        str_count_mutations_script = os.path.join( self.str_script_dir, "tabs_to_percent_mutations.py" )
+        str_count_mutations_gtf_file = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations.gtf" )
+        str_count_mutations_key_genes = "Gene1,Gene3,Gene5"
+        str_count_mutations_input_tab_file = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_tab_1.tab" )
+        str_count_mutations_output_file_answer = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_for_one_tab_file_secondary_ANSWER.txt" )
+        str_count_mutations_output_file_result = os.path.join( self.str_test_data_dir_working, "tabs_to_percent_mutations_for_one_tab_file_secondary_RESULT.txt" )
+        str_count_mutations_output_file_pdf = os.path.join( self.str_test_data_dir_working, "tabs_to_percent_mutations_for_one_tab_file_secondary_RESULT.pdf" )
+        self.func_make_dummy_dir( self.str_test_data_dir_working )
+        # Call Example script
+        str_command = " ".join( [ str_count_mutations_script, "--gtf", str_count_mutations_gtf_file, "--key", str_count_mutations_key_genes,
+                                  "--tab", str_count_mutations_input_tab_file, "--out_file", str_count_mutations_output_file_pdf, "--second" ] )
+        Commandline.Commandline().func_CMD( str_command )
+        # Check test environment for results
+        f_success = self.func_are_files_equivalent( str_count_mutations_output_file_answer, str_count_mutations_output_file_result )
+        # Destroy environment
+        self.func_remove_files( [ str_count_mutations_output_file_result, str_count_mutations_output_file_pdf ] )
+        self.func_remove_dirs( [ self.str_test_data_dir_working ] )
+        # Evaluate
+        self.func_test_true( f_success )
+
+    def test_tabs_to_percent_mutations_for_three_tab_file( self ):
+        """
+        Test tabs_to_percent_mutations.py for reading in three tab files with mutations.
+        """
+        # Create test environment
+        str_count_mutations_script = os.path.join( self.str_script_dir, "tabs_to_percent_mutations.py" )
+        str_count_mutations_gtf_file = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations.gtf" )
+        str_count_mutations_key_genes = "Gene1,Gene3,Gene5"
+        str_count_mutations_input_tab_file_1 = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_tab_1.tab" )
+        str_count_mutations_input_tab_file_2 = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_tab_2.tab" )
+        str_count_mutations_input_tab_file_3 = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_tab_3.tab" )
+        str_count_mutations_output_file_answer = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_for_three_tab_file_ANSWER.txt" )
+        str_count_mutations_output_file_result = os.path.join( self.str_test_data_dir_working, "tabs_to_percent_mutations_for_three_tab_file_RESULT.txt" )
+        str_count_mutations_output_file_pdf = os.path.join( self.str_test_data_dir_working, "tabs_to_percent_mutations_for_three_tab_file_RESULT.pdf" )
+        self.func_make_dummy_dir( self.str_test_data_dir_working )
+        # Call Example script
+        str_command = " ".join( [ str_count_mutations_script, "--gtf", str_count_mutations_gtf_file, "--key", str_count_mutations_key_genes,
+                                  "--tab", str_count_mutations_input_tab_file_1, "--tab", str_count_mutations_input_tab_file_2, "--tab", str_count_mutations_input_tab_file_3,
+                                  "--out_file", str_count_mutations_output_file_pdf ] )
+        Commandline.Commandline().func_CMD( str_command )
+        # Check test environment for results
+        f_success = self.func_are_files_equivalent( str_count_mutations_output_file_answer, str_count_mutations_output_file_result )
+        # Destroy environment
+        self.func_remove_files( [ str_count_mutations_output_file_result, str_count_mutations_output_file_pdf ] )
+        self.func_remove_dirs( [ self.str_test_data_dir_working ] )
+        # Evaluate
+        self.func_test_true( f_success )
+
+    def test_tabs_to_percent_mutations_for_three_tab_file_secondary( self ):
+        """
+        Test tabs_to_percent_mutations.py for reading in three tab files with mutations, using secondary evidence.
+        """
+        # Create test environment
+        str_count_mutations_script = os.path.join( self.str_script_dir, "tabs_to_percent_mutations.py" )
+        str_count_mutations_gtf_file = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations.gtf" )
+        str_count_mutations_key_genes = "Gene1,Gene3,Gene5"
+        str_count_mutations_input_tab_file_1 = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_tab_1.tab" )
+        str_count_mutations_input_tab_file_2 = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_tab_2.tab" )
+        str_count_mutations_input_tab_file_3 = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_tab_3.tab" )
+        str_count_mutations_output_file_answer = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_for_three_tab_file_secondary_ANSWER.txt" )
+        str_count_mutations_output_file_result = os.path.join( self.str_test_data_dir_working, "tabs_to_percent_mutations_for_three_tab_file_secondary_RESULT.txt" )
+        str_count_mutations_output_file_pdf = os.path.join( self.str_test_data_dir_working, "tabs_to_percent_mutations_for_three_tab_file_secondary_RESULT.pdf" )
+        self.func_make_dummy_dir( self.str_test_data_dir_working )
+        # Call Example script
+        str_command = " ".join( [ str_count_mutations_script, "--gtf", str_count_mutations_gtf_file, "--key", str_count_mutations_key_genes,
+                                  "--tab", str_count_mutations_input_tab_file_1, "--tab", str_count_mutations_input_tab_file_2, "--tab", str_count_mutations_input_tab_file_3,
+                                  "--out_file", str_count_mutations_output_file_pdf, "--second" ] )
+        Commandline.Commandline().func_CMD( str_command )
+        # Check test environment for results
+        f_success = self.func_are_files_equivalent( str_count_mutations_output_file_answer, str_count_mutations_output_file_result )
+        # Destroy environment
+        self.func_remove_files( [ str_count_mutations_output_file_result, str_count_mutations_output_file_pdf ] )
+        self.func_remove_dirs( [ self.str_test_data_dir_working ] )
+        # Evaluate
+        self.func_test_true( f_success )
+
 # Creates a suite of tests
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase( ScriptTester )

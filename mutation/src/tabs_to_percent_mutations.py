@@ -20,14 +20,14 @@ i_gtf_mutation = 1
 i_gtf_start_index = 3
 i_gtf_stop_index = 4
 
-prsr_arguments = argparse.ArgumentParser( prog = "tab_to_percent_mutations.py", description = "Talley's mutation prevalence from tab files", conflict_handler="resolve", formatter_class = argparse.ArgumentDefaultsHelpFormatter )
+prsr_arguments = argparse.ArgumentParser( prog = "tab_to_percent_mutations.py", description = "Counts mutation prevalence from tab files", conflict_handler="resolve", formatter_class = argparse.ArgumentDefaultsHelpFormatter )
 prsr_arguments.add_argument( "-g", "--gtf", metavar = "GTF_file", dest = "str_gtf", default = None, required = True, help = "GTF file to get gene locations." )
 prsr_arguments.add_argument( "-k", "--key", metavar = "Key_genes", dest = "str_key_genes", default = None, required = True, help = "Key genes of interest to count mutations in. comma delimited. Example: gene1,gene2,gene3,gene4." )
 prsr_arguments.add_argument( "-t", "--tab", metavar = "Tab_file", dest = "lstr_tab_files", default = None, required = True, action = "append", help = "Tab files to parse for mutations" )
 prsr_arguments.add_argument( "-o", "--out_file", metavar = "Output_file", dest = "str_output_file", default = None, required = True, help = "PDF figure." )
 prsr_arguments.add_argument( "-s", "--second", dest = "f_second_entry", default = False, action="store_true", help = "Switches between reading in the first or second evidence type in the tab files." )
 args_call = prsr_arguments.parse_args()
-print args_call
+
 # Shift reading if looking at the second entry in the tab file.
 i_tab_second_shift = 4
 if args_call.f_second_entry:
@@ -69,7 +69,7 @@ for str_tab_file in args_call.lstr_tab_files:
         lstr_samples_cur_gene = dict_mutation_samples[ str_cur_gene ]
         if not str_tab_file in lstr_samples_cur_gene:
           lstr_samples_cur_gene.append( str_tab_file )
-print( dict_mutation_samples )
+
 # Write to file
 lstr_write_genes = []
 li_write_mutations = []
@@ -78,12 +78,12 @@ with open( str_output_text_file, "w" ) as hndl_out_txt:
   hndl_out_txt.write( "\t".join( [ "Gene", "Mutations", "Samples", "Percent_samples\n" ] ) )
   for str_key in dict_mutation_counts.keys():
     i_cur_sample_count = len( dict_mutation_samples[ str_key ] )
-    hndl_out_txt.write( "\t".join( [ str_key, str( dict_mutation_counts[ str_key ] ), str( i_cur_sample_count ), str( i_cur_sample_count / i_samples ) + "\n" ] ) )
+    hndl_out_txt.write( "\t".join( [ str_key, str( dict_mutation_counts[ str_key ] ), str( i_cur_sample_count ), str( round( float( i_cur_sample_count ) / i_samples, 2 )) + "\n" ] ) )
     lstr_write_genes.append( str_key + " (" + str( round( i_cur_sample_count / i_samples, 2 ) ) + ")" )
     li_write_mutations.append( i_cur_sample_count )
 
   # Write sample info
-  hndl_out_txt.write( "\n\n ########## Sample detail\n" )
+  hndl_out_txt.write( "\n\n########## Sample detail\n" )
   if args_call.f_second_entry:
     hndl_out_txt.write( "### Second Type\n" )
   else:

@@ -1,0 +1,11 @@
+Gene	Mutations	Samples	Percent_samples
+gene1	0	0	0.0
+gene3	2	2	0.67
+gene5	5	1	0.33
+
+
+########## Sample detail
+### Second Type
+gene1	
+gene3	tabs_to_percent_mutations_tab_2.tab	tabs_to_percent_mutations_tab_3.tab
+gene5	tabs_to_percent_mutations_tab_3.tab
