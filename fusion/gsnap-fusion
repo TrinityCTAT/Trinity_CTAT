@@ -1,0 +1,92 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use Carp;
+use Cwd;
+use lib ($ENV{EUK_MODULES});
+use Pipeliner;
+use FindBin;
+
+my $usage = "usage: $0 left.fq right.fq output_directory\n\n";
+
+my $left_fq = $ARGV[0] or die $usage;
+my $right_fq = $ARGV[1] or die $usage;
+my $output_dir = $ARGV[2] or die $usage;
+
+
+my $UTILDIR = "$FindBin::Bin/GSNAP_fusion_pipe";
+
+main: {
+
+    $left_fq = &ensure_full_path($left_fq);
+    $right_fq = &ensure_full_path($right_fq);
+
+    unless (-d $output_dir) {
+        &process_cmd("mkdir -p $output_dir");
+    }
+    
+    chdir $output_dir or die "Error, cannot cd to $output_dir";
+    
+    my $pipeliner = new Pipeliner( -verbose => 1);
+
+    ## Run GSNAP
+    my $cmd = "gsnap -D /seq/regev_genome_portal/RESOURCES/human/Hg19 " 
+        . " -d Hg19.fa.gmap -A sam -N 1 -w 200000  -n 1 -t 2 "
+        . " $left_fq $right_fq "
+        . " --use-splicing=/seq/regev_genome_portal/RESOURCES/human/Hg19/Annotations/Hg19_Gencode/gencode.v19.rna_seq_pipeline.gtf.gsnap.splice.iit "
+        . " --split-output=split ";
+
+    if ($left_fq =~ /\.gz$/) {
+        $cmd .= " --gunzip ";
+    }
+    
+    $pipeliner->add_commands(Command->new($cmd, "gsnap_split.ok"));
+    
+    
+    ##  assign fusion junctions to genes:
+    
+    $cmd = "$UTILDIR/gsnap_coords_to_genes.pl "
+        . "split.concordant_transloc "
+        . "split.paired_uniq_inv "
+        . "split.paired_uniq_scr "
+        . "split.paired_uniq_long "
+        . "split.unpaired_uniq "
+        . "split.halfmapping_transloc "
+        . "split.unpaired_transloc ";
+    
+    $pipeliner->add_commands(Command->new($cmd, "gsnap_to_genes.ok"));
+    
+    $pipeliner->run();
+
+    exit(0);
+    
+}
+
+
+####
+sub ensure_full_path {
+    my ($file) = @_;
+
+    if ($file !~ m|^/|) {
+        my $curr_dir = cwd();
+
+        $file = "$curr_dir/$file";
+    }
+    
+    return($file);
+}
+
+####
+sub process_cmd {
+    my ($cmd) = @_;
+
+    print STDERR "CMD: $cmd\n";
+    my $ret = system($cmd);
+
+    if ($ret) {
+        confess "Error, cmd: $cmd died with ret $ret";
+    }
+
+    return;
+}
