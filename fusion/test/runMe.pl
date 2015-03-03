@@ -11,6 +11,8 @@ use __GLOBALS__;
 my $left_fq = "reads.left.simPE.fq.gz";
 my $right_fq = "reads.right.simPE.fq.gz";
 
+my $INSTALL_DIR = "$FindBin::Bin/../";
+
 main: {
 
     
@@ -25,10 +27,22 @@ main: {
 
     $pipeliner->add_commands(new Command($cmd, "trinity_out_dir.ok"));
 
+
+
+    #################
+    ## Trinity Fusion
+    #################
+    
+    
+    $pipeliner->add_commands(
+        new Command("$INSTALL_DIR/trinity-fusion -T trinity_out_dir.Trinity.fasta --output Trinity_Fusion", 
+                    "Trinity_Fusion.ok") 
+        ); 
+    
+    
     
 
-
-
+    
     $pipeliner->run();
 
     
