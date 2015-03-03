@@ -7,16 +7,8 @@ use Getopt::Long qw(:config no_ignore_case bundling pass_through);
 use FindBin;
 use Cwd;
 use lib ("$FindBin::Bin/PerlLib");
+use __GLOBALS__;
 use Pipeliner;
-
-
-BEGIN {
-    unless ($ENV{FUSION_ANNOTATOR_LIB}) {
-        die "Error, must have env var FUSION_ANNOTATOR_LIB set to the corresponding resource directory.";
-    }
-}
-
-my $FUSION_ANNOTATOR_LIB = $ENV{FUSION_ANNOTATOR_LIB};
 
 ## configuration:
 my $GENOME = "${FUSION_ANNOTATOR_LIB}/Hg19.fa";
