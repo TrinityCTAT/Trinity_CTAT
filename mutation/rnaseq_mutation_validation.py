@@ -219,21 +219,21 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
             # Tab files for vcf files that include if common or somatic
             str_file_maf_dna_tab = os.path.join( STR_TAB_DIR, str_sample_key + "_maf_dna.tab" )
             str_log_maf_dna = os.path.join( STR_LOG_DIR, str_sample_key + "_maf_dna.log" )
-            str_cmd_tab_MAF_DNA = os.path.join( self.str_src_dir, "vcfs_to_genotype_tab.py" ) + " --maf_reference " + args_parsed.str_maf_file + " --tumor " + dict_sample_pairing[ STR_MAF_SAMPLE_NAME ] + " --count_reference " + str_DNA_depth_compressed_file + " --vcf " + dict_sample_pairing[ STR_DNA_VCF_SNP ] + " --count " + str_DNA_depth_compressed_file + " " + str_file_maf_dna_tab + " > " + str_log_maf_dna
+            str_cmd_tab_MAF_DNA = os.path.join( self.str_src_dir, "vcfs_to_snp_calls_tab.py" ) + " --maf_reference " + args_parsed.str_maf_file + " --tumor " + dict_sample_pairing[ STR_MAF_SAMPLE_NAME ] + " --count_reference " + str_DNA_depth_compressed_file + " --vcf " + dict_sample_pairing[ STR_DNA_VCF_SNP ] + " --count " + str_DNA_depth_compressed_file + " " + str_file_maf_dna_tab + " > " + str_log_maf_dna
             lcmd_commands.append( Command.Command( str_cur_command = str_cmd_tab_MAF_DNA,
                                                    lstr_cur_dependencies = [ args_parsed.str_maf_file, str_DNA_depth_compressed_file, dict_sample_pairing[ STR_DNA_VCF_SNP ] ],
                                                    lstr_cur_products = [ str_file_maf_dna_tab, str_log_maf_dna ] ) )
 
             str_file_maf_rna_tab = os.path.join( STR_TAB_DIR, str_sample_key + "_maf_rna.tab" )
             str_log_maf_rna = os.path.join( STR_LOG_DIR, str_sample_key + "_maf_rna.log" )
-            str_cmd_tab_MAF_RNA = os.path.join( self.str_src_dir, "vcfs_to_genotype_tab.py" ) + " --maf_reference " + args_parsed.str_maf_file + " --tumor " + dict_sample_pairing[ STR_MAF_SAMPLE_NAME ] + " --count_reference " + str_DNA_depth_compressed_file + " --vcf " + dict_sample_pairing[ STR_RNA_VCF_SNP ] + " --count " + str_RNA_depth_compressed_file + " " + str_file_maf_rna_tab + " > " + str_log_maf_rna
+            str_cmd_tab_MAF_RNA = os.path.join( self.str_src_dir, "vcfs_to_snp_calls_tab.py" ) + " --maf_reference " + args_parsed.str_maf_file + " --tumor " + dict_sample_pairing[ STR_MAF_SAMPLE_NAME ] + " --count_reference " + str_DNA_depth_compressed_file + " --vcf " + dict_sample_pairing[ STR_RNA_VCF_SNP ] + " --count " + str_RNA_depth_compressed_file + " " + str_file_maf_rna_tab + " > " + str_log_maf_rna
             lcmd_commands.append( Command.Command( str_cur_command = str_cmd_tab_MAF_RNA,
                                                    lstr_cur_dependencies = [ args_parsed.str_maf_file, str_DNA_depth_compressed_file, str_RNA_depth_compressed_file, dict_sample_pairing[ STR_RNA_VCF_SNP ] ],
                                                    lstr_cur_products = [ str_file_maf_rna_tab, str_log_maf_rna ] ) )
 
             str_file_dna_rna_tab = os.path.join( STR_TAB_DIR, str_sample_key + "_dna_rna.tab" )
             str_log_dna_rna = os.path.join( STR_LOG_DIR, str_sample_key + "_dna_rna.log" )
-            str_cmd_tab_DNA_RNA = os.path.join( self.str_src_dir, "vcfs_to_genotype_tab.py" ) + " --vcf_reference " + dict_sample_pairing[ STR_DNA_VCF_SNP ] + " --count_reference " + str_DNA_depth_compressed_file + " --vcf " + dict_sample_pairing[ STR_RNA_VCF_SNP ] + " --count " + str_RNA_depth_compressed_file + " " + str_file_dna_rna_tab + " > " + str_log_dna_rna
+            str_cmd_tab_DNA_RNA = os.path.join( self.str_src_dir, "vcfs_to_snp_calls_tab.py" ) + " --vcf_reference " + dict_sample_pairing[ STR_DNA_VCF_SNP ] + " --count_reference " + str_DNA_depth_compressed_file + " --vcf " + dict_sample_pairing[ STR_RNA_VCF_SNP ] + " --count " + str_RNA_depth_compressed_file + " " + str_file_dna_rna_tab + " > " + str_log_dna_rna
             lcmd_commands.append( Command.Command( str_cur_command = str_cmd_tab_DNA_RNA,
                                                    lstr_cur_dependencies = [ dict_sample_pairing[ STR_DNA_VCF_SNP ], str_DNA_depth_compressed_file, str_RNA_depth_compressed_file, dict_sample_pairing[ STR_RNA_VCF_SNP ] ],
                                                    lstr_cur_products = [ str_file_dna_rna_tab, str_log_dna_rna ] ) )

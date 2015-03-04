@@ -257,6 +257,108 @@ class ScriptTester( ParentPipelineTester.ParentPipelineTester ):
         # Evaluate
         self.func_test_true( f_success )
 
+    def test_vcfs_to_snp_calls_tab_filter_maf_vcf( self ):
+        """
+        Test vcfs_to_snp_calls_tab.py with filtering. Inputs are maf and vcf files.
+        """
+        # Create test environment
+        str_snp_calls_script = os.path.join( self.str_script_dir, "vcfs_to_snp_calls_tab.py" )
+        str_snp_calls_input_file_1 = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_filter.maf" )
+        str_maf_tumor_key = "test"
+        str_snp_calls_input_file_2 = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_1_filter.vcf" )
+        str_snp_calls_input_depth_1 = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_1_filter.depth" )
+        str_snp_calls_input_depth_2 = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_1_filter.depth" )
+        str_snp_calls_answer = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_filter_maf_vcf_1_ANSWER_sorted.tab" )
+        str_snp_calls_result = os.path.join( self.str_test_data_dir_working, "vcfs_to_snp_calls_tab_filter_maf_vcf_1_RESULT.tab" )
+        self.func_make_dummy_dir( self.str_test_data_dir_working )
+        # Call Example script
+        str_command = " ".join( [ str_snp_calls_script, "--maf_reference", str_snp_calls_input_file_1, "--tumor", str_maf_tumor_key,
+                                  "--vcf", str_snp_calls_input_file_2, "--count_reference", str_snp_calls_input_depth_1,
+                                  "--count", str_snp_calls_input_depth_2, str_snp_calls_result ] )
+        Commandline.Commandline().func_CMD( str_command )
+        # Check test environment for results
+        lstr_answer_lines = None
+        with open( str_snp_calls_answer, "r" ) as hndl_answer:
+            lstr_answer_lines = [ str_line for str_line in hndl_answer.read().split("\n") if str_line ]
+        lstr_answer_lines.sort()
+        lstr_result_lines = None
+        with open( str_snp_calls_result, "r" ) as hndl_result:
+            lstr_result_lines = [ str_line for str_line in hndl_result.read().split("\n") if str_line ]
+        lstr_result_lines.sort()
+        # Destroy environment
+        self.func_remove_files( [ str_snp_calls_result ] )
+        self.func_remove_dirs( [ self.str_test_data_dir_working ] )
+        # Evaluate
+        self.func_test_equals( "\n".join( lstr_answer_lines), "\n".join( lstr_result_lines ) )
+
+    def test_vcfs_to_snp_calls_tab_filter_maf_vcf_2( self ):
+        """
+        Test vcfs_to_snp_calls_tab.py with filtering. Inputs are maf and vcf 2 files.
+        """
+        # Create test environment
+        str_snp_calls_script = os.path.join( self.str_script_dir, "vcfs_to_snp_calls_tab.py" )
+        str_snp_calls_input_file_1 = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_filter.maf" )
+        str_maf_tumor_key = "test"
+        str_snp_calls_input_file_2 = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_2_filter.vcf" )
+        str_snp_calls_input_depth_1 = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_1_filter.depth" )
+        str_snp_calls_input_depth_2 = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_2_filter.depth" )
+        str_snp_calls_answer = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_filter_maf_vcf_2_ANSWER_sorted.tab" )
+        str_snp_calls_result = os.path.join( self.str_test_data_dir_working, "vcfs_to_snp_calls_tab_filter_maf_vcf_2_RESULT.tab" )
+        self.func_make_dummy_dir( self.str_test_data_dir_working )
+        # Call Example script
+        str_command = " ".join( [ str_snp_calls_script, "--maf_reference", str_snp_calls_input_file_1, "--tumor", str_maf_tumor_key,
+                                  "--vcf", str_snp_calls_input_file_2, "--count_reference", str_snp_calls_input_depth_1,
+                                  "--count", str_snp_calls_input_depth_2, str_snp_calls_result ] )
+        Commandline.Commandline().func_CMD( str_command )
+        # Check test environment for results
+        lstr_answer_lines = None
+        with open( str_snp_calls_answer, "r" ) as hndl_answer:
+            lstr_answer_lines = [ str_line for str_line in hndl_answer.read().split("\n") if str_line ]
+        lstr_answer_lines.sort()
+        lstr_result_lines = None
+        with open( str_snp_calls_result, "r" ) as hndl_result:
+            lstr_result_lines = [ str_line for str_line in hndl_result.read().split("\n") if str_line ]
+        lstr_result_lines.sort()
+        # Destroy environment
+        self.func_remove_files( [ str_snp_calls_result ] )
+        self.func_remove_dirs( [ self.str_test_data_dir_working ] )
+        # Evaluate
+        self.func_test_equals( "\n".join( lstr_answer_lines), "\n".join( lstr_result_lines ) )
+
+    def test_vcfs_to_snp_calls_tab_filter_vcf_1_2( self ):
+        """
+        Test vcfs_to_snp_calls_tab.py with filtering. Inputs are and vcf 1 and 2 files.
+        """
+        # Create test environment
+        str_snp_calls_script = os.path.join( self.str_script_dir, "vcfs_to_snp_calls_tab.py" )
+        str_snp_calls_input_file_1 = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_1_filter.vcf" )
+        str_maf_tumor_key = "test"
+        str_snp_calls_input_file_2 = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_2_filter.vcf" )
+        str_snp_calls_input_depth_1 = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_1_filter.depth" )
+        str_snp_calls_input_depth_2 = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_2_filter.depth" )
+        str_snp_calls_answer = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_filter_vcf_1_2_ANSWER_sorted.tab" )
+        str_snp_calls_result = os.path.join( self.str_test_data_dir_working, "vcfs_to_snp_calls_tab_filter_vcf_1_2_RESULT.tab" )
+        self.func_make_dummy_dir( self.str_test_data_dir_working )
+        # Call Example script
+        str_command = " ".join( [ str_snp_calls_script, "--vcf_reference", str_snp_calls_input_file_1,
+                                  "--vcf", str_snp_calls_input_file_2, "--count_reference", str_snp_calls_input_depth_1,
+                                  "--count", str_snp_calls_input_depth_2, str_snp_calls_result ] )
+        Commandline.Commandline().func_CMD( str_command )
+        # Check test environment for results
+        lstr_answer_lines = None
+        with open( str_snp_calls_answer, "r" ) as hndl_answer:
+            lstr_answer_lines = [ str_line for str_line in hndl_answer.read().split("\n") if str_line ]
+        lstr_answer_lines.sort()
+        lstr_result_lines = None
+        with open( str_snp_calls_result, "r" ) as hndl_result:
+            lstr_result_lines = [ str_line for str_line in hndl_result.read().split("\n") if str_line ]
+        lstr_result_lines.sort()
+        # Destroy environment
+        self.func_remove_files( [ str_snp_calls_result ] )
+        self.func_remove_dirs( [ self.str_test_data_dir_working ] )
+        # Evaluate
+        self.func_test_equals( "\n".join( lstr_answer_lines), "\n".join( lstr_result_lines ) )
+
 # Creates a suite of tests
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase( ScriptTester )

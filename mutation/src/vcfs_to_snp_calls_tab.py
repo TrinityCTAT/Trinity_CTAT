@@ -50,14 +50,14 @@ import glob
 import gzip
 import os
 
-prsr_arguments = argparse.ArgumentParser( prog = "vcfs_to_genotype_tab", description = "Collapses vcfs to tabular files of genotype info", formatter_class = argparse.ArgumentDefaultsHelpFormatter )
+prsr_arguments = argparse.ArgumentParser( prog = "vcfs_to_snp_calls_tab", description = "Collapses vcfs to tabular files of snp calls", formatter_class = argparse.ArgumentDefaultsHelpFormatter )
 prsr_arguments.add_argument( "-v", "--vcf", required = True, default = None, dest = "str_vcf_file", action = "store", help = "Input vcf file; maf or vcf are required." )
 prsr_arguments.add_argument( "-r", "--vcf_reference", default = None, dest = "str_vcf_reference_file", action = "store", help = "Input reference vcf file; Any SNP in this file will be recorded even if it does not show up in the other VCF." )
 prsr_arguments.add_argument( "-m", "--maf_reference", default = None, dest = "str_maf_file", action = "store", help = "Input reference maf file; reference maf or reference vcf are required." )
 prsr_arguments.add_argument( "-t", "--tumor", default = None, dest = "str_maf_tumor_sample", action = "store", help = "The specific sample of interest to pull from the maf files, required when the reference file is a maf file.")
 prsr_arguments.add_argument( "-d", "--count_reference", required = True, dest = "str_depth_reference_file", action = "store", help = "Input file that has per base read counts for the bam the reference vcf or maf was derived from.")
 prsr_arguments.add_argument( "-c", "--count", required = True, dest = "str_vcf_depth_file", action = "store", help = "Input file that has per base read counts. For the bam used to drived the second vcf file which is being compared to the reference vcf / maf file.")
-prsr_arguments.add_argument( dest = "str_output_file", action = "store", help = "Output tab file." )
+prsr_arguments.add_argument( dest = "str_output_file", action = "store", help = "Output tab file of snp calls." )
 args = prsr_arguments.parse_args()
 
 
@@ -80,19 +80,19 @@ def func_get_genotype( str_REF, str_ALT, str_genotype_info ):
   if not ( len( lstr_REF ) == 1 ):
     return None
 
-  # Make sure the Genotype indicates a change occured.
+  # Make sure the call indicates a change occured.
   if (( lstr_genotype_values[ li_genotype[0] ] == lstr_REF[ 0 ] ) and
      ( lstr_genotype_values[ li_genotype[1] ] == lstr_REF[ 0 ] )):
     return None
 
-  # Make genotype
+  # Make call
   str_genotype = CHR_GENOTYPE_SEP.join([ lstr_genotype_values[ li_genotype[0] ], lstr_genotype_values[ li_genotype[1] ]]) 
 
-  # Check to make sure none of the genotypes are '.'
+  # Check to make sure none of the calls are '.'
   if "." in str_genotype:
     return None
 
-  # Make sure that the genotype is only snps
+  # Make sure that the calls only have snps
   if not len( str_genotype ) == 3:
     return None
   return str_genotype
@@ -108,11 +108,7 @@ def func_update_with_depth( str_depth_file, dict_to_update, i_column_to_update )
   csvr_rd = csv.reader( hndl_count, delimiter = CHR_READ_DEPTH_DELIM )
   for lstr_count_line in csvr_rd:
     str_rd_loc = lstr_count_line[0]+"--"+lstr_count_line[1]
-    print str_rd_loc
-    print lstr_count_line[2]
-    print lstr_count_line
     if str_rd_loc in dict_output:
-      print "in"
       dict_to_update[ str_rd_loc ][i_column_to_update] = lstr_count_line[2]
   hndl_count.close()
   return dict_to_update
@@ -130,7 +126,6 @@ def func_read_VCF_file( str_file_name, dict_reference = None ):
 
     csvr_vcf = csv.reader( hndl_vcf, delimiter = CHR_VCF_DELIM )
     for lstr_line in csvr_vcf:
-      print lstr_line
 
       # Skip comment
       if lstr_line[0][0] == CHR_COMMENT:
@@ -147,8 +142,8 @@ def func_read_VCF_file( str_file_name, dict_reference = None ):
       if lstr_line[ I_ALT_INDEX ] == CHR_MONOMORPHIC_REFERENCE:
         continue
 
-      # Get genotype information
-      # Get the location of the genotpe information from the format entry
+      # Get call information
+      # Get the location of the call information from the format entry
       i_genotype_index = lstr_line[ I_FORMAT_INDEX ].split( CHR_ANNOT_DELIM ).index( STR_FORMAT_GENOTYPE )
 
       str_genotype = func_get_genotype( lstr_line[ I_REF_INDEX], lstr_line[ I_ALT_INDEX ], lstr_line[ I_GENOTYPE_INDEX ].split( CHR_ANNOT_DELIM )[ i_genotype_index ] )
@@ -205,20 +200,18 @@ elif args.str_maf_file:
       if not lstr_line_maf[ I_MAF_VARIANT_TYPE ] == STR_MAF_SNP:
         continue
 
-      # Get genotype
+      # Get call
       # Make sure there is a difference in alleles and reference
       if (( lstr_line_maf[ I_MAF_REF_INDEX ] == lstr_line_maf[ I_MAF_ALLELE_ONE ]) and (lstr_line_maf[ I_MAF_ALLELE_ONE ] == lstr_line_maf[ I_MAF_ALLELE_TWO ])):
         continue
-      str_genotype_maf = lstr_line_maf[ I_MAF_ALLELE_ONE ] + CHR_GENOTYPE_SEP + lstr_line_maf[ I_MAF_ALLELE_TWO ]
+      str_call_maf = lstr_line_maf[ I_MAF_ALLELE_ONE ] + CHR_GENOTYPE_SEP + lstr_line_maf[ I_MAF_ALLELE_TWO ]
 
       # Make genomic location
       str_loc_maf = "" if lstr_line_maf[ I_MAF_CHR_INDEX ][0] == "c" else "chr"
       str_loc_maf = str_loc_maf + lstr_line_maf[ I_MAF_CHR_INDEX ] + STR_POS_SEP + lstr_line_maf[ I_MAF_POS_INDEX ]
 
       # Store in dict
-      dict_output[ str_loc_maf ] = [ str_loc_maf, lstr_line_maf[ I_MAF_REF_INDEX ], str_genotype_maf, "NA", "NA", "NA", "NA", "NA" ]      
-    print "Results of reading in the  maf"
-    print dict_output
+      dict_output[ str_loc_maf ] = [ str_loc_maf, lstr_line_maf[ I_MAF_REF_INDEX ], str_call_maf, "NA", "NA", "NA", "NA", "NA" ]      
 else:
   print "Please provide either a reference VCF or maf file."
   exit( 3 )
@@ -227,11 +220,8 @@ else:
 dict_output = func_read_VCF_file( str_file_name = args.str_vcf_file, dict_reference = dict_output )
 
 # Dict to hold the read depth
-print( dict_output)
 dict_output = func_update_with_depth( str_depth_file = args.str_depth_reference_file, dict_to_update = dict_output, i_column_to_update = 3 )
-print( dict_output )
 dict_output = func_update_with_depth( str_depth_file = args.str_vcf_depth_file, dict_to_update = dict_output, i_column_to_update = 7 )
-print( dict_output )
 
 # Write to output file
 with open( args.str_output_file, "w" ) as hndl_out:
