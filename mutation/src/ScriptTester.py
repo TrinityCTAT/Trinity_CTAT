@@ -332,7 +332,6 @@ class ScriptTester( ParentPipelineTester.ParentPipelineTester ):
         # Create test environment
         str_snp_calls_script = os.path.join( self.str_script_dir, "vcfs_to_snp_calls_tab.py" )
         str_snp_calls_input_file_1 = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_1_filter.vcf" )
-        str_maf_tumor_key = "test"
         str_snp_calls_input_file_2 = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_2_filter.vcf" )
         str_snp_calls_input_depth_1 = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_1_filter.depth" )
         str_snp_calls_input_depth_2 = os.path.join( self.str_test_data_dir, "vcfs_to_snp_calls_tab_2_filter.depth" )
@@ -358,6 +357,49 @@ class ScriptTester( ParentPipelineTester.ParentPipelineTester ):
         self.func_remove_dirs( [ self.str_test_data_dir_working ] )
         # Evaluate
         self.func_test_equals( "\n".join( lstr_answer_lines), "\n".join( lstr_result_lines ) )
+
+    def test_vcfs_to_genotype_matrix_1_file( self ):
+        """
+        Test vcfs_to_genotype_matrix.py with one input file.
+        """
+        # Create test environment
+        str_genotype_script = os.path.join( self.str_script_dir, "vcfs_to_genotype_matrix.py" )
+        str_vcf_directory = os.path.join( self.str_test_data_dir, "test_vcf_genotype_matrix_dir_1" )
+        str_genotype_answer = os.path.join( self.str_test_data_dir, "vcfs_to_genotype_matrix_1_ANSWER.txt" )
+        str_genotype_result = os.path.join( self.str_test_data_dir_working, "vcfs_to_genotype_matrix_1_RESULT.txt" )
+        self.func_make_dummy_dir( self.str_test_data_dir_working )
+        # Call Example script
+        str_command = " ".join( [ str_genotype_script, "--matrix", str_genotype_result, str_vcf_directory ] )
+        Commandline.Commandline().func_CMD( str_command )
+        # Check test environment for results
+        f_success = self.func_are_files_equivalent( str_genotype_answer, str_genotype_result )
+        # Destroy environment
+        self.func_remove_files( [ str_genotype_result ] )
+        self.func_remove_dirs( [ self.str_test_data_dir_working ] )
+        # Evaluate
+        self.func_test_true( f_success )
+
+    def test_vcfs_to_genotype_matrix_3_file( self ):
+        """
+        Test vcfs_to_genotype_matrix.py with one input file in one directory and 2 in another.
+        """
+        # Create test environment
+        str_genotype_script = os.path.join( self.str_script_dir, "vcfs_to_genotype_matrix.py" )
+        str_vcf_directory_1 = os.path.join( self.str_test_data_dir, "test_vcf_genotype_matrix_dir_1" )
+        str_vcf_directory_2 = os.path.join( self.str_test_data_dir, "test_vcf_genotype_matrix_dir_2" )
+        str_genotype_answer = os.path.join( self.str_test_data_dir, "vcfs_to_genotype_matrix_3_ANSWER.txt" )
+        str_genotype_result = os.path.join( self.str_test_data_dir_working, "vcfs_to_genotype_matrix_3_RESULT.txt" )
+        self.func_make_dummy_dir( self.str_test_data_dir_working )
+        # Call Example script
+        str_command = " ".join( [ str_genotype_script, "--matrix", str_genotype_result, str_vcf_directory_1, str_vcf_directory_2 ] )
+        Commandline.Commandline().func_CMD( str_command )
+        # Check test environment for results
+        f_success = self.func_are_files_equivalent( str_genotype_answer, str_genotype_result )
+        # Destroy environment
+        self.func_remove_files( [ str_genotype_result ] )
+        self.func_remove_dirs( [ self.str_test_data_dir_working ] )
+        # Evaluate
+        self.func_test_true( f_success )
 
 # Creates a suite of tests
 def suite():
