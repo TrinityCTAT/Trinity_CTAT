@@ -66,7 +66,7 @@ def func_get_genotype( str_REF, str_ALT, str_genotype_info ):
   li_genotype = [ int( x ) for x in lstr_genotype ]
   if not len( li_genotype ) == 2:
     print "This script assumes diploid calls but received a genotype that is not diploid. entry = " + str_genotype_info
-    exit( 1 )
+    exit( 11 )
 
   # Update
   # Sometimes the REF and ALT calls can be comma delimited
@@ -180,7 +180,7 @@ elif args.str_maf_file:
   # This requires the name of the sample in the maf file of interest to be given for maf file parsing.
   if not args.str_maf_tumor_sample:
     print "Please supply the tumor sample of interest when parsing results from the maf file"
-    exit( 2 )
+    exit( 12 )
 
   with open( args.str_maf_file, "r" ) as hndl_maf:
 
@@ -214,7 +214,7 @@ elif args.str_maf_file:
       dict_output[ str_loc_maf ] = [ str_loc_maf, lstr_line_maf[ I_MAF_REF_INDEX ], str_call_maf, "NA", "NA", "NA", "NA", "NA" ]      
 else:
   print "Please provide either a reference VCF or maf file."
-  exit( 3 )
+  exit( 13 )
 
 # Read the not reference vcf
 dict_output = func_read_VCF_file( str_file_name = args.str_vcf_file, dict_reference = dict_output )
