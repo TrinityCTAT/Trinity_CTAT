@@ -3,11 +3,14 @@
 use strict;
 use warnings;
 use Carp;
-use lib ("/home/unix/bhaas/EUK_modules/lib/perl5/x86_64-linux-thread-multi/", 
-         "/seq/regev_genome_portal/SOFTWARE/PerlLib");
+use FindBin;
+use lib ("$FindBin::Bin/../PerlLib");
+use __GLOBALS__;
 use Set::IntervalTree;
 use SAM_reader;
 use SAM_entry;
+use FusionAnnotator;
+
 
 my $usage = "usage: $0 gsnap.split.sam, ...\n\n";
 
@@ -140,7 +143,7 @@ sub identify_gsnap_fusions {
         &examine_fusion_candidates(\%fusion_candidates, \%indiv_fragment_fusion_genes);
     }
  
-
+    
   report_fusions: {
 
       ## output the fusion list, require junction reads for candidates.
@@ -154,14 +157,22 @@ sub identify_gsnap_fusions {
               my $spanning_gene_key = join("--", sort split(/--/, $fusion_gene));
               my $spanning_count = $fusion_candidates{SPANNING}->{$spanning_gene_key} || 0;
               
-              print $ofh join("\t", $fusion_gene, $junction_count, $spanning_count) . "\n";
+              my ($geneA, $geneB) = split(/--/, $fusion_gene);
+              
+              ## no self-fusions ;)
+              if ($geneA eq $geneB) { next; }
+
+              my @annotations = &FusionAnnotator::get_annotations($geneA, $geneB);
+              
+              print $ofh join("\t", $fusion_gene, $junction_count, $spanning_count, 
+                  join(",", @annotations)) . "\n";
           }
       }
       close $ofh;
     }
 
 
-    print STDERR "-done.  SEe $fusion_list_output_file for fusion candidates.\n\n";
+    print STDERR "-done.  See $fusion_list_output_file for fusion candidates.\n\n";
 
     exit(0);
 }
@@ -315,11 +326,11 @@ sub parse_junctions {
             confess "Error, cannot find gene_id from $info";
         }
 
-        
-        &add_chr_interval($chr_to_interval_tree_href, $chr, $gene_id, $lend, $rend);
-
-        &add_splice_junction($chr_coord_to_splice_junction_href, $chr, $gene_id, $lend, $rend, $orient);
-        
+        if ($rend - $lend > 1) {
+            &add_chr_interval($chr_to_interval_tree_href, $chr, $gene_id, $lend, $rend);
+            
+            &add_splice_junction($chr_coord_to_splice_junction_href, $chr, $gene_id, $lend, $rend, $orient);
+        }
 
     }
     
@@ -351,9 +362,14 @@ sub add_chr_interval {
     unless ($i_tree) {
         $i_tree = $chr_exons_interval_tree_href->{$chr} = Set::IntervalTree->new;
     }
+    
+    eval {
+        $i_tree->insert($gene_id, $lend, $rend);
+    };
 
-    $i_tree->insert($gene_id, $lend, $rend);
-
+    if ($@) {
+        print STDERR "Error, $@, $gene_id,$lend,$rend";
+    }
     return;
 }
         

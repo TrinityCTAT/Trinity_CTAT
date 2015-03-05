@@ -40,8 +40,15 @@ main: {
         ); 
     
     
-    
+    ###############
+    ## GSNAP-Fusion 
+    ###############
 
+    $pipeliner->add_commands(
+        new Command("$INSTALL_DIR/gsnap-fusion reads.left.simPE.fq.gz reads.right.simPE.fq.gz Gsnap_Fusion",
+                    "Gsnap_Fusion.ok")
+        );
+    
     
     $pipeliner->run();
 
