@@ -162,7 +162,8 @@ main: {
         $align_text .= "\t$num_aligns";
 
         my $prev_align;
-        
+        my $prev_align_text = "";
+
         my @chim_align_descrs;
         my @at_exon_junctions;
         
@@ -180,12 +181,17 @@ main: {
             my $per_id = $align->{per_id};
             
 
-            push (@chim_align_descrs, "[$hit:($range_lend-$range_rend)$lend-$rend ($orient) $per_id\%]");
+            my $align_text = "[$hit:($range_lend-$range_rend)$lend-$rend ($orient) $per_id\%]";
             
             if ($prev_align) {
+                
+                @chim_align_descrs = ($prev_align_text, $align_text);
+                
                 if (%genes) {
-                    my ($left_exon, $left_delta) = &examine_exon_junction("left", $prev_align);
-                    my ($right_exon, $right_delta) = &examine_exon_junction("right", $align);
+                    my ($left_exon, $left_delta, $left_breakpoint) = &examine_exon_junction("left", $prev_align);
+                    my ($right_exon, $right_delta, $right_breakpoint) = &examine_exon_junction("right", $align);
+                    
+
                     if ($left_exon && $right_exon) {
                         
                         my $left_exon_orient = $left_exon->{orient};
@@ -193,23 +199,23 @@ main: {
                         
                         my $prev_align_orient = $prev_align->{orient};
                         my $curr_align_orient = $align->{orient};
-
+                        
                         ## both orient conflict, swap them (transcript is in antisense orientation)
                         if ($left_exon_orient ne $prev_align_orient && $right_exon_orient ne $curr_align_orient) {
                             
                             push (@at_exon_junctions, 
-                                  $right_exon->{gene}, $right_delta,                                   
-                                  $left_exon->{gene}, $left_delta, 
-                                  join("--", 
-                                       $right_exon->{gene},
-                                       $left_exon->{gene}
-                                       )
-                                  );
+                                  $right_exon->{gene}, $right_delta, $right_breakpoint,                                   
+                                  $left_exon->{gene}, $left_delta, $left_breakpoint,
+                                  join("--", $right_exon->{gene}, $left_exon->{gene}));
                             
+                            @chim_align_descrs = reverse @chim_align_descrs;
                         }
                         else {
-                                                    
-                            push (@at_exon_junctions, $left_exon->{gene}, $left_delta, $right_exon->{gene}, $right_delta, join("--", $left_exon->{gene}, $right_exon->{gene}));
+                            
+                            push (@at_exon_junctions, 
+                                  $left_exon->{gene}, $left_delta, $left_breakpoint,
+                                  $right_exon->{gene}, $right_delta, $right_breakpoint,
+                                  join("--", $left_exon->{gene}, $right_exon->{gene}));
                         }
                                                 
                     }
@@ -218,7 +224,8 @@ main: {
             
 
             $prev_align = $align;
-
+            $prev_align_text = $align_text;
+            
         }
         
         $align_text .= "\t" . join(";", @chim_align_descrs);
@@ -226,14 +233,13 @@ main: {
         unless (@at_exon_junctions) {
             @at_exon_junctions = ('.'); # placeholder
         }
-
+        
         $align_text .= "\t" . join(";", @at_exon_junctions);
         
         
         print $align_text . "\n";
     }
-    
-    
+        
 
     exit(0);
 }
@@ -242,10 +248,6 @@ main: {
 sub examine_exon_junction {
     my ($side_of_junction, $align_struct) = @_;
 
-    #use Data::Dumper;
-    #print Dumper($align_struct);
-    #die;
-    
     my $chr = $align_struct->{chr};
     my $lend = $align_struct->{lend};
     my $rend = $align_struct->{rend};
@@ -298,11 +300,6 @@ sub examine_exon_junction {
                     
                     my $delta = abs($align_struct->{$coord_to_examine} - $exon->{$coord_to_examine});
                     
-                    #my $delta = &min( abs($align_struct->{lend} - $exon->{lend}),
-                    #                  abs($align_struct->{rend} - $exon->{rend}),
-                    #                  abs($align_struct->{lend} - $exon->{rend}),
-                    #                 abs($align_struct->{rend} - $exon->{lend}),
-                    #                );
                     
                     push (@hits, { delta => $delta,
                                    exon => $exon,
@@ -331,8 +328,10 @@ sub examine_exon_junction {
         my $top_hit = shift @hits;
         my $exon = $top_hit->{exon};
         my $delta = $top_hit->{delta};
-        return($exon, $delta);
-        #push (@hits, "$gene_id:" . $exon->{lend} . "-" . $exon->{rend});
+        my $breakpoint = $top_hit->{pt_align};
+
+        return($exon, $delta, "$chr:$breakpoint");
+        
     }
     else {
         return();

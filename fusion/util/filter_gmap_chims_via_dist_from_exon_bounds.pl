@@ -24,10 +24,10 @@ while (<$fh>) {
     my $info = $x[3];
     
     if ($info ne '.') {
-        my ($geneA, $distA, $geneB, $distB, $chim) = split(/;/, $info);
+        my ($geneA, $distA, $breakpointA, $geneB, $distB, $breakpointB, $chim) = split(/;/, $info);
         if ($distA <= $max_distance && $distB <= $max_distance
             && $geneA ne $geneB
-
+            
             ) {
             print "$line\t$chim\n";
         }

@@ -122,7 +122,17 @@ main: {
     
     $pipeliner->add_commands(new Command($cmd, ".${chims_D0_outfile}.ok") );
 
+    ###############################################
+    ## annotate the fusions, make a prettier report
+    ###############################################
+    
+    my $annotation_report_file = "Trinity-Fusion.report.xls";
+    $cmd = "$UTILDIR/write_TrinityFusion_annot_report.pl $chims_D0_outfile > $annotation_report_file";
 
+    $pipeliner->add_commands(new Command($cmd, ".${annotation_report_file}.ok"));
+    
+
+    
 
     $pipeliner->run();
     
