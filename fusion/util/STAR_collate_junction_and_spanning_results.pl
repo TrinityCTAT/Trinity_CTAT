@@ -2,7 +2,10 @@
 
 use strict;
 use warnings;
-
+use Carp;
+use FindBin;
+use lib ("$FindBin::Bin/../PerlLib");
+use FusionAnnotator;
 
 my $usage = "\n\n\tusage: $0 Chimeric.out.junction.genes Chimeric.out.sam.spanning.genes\n\n";
 
@@ -56,6 +59,16 @@ main: {
     
 
     foreach my $fusion (keys %fusion_to_counts) {
+
+
+        my ($geneA, $geneB) = split(/--/, $fusion);
+        
+        ## no self-fusions
+        if ($geneA eq $geneB) { next; }
+
+
+        my @annotations = &FusionAnnotator::get_annotations($geneA, $geneB);
+
         my $junction_count = $fusion_to_counts{$fusion}->{junction};
         my $spanning_count = $fusion_to_counts{$fusion}->{spanning} || 0;
         
@@ -64,7 +77,9 @@ main: {
         # get the coordinate junction set with the highest read support
         my @coords_info = reverse sort {$fusion_coords_info_href->{$a} <=> $fusion_coords_info_href->{$b}} keys %$fusion_coords_info_href;
 
-        print join("\t", $fusion, $junction_count, $spanning_count, $coords_info[0]) . "\n";
+        print join("\t", $fusion, $junction_count, $spanning_count, $coords_info[0],
+                   join(",", @annotations)
+            ) . "\n";
     }
     
     exit(0);

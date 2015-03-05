@@ -3,8 +3,8 @@
 use strict;
 use warnings;
 use Carp;
-use lib ("/home/unix/bhaas/EUK_modules/lib/perl5/x86_64-linux-thread-multi/", 
-         "/seq/regev_genome_portal/SOFTWARE/PerlLib");
+use FindBin;
+use lib ("$FindBin::Bin/../PerlLib");
 use Set::IntervalTree;
 use SAM_reader;
 use SAM_entry;
@@ -149,8 +149,9 @@ sub parse_junctions {
         }
 
         
-        &add_chr_interval(\%chr_exons_interval_tree, $chr, $gene_id, $lend, $rend);
-        
+        if ($rend - $lend > 1) {
+            &add_chr_interval(\%chr_exons_interval_tree, $chr, $gene_id, $lend, $rend);
+        }
 
     }
 

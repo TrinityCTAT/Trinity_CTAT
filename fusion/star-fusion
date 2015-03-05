@@ -4,9 +4,12 @@ use strict;
 use warnings;
 use Carp;
 use Cwd;
-use lib ($ENV{EUK_MODULES});
-use Pipeliner;
 use FindBin;
+
+use lib ("$FindBin::Bin/PerlLib");
+use __GLOBALS__;
+use Pipeliner;
+
 
 my $usage = "usage: $0 left.fq right.fq output_directory\n\n";
 
@@ -15,7 +18,7 @@ my $right_fq = $ARGV[1] or die $usage;
 my $output_dir = $ARGV[2] or die $usage;
 
 
-my $UTILDIR = "$FindBin::Bin/STAR_fusion_pipe";
+my $UTILDIR = "$FindBin::Bin/util";
 
 main: {
 
@@ -68,6 +71,7 @@ main: {
     $cmd = "sort -k2,2nr -k3,3nr STAR.fusion_candidates.txt > STAR.fusion_candidates.sorted.txt";
     $pipeliner->add_commands(Command->new($cmd, "STAR.fusion_candidates.sorted.txt.ok"));
     
+
 
     $pipeliner->run();
 

@@ -50,10 +50,26 @@ main: {
         );
     
     
+    
+    ##############
+    ## STAR-Fusion
+    ##############
+
+    $pipeliner->add_commands(
+        new Command("$INSTALL_DIR/star-fusion reads.left.simPE.fq.gz reads.right.simPE.fq.gz Star_Fusion",
+                    "Star_Fusion.ok")
+        );
+
+    
+
+    ## Execute pipeline
+    
     $pipeliner->run();
 
     
+    
     exit(0);
+
 }
 
 
