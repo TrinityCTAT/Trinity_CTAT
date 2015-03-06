@@ -2,7 +2,8 @@
 
 use strict;
 use warnings;
-use lib ($ENV{EUK_MODULES});
+use FindBin;
+use lib ("$FindBin::Bin/../../PerlLib");
 use SAM_reader;
 use SAM_entry;
 use Data::Dumper;

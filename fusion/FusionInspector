@@ -412,13 +412,6 @@ class FusionInspector( ParentScript.ParentScript ):
                                                lstr_cur_products = [ sorted_bed_file ] ) )
 
 
-        # index the bed file using igvtools
-        cmdstr = str("/seq/regev_genome_portal/SOFTWARE/IGVtools/IGVTools/igvtools index " + sorted_bed_file)
-        lcmd_commands.append( Command.Command (str_cur_command = cmdstr,
-                                               lstr_cur_dependencies = [ sorted_bed_file ],
-                                               lstr_cur_products = [ sorted_bed_file + ".idx" ] ) )
-
-
         # index using tabix (preferred for IGV-web)
         cmdstr = str("bgzip -f " + sorted_bed_file)
         lcmd_commands.append( Command.Command (str_cur_command = cmdstr,
