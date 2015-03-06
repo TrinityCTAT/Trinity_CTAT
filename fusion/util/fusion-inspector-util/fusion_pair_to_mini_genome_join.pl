@@ -96,11 +96,16 @@ main: {
     open (my $out_genome_ofh, ">$out_prefix.fa") or die "Error, cannot write to $out_prefix.fa";
     open (my $out_gtf_ofh, ">$out_prefix.gtf") or die "Error, cannot write to $out_prefix.gtf";
 
+    my %seen;
     foreach my $chim_pair (@chim_pairs) {
         
-        my ($left_gene, $right_gene) = split(/--/, $chim_pair);
+        if ($seen{$chim_pair}) {
+            next; 
+        }
+        $seen{$chim_pair}++;
         
-                
+        my ($left_gene, $right_gene) = split(/--/, $chim_pair);
+                        
         my $left_gene_gtf = $gene_to_gtf{$left_gene};
         my $right_gene_gtf = $gene_to_gtf{$right_gene};
         
