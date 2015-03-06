@@ -3,12 +3,16 @@
 use strict;
 use warnings;
 use Carp;
+use FindBin;
+use lib ("$FindBin::Bin/../../PerlLib");
+use __GLOBALS__;
+
 
 my $usage = "usage: $0 star.junctions\n\n";
 
 my $junctions_file = $ARGV[0] or die $usage;
 
-my $gtf_file = "/seq/regev_genome_portal/RESOURCES/human/Hg19/gencode.v19/gencode.v19.rna_seq_pipeline.gtf.exons";
+my $gtf_file = "$FUSION_ANNOTATOR_LIB/gencode.v19.rna_seq_pipeline.gtf.exons";
 
 
 main: {

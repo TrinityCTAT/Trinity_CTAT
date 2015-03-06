@@ -18,7 +18,7 @@ my $right_fq = $ARGV[1] or die $usage;
 my $output_dir = $ARGV[2] or die $usage;
 
 
-my $UTILDIR = "$FindBin::Bin/util";
+my $UTILDIR = "$FindBin::Bin/util/star-fusion-util";
 
 main: {
 

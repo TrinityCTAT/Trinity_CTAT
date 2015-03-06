@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Carp;
 use FindBin;
-use lib ("$FindBin::Bin/../PerlLib");
+use lib ("$FindBin::Bin/../../PerlLib");
 use FusionAnnotator;
 
 my $usage = "\n\n\tusage: $0 Chimeric.out.junction.genes Chimeric.out.sam.spanning.genes\n\n";

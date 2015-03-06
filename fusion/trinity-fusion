@@ -88,7 +88,7 @@ if ($output_directory) {
 }
 
 
-my $UTILDIR = "$FindBin::Bin/util";
+my $UTILDIR = "$FindBin::Bin/util/trinity-fusion-util";
 
 main: {
 
