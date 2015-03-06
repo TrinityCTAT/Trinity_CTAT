@@ -15,6 +15,7 @@ my @files_to_keep = qw (cleanme.pl
                         reads.left.simPE.fq.gz
                         reads.right.simPE.fq.gz
                         runMe.pl
+                        test_fusions.list
                         );
 
 

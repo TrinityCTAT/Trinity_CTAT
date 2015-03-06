@@ -22,7 +22,7 @@ import sciedpiper.ParentScript as ParentScript
 #pathlist = ["/seq/regev_genome_portal/SOFTWARE/BEDTOOLS/bedtools2-2.20.1/bin",
 #            "/seq/regev_genome_portal/SOFTWARE/IGVtools/IGVTools" ]
             
-os.environ["PATH"] += os.pathsep + os.pathsep.join(pathlist)
+#os.environ["PATH"] += os.pathsep + os.pathsep.join(pathlist)
 
 UTILDIR = os.sep.join([os.path.dirname(__file__), "util/fusion-inspector-util"])
 
@@ -48,7 +48,7 @@ class FusionInspector( ParentScript.ParentScript ):
         arg_raw.prog = "run_chimera_visualizer_pipe.from_chim_summary.py"
         arg_raw.description = "Extracts a pair of genes from the genome, creates a mini-contig, aligns reads to the mini-contig, and extracts the fusion reads as a separate tier for vsiualization."
 
-        arg_raw.add_argument("--chim_summary_file", dest="chim_summary_file", default="", required=True, help="chimera summary file")
+        arg_raw.add_argument("--fusions", dest="chim_summary_file", default="", required=True, help="fusions summary file")
         arg_raw.add_argument("--gtf", dest="gtf_filename", default="", required=True, help="genome annotation in gtf format")
         arg_raw.add_argument("--genome_fa", dest="genome_fasta_filename", required=True, help="genome sequence in fasta format")
         arg_raw.add_argument("--left_fq", dest="left_fq_filename", required=True, help="left fastq file")
@@ -85,7 +85,7 @@ class FusionInspector( ParentScript.ParentScript ):
         ## Build the mini-contig containing just the two fusion genes, plus annotations in gtf format
         
         cmdstr = str( os.sep.join([UTILDIR, "fusion_pair_to_mini_genome_join.pl"]) +
-                      " --chim_summary_file " + args_parsed.chim_summary_file +
+                      " --fusions " + args_parsed.chim_summary_file +
                       " --gtf " + args_parsed.gtf_filename +
                       " --genome_fa " + args_parsed.genome_fasta_filename +
                       " --shrink_introns --max_intron_length 1000 " +

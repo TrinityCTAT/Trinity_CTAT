@@ -86,7 +86,7 @@ main: {
         
         $chim_pair =~ s/^\s+|\s+$//g; # trim trailing ws if any
         
-        my ($geneA, $geneB) = split(/\s+/, $chim_pair);
+        my ($geneA, $geneB) = split(/--/, $chim_pair);
         $in_fusion{$geneA}++;
         $in_fusion{$geneB}++;
     }
@@ -97,10 +97,9 @@ main: {
     open (my $out_gtf_ofh, ">$out_prefix.gtf") or die "Error, cannot write to $out_prefix.gtf";
 
     foreach my $chim_pair (@chim_pairs) {
-
-        my ($left_gene, $right_gene) = @$chim_pair;
-
-        my $chim_pair_name = "$left_gene" . "--" . "$right_gene";
+        
+        my ($left_gene, $right_gene) = split(/--/, $chim_pair);
+        
                 
         my $left_gene_gtf = $gene_to_gtf{$left_gene};
         my $right_gene_gtf = $gene_to_gtf{$right_gene};
@@ -133,11 +132,11 @@ main: {
             $supercontig =~ s/(\S{60})/$1\n/g; # make fasta 
             chomp $supercontig;
             
-            print $out_genome_ofh ">$chim_pair_name\n$supercontig\n";
+            print $out_genome_ofh ">$chim_pair\n$supercontig\n";
             
             
             my $out_gtf = $left_gene_supercontig_gtf . $right_gene_supercontig_gtf;
-            $out_gtf = &set_gtf_scaffold_name($chim_pair_name, $out_gtf);
+            $out_gtf = &set_gtf_scaffold_name($chim_pair, $out_gtf);
                         
             print $out_gtf_ofh $out_gtf;
             
