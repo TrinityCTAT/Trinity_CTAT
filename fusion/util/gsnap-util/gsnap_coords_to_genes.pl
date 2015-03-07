@@ -218,23 +218,21 @@ sub examine_fusion_candidates {
     }
 
     my @genes_involved = keys %genes;
-    if (scalar @genes_involved == 2) {
-        my @donor_genes = keys %donors;
-        my @acceptor_genes = keys %acceptors;
-
-        if (scalar @donor_genes == 1 && scalar @acceptor_genes == 1) {
-            ## got directional fusion w/ junction read
-            my $fusion_name = $donor_genes[0] . "--" . $acceptor_genes[0];
-            $fusion_candidates_href->{JUNCTION}->{$fusion_name}++;
-        }
-        else {
-            ## consider it a spanning read
-            @genes_involved = sort @genes_involved;
-            my $fusion_name = join("--", @genes_involved);
-            $fusion_candidates_href->{SPANNING}->{$fusion_name}++;
-        }
+    
+    my @donor_genes = keys %donors;
+    my @acceptor_genes = keys %acceptors;
+    
+    if (scalar @donor_genes == 1 && scalar @acceptor_genes == 1) {
+        ## got directional fusion w/ junction read
+        my $fusion_name = $donor_genes[0] . "--" . $acceptor_genes[0];
+        $fusion_candidates_href->{JUNCTION}->{$fusion_name}++;
     }
-
+    elsif (scalar @genes_involved == 2) {
+        ## consider it a spanning read
+        @genes_involved = sort @genes_involved;
+        my $fusion_name = join("--", @genes_involved);
+        $fusion_candidates_href->{SPANNING}->{$fusion_name}++;
+    }
     
     return;
 }

@@ -4,7 +4,13 @@ use strict;
 use warnings;
 use Carp;
 
+################################
+## Verbose levels:
+## 1: see CMD string
+## 2: see stderr during process
 my $VERBOSE = 0;
+################################
+
 
 ####
 sub new {
@@ -12,12 +18,13 @@ sub new {
     my %params = @_;
     
     if ($params{-verbose}) {
-        $VERBOSE = 1;
+        $VERBOSE = $params{-verbose};
     }
     
-    my $self = { cmd_objs => [],
+    my $self = { 
+        cmd_objs => [],
     };
-
+    
     bless ($self, $packagename);
 
     return($self);
@@ -48,19 +55,39 @@ sub run {
         my $checkpoint_file = $cmd_obj->get_checkpoint_file();
 
         if (-e $checkpoint_file) {
-            print STDERR "--Skipping cmd: $cmdstr, checkpoint exists.\n" if $VERBOSE;
+            print STDERR "-- Skipping CMD: $cmdstr, checkpoint exists.\n" if $VERBOSE;
         }
         else {
-            print STDERR "Running cmd: $cmdstr\n" if $VERBOSE;
+            print STDERR "* Running CMD: $cmdstr\n" if $VERBOSE;
+            
+            my $tmp_stderr = "tmp.$$.stderr";
+            if (-e $tmp_stderr) {
+                unlink($tmp_stderr);
+            }
+            unless ($VERBOSE == 2) {
+                $cmdstr .= " 2>$tmp_stderr";
+            }
+            
             my $ret = system($cmdstr);
             if ($ret) {
+                
+                if (-e $tmp_stderr) {
+                    system("cat $tmp_stderr");
+                    unlink($tmp_stderr);
+                }
+                                
                 confess "Error, cmd: $cmdstr died with ret $ret";
             }
             else {
                 `touch $checkpoint_file`;
                 if ($?) {
+                    
                     confess "Error creating checkpoint file: $checkpoint_file";
                 }
+            }
+
+            if (-e $tmp_stderr) {
+                unlink($tmp_stderr);
             }
         }
     }
