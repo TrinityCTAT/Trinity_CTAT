@@ -214,16 +214,6 @@ class FusionInspector( ParentScript.ParentScript ):
 
 
 
-        # generate an abridged summary file w/o the read names
-        abridged_summary_file = fusion_summary_file + ".abridged"
-
-        cmdstr = str("set -o pipefail && cut -f 1,3,4,6,7,8,11,13,15,16,17 " + fusion_summary_file + " | egrep -v ^\# | sort -k3,3nr > " + abridged_summary_file)
-
-        lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
-                                               lstr_cur_dependencies = [ fusion_summary_file ],
-                                               lstr_cur_products = [ abridged_summary_file ] ) )
-                                               
-        
 
         #################################################################
         ## consolidate the Fusion Inspector reads into a single bam files
@@ -319,10 +309,31 @@ class FusionInspector( ParentScript.ParentScript ):
         
         lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
                                                lstr_cur_dependencies = [ consolidated_bam_file ],
-                                            lstr_cur_products = [ trinity_fasta_filename ] ) )
+                                               lstr_cur_products = [ trinity_fasta_filename ] ) )
+
+        ## Run TrinityGG, reconstruct fusion transcripts locally via de novo assembly
+        trinGG_fusion_gff3 = self.add_trinfusion_gmap_subpipe(args_parsed, mergedContig_fasta_filename, mergedContig_gtf_filename, trinity_fasta_filename, lcmd_commands)
+
+        # merge de novo assembly fusion results w/ read-based fusion results:
+        fusion_summary_w_trinity = fusion_summary_file + ".wTrinityGG"
+        cmdstr = str(UTILDIR + "/add_TrinityGG_to_fusion_summary.pl " + fusion_summary_file + " " + trinGG_fusion_gff3 +
+                     " > " + fusion_summary_w_trinity)
+        lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
+                                               lstr_cur_dependencies = [ fusion_summary_file, trinGG_fusion_gff3 ],
+                                               lstr_cur_products = [ fusion_summary_w_trinity ]
+                                               ) )
+
+        # generate an abridged summary file w/o the read names
+        abridged_summary_file = fusion_summary_w_trinity + ".abridged"
         
-        self.add_trinfusion_gmap_subpipe(args_parsed, mergedContig_fasta_filename, mergedContig_gtf_filename, trinity_fasta_filename, lcmd_commands)
+        cmdstr = str("set -o pipefail && cut -f 1,3,4,6,7,8,11,13,15,16,17,18 " + fusion_summary_file + " | egrep -v ^\# | sort -k3,3nr > " + abridged_summary_file)
+
+        lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
+                                               lstr_cur_dependencies = [ fusion_summary_w_trinity ],
+                                               lstr_cur_products = [ abridged_summary_file ] ) )
+                                               
         
+
 
         
         # align the additional reads
@@ -568,7 +579,7 @@ class FusionInspector( ParentScript.ParentScript ):
         
         
 
-        return
+        return (trinity_fusion_trans_filename) # trinGG fusion gff3 file w/ breakpoints encoded
 
 
                           

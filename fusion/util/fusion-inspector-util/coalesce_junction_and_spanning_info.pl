@@ -74,6 +74,10 @@ main: {
         
         
         my @annots = &FusionAnnotator::get_annotations($geneA, $geneB);
+        unless (@annots) {
+            @annots = ("."); # put in a placeholder
+        }
+
 
         print join("\t", $fusion, $num_junction_reads, $num_spanning_reads,
                    join(",", @junction_reads),

@@ -234,7 +234,7 @@ sub get_breakpoint_coords {
         }
     }
     
-    @left_shared_coords = sort {$a<=>$b}
+    @left_shared_coords = sort {$a<=>$b} @left_shared_coords;
     my $left_breakpoint = pop @left_shared_coords;
     unless ($left_breakpoint) {
         confess "Error, no left breakpoint";
