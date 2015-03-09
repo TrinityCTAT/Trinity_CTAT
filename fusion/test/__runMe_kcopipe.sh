@@ -16,6 +16,7 @@ export PYTHONPATH=/seq/regev_genome_portal/SOFTWARE/PYTHON_LIB:${PYTHONPATH}
 export HISAT_HOME=/seq/regev_genome_portal/SOFTWARE/HISAT/current
 export TRINITY_HOME=/home/unix/bhaas/GITHUB/trinityrnaseq
 export PATH=/home/unix/bhaas/utilities:${PATH}
+export FUSION_ANNOTATOR_LIB=/seq/regev_genome_portal/RESOURCES/FUSION_ANNOTATOR_LIB
 
 ./runMe.pl
 
