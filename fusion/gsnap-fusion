@@ -4,9 +4,10 @@ use strict;
 use warnings;
 use Carp;
 use Cwd;
-use lib ($ENV{EUK_MODULES});
-use Pipeliner;
 use FindBin;
+use lib ("$FindBin::Bin/PerlLib");
+use Pipeliner;
+
 
 my $usage = "usage: $0 left.fq right.fq output_directory\n\n";
 
