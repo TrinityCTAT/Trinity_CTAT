@@ -1,0 +1,12 @@
+# migrating from fusion_devel branch to master:
+
+ git checkout master
+ git pull --rebase origin fusion_devel
+ git commit -m 'adding FusionInspector and removed local env dependencies' -a
+ git push
+
+
+# go back to fusion_devel
+
+  git checkout fusion_devel
+
