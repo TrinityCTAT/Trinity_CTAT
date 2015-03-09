@@ -2,6 +2,10 @@
 
 use strict;
 use warnings;
+use FindBin;
+use lib ("$FindBin::Bin/../../PerlLib");
+use __GLOBALS__;
+use FusionAnnotator;
 
 my $usage = "\n\tusage: $0 junction_info_A.txt,[junction_info_B.txt,...] spanning_info_A.txt,[spanning_info_B.txt,...]\n\n";
 
@@ -26,6 +30,13 @@ main: {
     }
 
     # generate coalesced view:
+    print join("\t", "#geneA", "local_brkpt_A", "chr_brkpt_A", 
+               "geneB", "local_brkpt_B", "chr_brkpt_B", 
+               "junction_count", "spanning_count", "junction_reads", "spanning_reads", 
+               "num_left_contrary_reads", "left_contrary_reads",
+               "num_right_contrary_reads", "right_contrary_reads",
+               "TAF_left", "TAF_right", "fusion_annotations") . "\n";
+
     foreach my $fusion (keys %fusion_info) {
         my @junction_reads = keys %{$fusion_info{$fusion}->{'junction'}};
 
@@ -59,6 +70,10 @@ main: {
         my $TAF_right = ($num_junction_reads + $num_spanning_reads + $PSEUDOCOUNT) / ($num_right_contrary_reads + $PSEUDOCOUNT);
         $TAF_right = sprintf("%.2f", $TAF_right);
         
+        my ($geneA, $local_brkpt_A, $chr_brkpt_A, $geneB, $local_brkpt_B, $chr_brkpt_B) = split(/\t/, $fusion);
+        
+        
+        my @annots = &FusionAnnotator::get_annotations($geneA, $geneB);
 
         print join("\t", $fusion, $num_junction_reads, $num_spanning_reads,
                    join(",", @junction_reads),
@@ -69,6 +84,7 @@ main: {
                    join(",", @right_contrary_reads),
                    $TAF_left,
                    $TAF_right,
+                   join(",", @annots),
             ) 
             
             . "\n";
