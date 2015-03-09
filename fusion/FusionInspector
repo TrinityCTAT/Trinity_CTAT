@@ -321,7 +321,7 @@ class FusionInspector( ParentScript.ParentScript ):
                                                lstr_cur_dependencies = [ consolidated_bam_file ],
                                             lstr_cur_products = [ trinity_fasta_filename ] ) )
         
-        self.add_gmap_subpipe(args_parsed, mergedContig_fasta_filename, mergedContig_gtf_filename, trinity_fasta_filename, lcmd_commands)
+        self.add_trinfusion_gmap_subpipe(args_parsed, mergedContig_fasta_filename, mergedContig_gtf_filename, trinity_fasta_filename, lcmd_commands)
         
 
         
@@ -517,13 +517,13 @@ class FusionInspector( ParentScript.ParentScript ):
     
     
 
-    def add_gmap_subpipe(self, args_parsed, mergedContig_fasta_filename, mergedContig_gtf_filename, trinity_fasta_filename, lcmd_commands):
+    def add_trinfusion_gmap_subpipe(self, args_parsed, mergedContig_fasta_filename, mergedContig_gtf_filename, trinity_fasta_filename, lcmd_commands):
 
         gmap_gff3_output_filename = os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".gmap_trinity_GG.gff3"])
 
         cmdstr = str(TRINITY_HOME + "/util/misc/process_GMAP_alignments_gff3_chimeras_ok.pl " +
                      "--genome " + mergedContig_fasta_filename + " --transcripts " + trinity_fasta_filename +
-                     " > " + gmap_gff3_output_filename)
+                     " --no_chimera > " + gmap_gff3_output_filename)
 
         lcmd_commands.append( Command.Command (str_cur_command = cmdstr,
                                                lstr_cur_dependencies = [ mergedContig_fasta_filename, trinity_fasta_filename ],
@@ -537,6 +537,20 @@ class FusionInspector( ParentScript.ParentScript ):
         lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
                                                lstr_cur_dependencies = [ mergedContig_gtf_filename, gmap_gff3_output_filename ],
                                                lstr_cur_products = [ trinity_fusion_trans_filename ] ) )
+
+
+
+        ## extract the Trinity Fusion transcripts
+        trinityGG_fusion_fasta = os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".gmap_trinity_GG.fusions.fasta"])
+        cmdstr = str(os.sep.join([UTILDIR, "get_Trinity_fusion_fasta_seqs.pl"]) + " " + trinity_fasta_filename + " " + trinity_fusion_trans_filename +
+                     " > " + trinityGG_fusion_fasta)
+        lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
+                                               lstr_cur_dependencies = [ trinity_fasta_filename, trinity_fusion_trans_filename ],
+                                               lstr_cur_products = [ trinityGG_fusion_fasta ] ) )
+    
+        
+                    
+
 
         
         # convert fusion trans to bed
