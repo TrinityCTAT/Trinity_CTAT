@@ -1,7 +1,9 @@
 #!/usr/bin/env Rscript
 
+library( RColorBrewer )
 library( ggplot2 )
 library( optparse )
+library( vioplot )
 
 C_I_PRIMARY_POS = 1
 C_I_PRIMARY_REF = 2
@@ -14,11 +16,50 @@ C_I_SECONDARY_DEPTH = 8
 
 C_STR_DETAIL_FILE = "detail_validation.pdf"
 
+C_I_MIN_PERCENT_FEATURES = .1
+C_I_INDIVIDUALS_PER_BIN = 5
+
 # Argument parsing
 pArgs = OptionParser( usage ="%prog files1.tab files2.tab" )
 pArgs = add_option( pArgs, c("-k","--title_key"),type="character",action="store",dest="str_title_key",default="Primary vs Secondary",help="Key identifying the contrast being visualized (eg \"DNA vs RNA\")")
 pArgs = add_option( pArgs, c("-o","--group_output_dir"),type="character",action="store",dest="str_output_dir",default=NA,help="Output directory (required).")
 lsArgs = parse_args( pArgs, positional_arguments=TRUE )
+
+# Calculate membership in different error classes
+# i_alpha_depth : the minimum depth that a feature must have to be looked at
+# vi_primary_calls : indices of features that are calls in the primary ( truth ) data set
+# vi_secondary_calls : indices of features that are calls in the secondary ( evaluate ) data set
+# vi_depth : The depths of the features
+func_calculate_categories = function( i_alpha_depth, vi_primary_calls, vi_secondary_calls, vi_depth )
+{
+  # Locations of interest for this depth
+  # Matched at the depth given a min coverage in both evidence
+  vi_features = intersect( which( vi_depth >= i_alpha_depth ), which( !is.na( vi_depth ) ) )
+  vi_primary_calls_at_depth = intersect( vi_features, vi_primary_calls )
+  vi_secondary_calls_at_depth = intersect( vi_features, vi_secondary_calls )
+
+  # Calculate error classes
+  # TP
+  vi_TP = intersect( vi_primary_calls_at_depth, vi_secondary_calls_at_depth )
+  # FP
+  vi_FP = setdiff( vi_secondary_calls_at_depth, vi_primary_calls_at_depth )
+  # FN
+  vi_FN = setdiff( vi_primary_calls_at_depth, vi_secondary_calls_at_depth )
+
+  # Count class membership
+  # Calculate depth distributions per error class
+  # Add to return list
+  return( list( TP = length( vi_TP ), 
+                FP = length( vi_FP ),
+                FN = length( vi_FN ),
+                Truth_depths = vi_depth[ vi_primary_calls_at_depth ],
+                TP_depths = vi_depth[ vi_TP ],
+                FP_depths = vi_depth[ vi_FP ],
+                FN_depths = vi_depth[ vi_FN ],
+                Calls_primary_indices = vi_primary_calls_at_depth,
+                Calls_secondary_indices = vi_secondary_calls_at_depth,
+                Feature_count = length( vi_features )))
+}
 
 # Handle arguments
 v_str_files = lsArgs$args
@@ -34,9 +75,6 @@ dir.create( str_output_dir )
 # Holds file information for the global images at the end.
 print( "Number of files reading:" )
 print( length( v_str_files ) )
-ls_group_sensitivity = c()
-ls_group_specificity = c()
-ls_group_files = c()
 
 # Process each file
 for( str_file in v_str_files )
@@ -56,53 +94,31 @@ for( str_file in v_str_files )
     df_tab = df_tab[-1*vi_empty_calls,]
   }
 
-  # Read depth can vary between evidence.
-  # To try to normalize this, feature depth are divided by the sum of all the depth in the evidence
-  df_tab[[ C_I_PRIMARY_DEPTH ]] = df_tab[[ C_I_PRIMARY_DEPTH ]] / sum( df_tab[[ C_I_PRIMARY_DEPTH ]], na.rm = TRUE )
-  df_tab[[ C_I_SECONDARY_DEPTH ]] = df_tab[[ C_I_SECONDARY_DEPTH ]] / sum( df_tab[[ C_I_SECONDARY_DEPTH ]], na.rm = TRUE )
-
   # Different measurements used later on
   ## Primary
   ### Locations with no depth
   vi_primary_no_depth = which( is.na( df_tab[[ C_I_PRIMARY_DEPTH ]] ))
   ### Locations with depth
-  vi_primary_read_evidence = which( !is.na( df_tab[[ C_I_PRIMARY_DEPTH ]] ))
+#  vi_primary_read_evidence = which( !is.na( df_tab[[ C_I_PRIMARY_DEPTH ]] ))
   ### Primary calls
   vi_primary_calls = which( !is.na(  df_tab[[ C_I_PRIMARY_GT ]] ) )
   ## Secondary
   ### Locations with no depth
   vi_secondary_no_depth = which( is.na( df_tab[[ C_I_SECONDARY_DEPTH ]] ))
   ### Locations with depth
-  vi_secondary_read_evidence = which( !is.na( df_tab[[ C_I_SECONDARY_DEPTH ]] ))
-  i_count_secondary_read_evidence = length( vi_secondary_read_evidence )
+#  vi_secondary_read_evidence = which( !is.na( df_tab[[ C_I_SECONDARY_DEPTH ]] ))
+#  i_count_secondary_read_evidence = length( vi_secondary_read_evidence )
   ### Calls with or without depth
   vi_secondary_calls = which( !is.na( df_tab[[ C_I_SECONDARY_GT ]] ) )
   ### Calls with depth
-  vi_secondary_calls_with_evidence = intersect( vi_secondary_read_evidence, vi_secondary_calls )
-  i_count_secondary_calls_with_evidence = length( vi_secondary_calls_with_evidence )
+#  vi_secondary_calls_with_evidence = intersect( vi_secondary_read_evidence, vi_secondary_calls )
+#  i_count_secondary_calls_with_evidence = length( vi_secondary_calls_with_evidence )
   ## Both
-  vi_agreeing_calls = intersect( vi_primary_calls, vi_secondary_calls )
+#  vi_agreeing_calls = intersect( vi_primary_calls, vi_secondary_calls )
   ### Correct secondary calls (defined as secondary agreeing with primary)
-  vi_secondary_calls_agreeing_primary = intersect( vi_secondary_calls_with_evidence, vi_agreeing_calls )
-  i_count_secondary_calls_agreeing_primary = length( vi_secondary_calls_agreeing_primary )
+#  vi_secondary_calls_agreeing_primary = intersect( vi_secondary_calls_with_evidence, vi_agreeing_calls )
+#  i_count_secondary_calls_agreeing_primary = length( vi_secondary_calls_agreeing_primary )
   
-  # False / True negative and postive rates for primary and secondary calls
-  ## False negative rates
-  ### Secondary: Calls not called in the secondary that had read depth and were called in the primary
-  vi_secondary_false_negatives = setdiff( intersect( vi_secondary_read_evidence, vi_primary_calls ), vi_secondary_calls )
-#  vi_secondary_false_negatives_depth = df_tab[[ C_I_PRIMARY_DEPTH ]][ vi_secondary_false_negatives ]
-#  vi_order_secondary_false_negatives = order( vi_secondary_false_negatives_depth )
-  ## False positive rates
-  ### Secondary: Calls in the secondary that are not in the primary calls
-  vi_secondary_false_positives = setdiff( vi_secondary_calls, vi_primary_calls )
-#  vi_order_secondary_false_positives = order( df_tab[[ C_I_SECONDARY_DEPTH ]][ vi_secondary_false_positives ] )
-  ## True negative rates
-  ### Secondary: Not recorded
-  ## True postive rates
-  ### Secondary: Calls in the secondary with read depth that are also in the primary
-  vi_secondary_true_positives = intersect( vi_secondary_calls, vi_primary_calls )
-#  vi_order_secondary_true_positives = order( df_tab[[ C_I_SECONDARY_DEPTH ]][ vi_secondary_true_positives ] )
-
   # How many calls occured with no read depth to support them
   print( "Just a check: How many primary calls had no read depth" )
   print( length( intersect( vi_primary_calls, vi_primary_no_depth ) ) )
@@ -121,121 +137,134 @@ for( str_file in v_str_files )
   print( length( vi_secondary_exclusive )/length( vi_secondary_calls ) * 100 )
   print( "Remember this is a problematic view for maf files given they do not have thier own depth files or it is the same as the DNA files." )
 
+  # Which depths has the lowest max per feature
+  # This is the range that is used in the ROCs.
+  # This can have NAs in it if an evidence does not have a read depth
+  vi_min_depth = apply( df_tab[ c( C_I_PRIMARY_DEPTH, C_I_SECONDARY_DEPTH ) ], MARGIN = 1, min )
+  vi_roc_depth_used = c()
+
+  # Plot the distribution of the data and get the central tendency
+  # Remove NAs and 0 entries from the list.
+  vi_min_depth_no_na = vi_min_depth[ intersect( which( !is.na( vi_min_depth ) ), which( vi_min_depth != 0 ) ) ]
+  vi_truth_depth_no_na = df_tab[[ C_I_PRIMARY_DEPTH ]][ which( !is.na( df_tab[[ C_I_PRIMARY_DEPTH ]] )) ]
+  vi_evaluated_depth_no_na = df_tab[[ C_I_SECONDARY_DEPTH ]][ which( !is.na( df_tab[[ C_I_SECONDARY_DEPTH ]] )) ]
+  i_min_depth_no_na = length( vi_min_depth_no_na )
+
+  pdf( file.path( str_output_dir, paste( basename( str_file ), "depth_distributions.pdf", sep = "_" ) ), useDingbats = FALSE )
+
+  # Get central value for min coverage
+  i_center = mean( log( vi_min_depth_no_na, 2 ) )
+  i_center_raw = round( 2^i_center )
+
+  hist( log( vi_min_depth_no_na, 2 ), main = "Distribution of Min Coverage (Log2)", xlab = "Min Coverage", breaks = round( length( vi_min_depth_no_na ) / C_I_INDIVIDUALS_PER_BIN ) )
+  abline( v = i_center, col = "RED", lwd = 2 )
+
+  hist( log( vi_truth_depth_no_na, 2 ), main = "Distribution of Depths for the Truth Data Set (Log2)", xlab = "Truth Depth", breaks = round( length( vi_min_depth_no_na ) / C_I_INDIVIDUALS_PER_BIN ) )
+
+  hist( log( vi_evaluated_depth_no_na, 2 ), main = "Distribution of Depths for the Evaluated Data Set (Log2)", xlab = "Evaluated Depth", breaks = round(length( vi_evaluated_depth_no_na ) / C_I_INDIVIDUALS_PER_BIN ))
+  dev.off()
+
+  # At any depth what are the TP / FP / FN
+  vstr_bar_names = c("Truth","TP","FP","FN")
+  vstr_bar_colors = c("Grey","aquamarine","darkorchid1","darkgoldenrod1")
+  list_categories_all = func_calculate_categories( i_alpha_depth = -1, vi_primary_calls = vi_primary_calls, 
+                                                   vi_secondary_calls = vi_secondary_calls, 
+                                                   vi_depth = vi_min_depth_no_na )
+  vi_bar_values = c( length( list_categories_all$Truth_depths ), list_categories_all$TP, list_categories_all$FP, list_categories_all$FN )
+  pdf( file.path( str_output_dir, paste( basename( str_file ), "raw_class_distributions", C_STR_DETAIL_FILE, sep = "_" )), useDingbats = FALSE )
+  barplot( vi_bar_values, names.arg = paste( vstr_bar_names," (", vi_bar_values ,")" ), main = "Proportions of Call Classes", xlab = "Classes",
+           col = vstr_bar_colors, border = "grey", legend = vstr_bar_names, beside = TRUE )
+
   # How does read depth associate with secondary assays being called
   # What are the distributions of read depth for good and bad calls
-  # v_sec_calls_bad = setdiff( vi_secondary_calls_with_evidence , vi_secondary_calls_agreeing_primary )
-#  v_histogram = c( df_tab[[ C_I_SECONDARY_DEPTH ]][ vi_secondary_true_positives ],
-#                   df_tab[[ C_I_SECONDARY_DEPTH ]][ vi_secondary_false_positives ],        
-#                   df_tab[[ C_I_PRIMARY_DEPTH ]][ vi_secondary_false_negatives ] )
-#  i_bin = floor( max( v_histogram )/200 )
-#  df_histogram = data.frame( values = v_histogram,
-#                           groups = c(rep("True_positives",length( vi_secondary_true_positives )),
-#                                      rep("False_Positives", length( vi_secondary_false_positives )),
-#                                      rep("False_Negatives",length( vi_secondary_false_negatives ))))
-#
-#  print("Creating detail ROC")
-#  print( file.path( str_output_dir, paste( basename( str_file ), "rates_hist", C_STR_DETAIL_FILE, sep = "_"  )) )
-#  ggplot( df_histogram, aes(x=values,fill=groups) ) +
-#    geom_histogram( data=subset(df_histogram,groups=="True_positives"), fill = "green", alpha = .4, binwidth=i_bin ) +
-#    geom_histogram( data=subset(df_histogram,groups=="False_Positives"), fill = "orange", alpha = .4, binwidth=i_bin ) +
-#    geom_histogram( data=subset(df_histogram,groups=="False_Negatives"), fill = "purple", alpha = .4, binwidth=i_bin ) +
-#    geom_vline(aes(xintercept=20,colour="red"), linetype="dashed", size=.25) +
-#    ggtitle( paste( "Depth distribution in secondary calls (",str_title_key,")") )
-#  ggsave(file=file.path( str_output_dir, paste( basename( str_file ), "rates_hist", C_STR_DETAIL_FILE, sep = "_"  )))
-  
-  # Sensitivity (y-axis): Exome Calls with min rna-seq coverage, what percent did rna-seq call
-  # sensitivity (y-axis) = given exome snp calls having min alpha rna-seq coverage, what percent did rna-seq call as snps?
-  # Specificity: Given RNA-seq calls having min rna-seq coverage, what percent are correct
-  # specificity (x-axis) = given rna-seq snp calls having min alpha rna-seq coverage, what percent are correct (exome-called)?
-  # Alpha: Min depth of rna-seq coverage
+  vioplot( list_categories_all$Truth_depths, list_categories_all$TP_depths, list_categories_all$FP_depths, list_categories_all$FN_depths,
+           names = paste( vstr_bar_names," (", vi_bar_values ,")" ), col = vstr_bar_colors)
+  title( "Min Coverage by Class" )
 
-  # Really high sensitivity
+  dev.off()
+
   Sensitivity = c()
   Specificity = c()
-  # alpha=min depth of rna-seq coverage
-  # Minimum coverage defines sample space in primary and secondary evidence (depth)
-  # What is the depth in both rna and dna?
-  # So at a depth both evidence must meet the minium depth, if not they are dropped (completely)
-  # At a certain level the RNASEQ depth will drownd out the DNASeq.
-  # Stop, at max( depth( primary ), depth( secondary ) )
- 
-  # The depth that was used in the sensitivity or specificity
-  vi_roc_depth_used = c() 
-  vi_roc_depth = c()
-  # Which depths has the lowest max
-  # This is the range that is used in the ROCs.
-  # Looking at depths that are no na
-  if( median( df_tab[[ C_I_PRIMARY_DEPTH ]][ vi_primary_calls ], na.rm = TRUE ) < median( df_tab[[ C_I_SECONDARY_DEPTH ]][ vi_secondary_calls ], na.rm = TRUE ) )
+  TP = c()
+  FP = c()
+  FN = c()
+
+  i_sensitivity_at_center = NA
+  i_specificity_at_center = NA
+  # Loop through each depths and calculate error rates
+  for( i_alpha_depth in 1:max( vi_min_depth_no_na, na.rm = TRUE ) )
   {
-    vi_roc_depth = df_tab[[ C_I_PRIMARY_DEPTH ]][ vi_primary_calls ]
-  } else {
-    vi_roc_depth = df_tab[[ C_I_SECONDARY_DEPTH ]][ vi_secondary_calls ]
-  }
-  vi_roc_depth = sort( unique( vi_roc_depth ), decreasing=FALSE )
-  for( i_alpha_depth in vi_roc_depth )
-  {
-    # Primary locations with a minimum read evidence and no nas
-    vi_primary_with_evidence_at_depth = intersect( which( df_tab[ C_I_PRIMARY_DEPTH ] >= i_alpha_depth ), vi_primary_read_evidence )
+    list_categories = func_calculate_categories( i_alpha_depth=i_alpha_depth, vi_primary_calls=vi_primary_calls,
+                                            vi_secondary_calls=vi_secondary_calls, vi_min_depth_no_na )
 
-    # Secondary locations with a minimum read evidence and no nas
-    vi_secondary_with_evidence_at_depth = intersect( which( df_tab[ C_I_SECONDARY_DEPTH ] >= i_alpha_depth ), vi_secondary_read_evidence )
-
-    # Take the locations that are primary calls
-    vi_primary_calls_at_depth = intersect( vi_primary_calls, vi_primary_with_evidence_at_depth )
-    # Take the locations that are secondary calls
-    vi_secondary_calls_at_depth = intersect( vi_secondary_calls, vi_secondary_with_evidence_at_depth )
-
-    # Of the primary calls, which have the same minimum coverage in the secondary assay
-    vi_primary_matched_calls_at_depth = intersect( vi_primary_calls_at_depth, vi_secondary_with_evidence_at_depth )
-    # Of the secondary calls, which have the same minimum coverage in the primary assay
-    vi_secondary_matched_calls_at_depth = intersect( vi_secondary_calls_at_depth, vi_primary_with_evidence_at_depth )
-
-    if( ( length( vi_primary_matched_calls_at_depth ) > 0 ) && ( length( vi_secondary_matched_calls_at_depth ) > 0 ) )
+    # Check to make sure we have at least the min percent of features or break
+    if( ( list_categories$Feature_count / i_min_depth_no_na ) < C_I_MIN_PERCENT_FEATURES )
     {
-      # Sensitivity is: How many of the primary calls at a depth had a call in the secondary given a minimum coverage in both
-      # Primary calls at depth which had the same depth and were called in the secondary / primary calls at depth
-      Sensitivity = c( Sensitivity, length( intersect( vi_primary_matched_calls_at_depth, vi_secondary_calls_at_depth ) ) / length( vi_primary_matched_calls_at_depth ) )
-      # Specificity (x-axis) = given rna-seq snp calls having min alpha rna-seq coverage, what percent are correct (exome-called)?
-      # Secondary calls at depth which had the same depth and were called in the primary / secondary calls at depth
-      Specificity = c( Specificity, length( intersect( vi_secondary_matched_calls_at_depth, vi_primary_calls_at_depth ) ) / length( vi_secondary_matched_calls_at_depth ) )
-      # Depth for sensitivity and specificity measurements
-      vi_roc_depth_used = c( vi_roc_depth_used, i_alpha_depth)
+      break
+    }
+ 
+    i_TP = list_categories$TP
+    i_FP = list_categories$FP
+    i_FN = list_categories$FN
+
+    if( ( i_TP + i_FN ) > 0 && ( i_TP + i_FP ) > 0 )
+    {
+      # Sensitivity
+      # TP / ( TP + FN )
+      i_sensitivity = i_TP / ( i_TP + i_FN )
+      Sensitivity = c( Sensitivity, i_sensitivity )
+      # TP / ( TP + FP )
+      # Positive Predictive value
+      i_specificity = 1 - ( i_TP / ( i_TP + i_FP ))
+      Specificity = c( Specificity, i_specificity )
+      # Record the depth measurement
+      vi_roc_depth_used = c( vi_roc_depth_used, i_alpha_depth )
+      # Record error classes at each depth
+      TP = c( TP, i_TP )
+      FP = c( FP, i_FP )
+      FN = c( FN, i_FN )
+
+      if( i_alpha_depth == i_center_raw )
+      {
+        i_sensitivity_at_center = i_sensitivity
+        i_specificity_at_center = i_specificity
+      }
     }
   }
-  df_cur = data.frame( sensitivity=Sensitivity, specificity=Specificity )
+  df_cur = data.frame( sensitivity=Sensitivity, specificity=Specificity, depth=vi_roc_depth_used, tp=TP, fp=FP, fn=FN )
 
-  # New plot
+  # Colors used in plotting
+  ## Fill
+  i_depth_used = length( vi_roc_depth_used )
+  i_depth_half = floor( i_depth_used /2 )
+  plt_blues = adjustcolor( colorRampPalette(brewer.pal( 9, "Blues" ))( i_depth_used ), alpha.f = 0.5 )
+  ## Borders
+  str_border_color = "#000000"
+  plt_border = sapply( c(round( ( i_depth_half:1 ) / i_depth_half, 2 ),rep(0, i_depth_used-i_depth_half)), function( x ) adjustcolor( str_border_color, alpha.f = x ) )
+
   # At a given minimum, x = depth, (y) sensitivity vs ( x ) minimum read threshold
-  pdf( file.path( str_output_dir, paste( basename( str_file ), "sensitivity_min_read_coverage.pdf", sep = "_" ) ), useDingbats = FALSE )
-  plot( vi_roc_depth_used, Sensitivity, main = "Positive Predictive Value vs Min Read Covereage", xlab = "Minimum Read Coverage", ylab = "Positive Predictive Value" ) 
+  pdf( file.path( str_output_dir, paste( basename( str_file ), "sensitivity_min_read_coverage_norm.pdf", sep = "_" ) ), useDingbats = FALSE )
+  plot( df_cur$depth, df_cur$sensitivity, main = "Sensitivity vs Min Read Coverage", xlab = paste("Minimum Read Coverage (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), ylab = "Sensitivity", pch = 21, col = plt_border, bg = plt_blues ) 
+  abline( v = i_center_raw, col = "darkgoldenrod1" )
   dev.off()
 
-  pdf( file.path( str_output_dir, paste( basename( str_file ), "ROC2", C_STR_DETAIL_FILE, sep = "_" )), useDingbats = FALSE )
-  plot( df_cur$specificity, df_cur$sensitivity )
-  plot( df_cur$specificity, df_cur$sensitivity, xlim =c(0,1), ylim=c(0,1) )
+  # At a given minimum, x = depth, (y) postivive predictive value vs ( x ) minimum read threshold
+  pdf( file.path( str_output_dir, paste( basename( str_file ), "fdr_min_read_coverage_norm.pdf", sep = "_" ) ), useDingbats = FALSE )
+  plot( df_cur$depth, df_cur$specificity, main = "False Discovery Rate vs Min Read Coverage", xlab = paste("Minimum Read Coverage (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), ylab = "False Discovery Rate", pch = 21, col = plt_border, bg = plt_blues ) 
+  abline( v = i_center_raw, col = "darkgoldenrod1" )
   dev.off()
 
-#  ggplot( data = df_cur, aes( x=specificity, y=sensitivity )) + geom_line() + ggtitle("Specificity vs Sensitivity by Depth")
-#  gg = ggplot()
-#  gg = gg + geom_line( data=df_cur, aes( x=Specificity, y=Sensitivity ) )
-#  gg = gg + ggtitle( paste( "Specificity vs Sensitivity at depth (", str_title_key, ")" ) )+ylim(c(0,1.1))+xlim(c(0,1.1))
-#  ggsave(file=file.path( str_output_dir, paste( basename( str_file ), "ROC2", C_STR_DETAIL_FILE, sep = "_" )))
+  # Optimization plot
+  pdf( file.path( str_output_dir, paste( basename( str_file ), "optimize", C_STR_DETAIL_FILE, sep = "_" )), useDingbats = FALSE )
+  plot( df_cur$specificity, df_cur$sensitivity, main = paste("Sensitivity vs False Discovery Rate (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), xlab = "False Discovery Rate 1 - ( TP/TP+FP )", ylab = "Sensitivity (TP/TP+FN)", pch = 21, col = plt_border, bg = plt_blues )
+  lines( x = c( i_specificity_at_center, 1 ), y = c( i_sensitivity_at_center, i_sensitivity_at_center), col = "darkgoldenrod1" )
+  lines( x = c( i_specificity_at_center, i_specificity_at_center ), y = c( 0, i_sensitivity_at_center), col = "darkgoldenrod1" )
+  plot( df_cur$specificity, df_cur$sensitivity, main = "Sensitivity vs False Discovery Rate", xlab = "False Discovery Rate 1 - ( TP/TP+FP )", ylab = "Sensitivity (TP/TP+FN)", pch = 21, 
+                                                xlim = c( 0, max( df_cur$specificity ) ), ylim = c( 0, max( df_cur$sensitivity ) ), col = plt_border, bg = plt_blues )
+  lines( x = c( i_specificity_at_center, 1 ), y = c( i_sensitivity_at_center, i_sensitivity_at_center), col = "darkgoldenrod1" )
+  lines( x = c( i_specificity_at_center, i_specificity_at_center ), y = c( 0, i_sensitivity_at_center), col = "darkgoldenrod1" )
+  dev.off()
 
-  # New plot
-  # At a given minimum, x = depth, (y) sensitivity vs ( x ) minimum read threshold
-
-  # Update group infomation
-  print("Updating group information")
-  ls_group_sensitivity = c( ls_group_sensitivity, Sensitivity )
-  ls_group_specificity = c( ls_group_specificity, Specificity )
-  ls_group_files = c( ls_group_files, rep( str_file, length( Sensitivity ) ) )
+  # Write measurements to file for troubleshooting
+  write.table( df_cur, file = file.path( str_output_dir, paste( basename( str_file ), "data.txt", sep = "_" ) ) )
 }
-
-# Group ROCs
-ggplot( data = data.frame( Sensitivity=ls_group_sensitivity, Specificity=ls_group_specificity, File = ls_group_files ),
-        aes( x=Specificity, y=Sensitivity, group=File )) + geom_line() + ggtitle("Specificity vs Sensitivity by Depth")
-ggsave( file=file.path( str_output_dir, paste( str_title_key, "group.pdf", sep = "_" ) ) )
-
-ggplot( data = data.frame( Sensitivity=ls_group_sensitivity, Specificity=ls_group_specificity, File = ls_group_files ),
-        aes( x=Specificity, y=Sensitivity, group=File )) + geom_line() + ggtitle("Specificity vs Sensitivity by Depth") + ylim(c(0,1))+ xlim(c(0,1))
-ggsave( file=file.path( str_output_dir, paste( str_title_key, "group_2.pdf", sep = "_" ) ) )
