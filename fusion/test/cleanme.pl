@@ -29,6 +29,7 @@ my %keep = map { + $_ => 1 } @files_to_keep;
 `rm -rf ./Star_Fusion` if (-d "Star_Fusion");
 `rm -rf ./Trinity_Fusion` if (-d "Trinity_Fusion");
 `rm -rf ./Fusion_Inspector` if (-d "Fusion_Inspector");
+`rm -rf ./trinity_out_dir` if (-d "trinity_out_dir");
 
 foreach my $file (<*>) {
 	
