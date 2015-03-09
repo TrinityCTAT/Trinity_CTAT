@@ -23,7 +23,7 @@ main: {
     ####################################
 
     my $cmd = "$TRINITY_HOME/Trinity --left $left_fq --right $right_fq --seqType fq "
-        . " --max_memory 2G --CPU 2 --output trinity_out_dir --verbose --full_cleanup ";
+        . " --max_memory 2G --CPU 2 --output trinity_out_dir --full_cleanup ";
 
     $pipeliner->add_commands(new Command($cmd, "trinity_out_dir.ok"));
 
