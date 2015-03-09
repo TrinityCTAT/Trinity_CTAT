@@ -2,6 +2,7 @@
 
 use strict;
 use warnings;
+use Carp;
 
 use FindBin;
 use lib ("$FindBin::Bin/../../PerlLib");
@@ -33,7 +34,7 @@ main: {
             die "Error, dont have only two genes for scaffold: $scaffold: " . Dumper(\@genes);
         }
 
-        my ($geneA_coords_href, $geneB_coords_href) = &get_gene_coords($scaffold_to_gene_coordsets{$scaffold});
+        my ($geneA_coords_href, $geneB_coords_href) = &get_gene_coords($scaffold, $scaffold_to_gene_coordsets{$scaffold});
  
         #print "GeneA: " . Dumper($geneA_coords_href) 
         #    . "GeneB: " . Dumper($geneB_coords_href);
@@ -52,7 +53,9 @@ main: {
                 &&
                 &shared_coordinate($geneB_coords_href, $trin_coords_href) ) {
 
-                $trinity_fusion_trans_ids{$trin_acc}++;
+                my ($break_left, $break_right) = &get_breakpoint_coords($geneA_coords_href, $geneB_coords_href, $trin_coords_href);
+
+                $trinity_fusion_trans_ids{$trin_acc} = "$scaffold:$break_left-$break_right";
             }
 
         }
@@ -84,10 +87,10 @@ sub shared_coordinate {
 
 ####
 sub get_gene_coords {
-    my ($genes_to_coords_href) = @_;
+    my ($scaffold, $genes_to_coords_href) = @_;
 
     my @gene_coords_hrefs;
-    foreach my $gene (keys %$genes_to_coords_href) {
+    foreach my $gene (split(/--/, $scaffold)) {
         
         my @coords = @{$genes_to_coords_href->{$gene}};
 
@@ -180,6 +183,11 @@ sub report_trin_fusions {
     my ($gff3_align_file, $trin_ids_href) = @_;
 
     
+    foreach my $trin_id (keys %$trin_ids_href) {
+        my $scaff_breakpoint = $trin_ids_href->{$trin_id};
+        print "#TrinityFusionTranscript:\t$trin_id\t$scaff_breakpoint\n";
+    }
+        
     my %scaffold_to_trans_coords;
     
     open (my $fh, $gff3_align_file) or die $!;
@@ -210,5 +218,44 @@ sub report_trin_fusions {
 
 
     return;
+}
+
+####
+sub get_breakpoint_coords {
+    my ($geneA_coords_href, $geneB_coords_href, $trin_coords_href) = @_;
+
+
+    ## get left breakpoint
+    my @left_shared_coords;
+
+    foreach my $coord (keys %$geneA_coords_href) {
+        if ($trin_coords_href->{$coord}) {
+            push (@left_shared_coords, $coord);
+        }
+    }
+    
+    @left_shared_coords = sort {$a<=>$b}
+    my $left_breakpoint = pop @left_shared_coords;
+    unless ($left_breakpoint) {
+        confess "Error, no left breakpoint";
+    }
+    
+    ## get right breakpoint
+    my @right_shared_coords;
+
+    foreach my $coord (keys %$geneB_coords_href) {
+        if ($trin_coords_href->{$coord}) {
+            push (@right_shared_coords, $coord);
+        }
+    }
+    @right_shared_coords = sort {$a<=>$b} @right_shared_coords;
+
+    my $right_breakpoint = shift @right_shared_coords;
+
+    unless ($right_breakpoint) {
+        confess "Error, no right breakpoint";
+    }
+       
+    return($left_breakpoint, $right_breakpoint);
 }
 
