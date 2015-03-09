@@ -25,11 +25,11 @@ my %keep = map { + $_ => 1 } @files_to_keep;
 `rm -rf ./Gsnap_Fusion` if (-d "Gsnap_Fusion");
 `rm -rf ./Star_Fusion` if (-d "Star_Fusion");
 `rm -rf ./Trinity_Fusion` if (-d "Trinity_Fusion");
-
+`rm -rf ./Fusion_Inspector` if (-d "Fusion_Inspector");
 
 foreach my $file (<*>) {
 	
-	if (! $keep{$file}) {
+	if (-f $file && ! $keep{$file}) {
 		print STDERR "-removing file: $file\n";
 		unlink($file);
 	}
