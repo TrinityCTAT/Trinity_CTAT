@@ -16,6 +16,9 @@ my @files_to_keep = qw (cleanme.pl
                         reads.right.simPE.fq.gz
                         runMe.pl
                         test_fusions.list
+
+
+__runMe_kcopipe.sh
                         );
 
 
