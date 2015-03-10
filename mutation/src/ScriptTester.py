@@ -401,65 +401,61 @@ class ScriptTester( ParentPipelineTester.ParentPipelineTester ):
         # Evaluate
         self.func_test_true( f_success )
 
-    def nottest_tabs_comparisons_to_igv_batch_for_vanilla( self ):
+    def test_visualize_mutation_depth_tab_files_for_error_counts_opt( self ):
         """
-        Test test_tabs_comparisons_to_igv_batch for a vanilla file.
+        Tests to make sure the TP, FP, FN, senstivity, and specificity measurements are correct from a test data set.
+        This is testing output that has a changing feature space (optimization figure) and not the "ROC" plot.
         """
-        # Create test environment
-        str_igv_script = os.path.join( self.str_script_dir, "tabs_comparisons_to_igv_batch.py" )
-        str_maf_dna = os.path.join( self.str_test_data_dir, "test_tabs_comparisons_to_igv_batch_maf_dna.tab" )
-        str_maf_rna = os.path.join( self.str_test_data_dir, "test_tabs_comparisons_to_igv_batch_maf_rna.tab" )
-        str_dna_rna = os.path.join( self.str_test_data_dir, "test_tabs_comparisons_to_igv_batch_dna_rna.tab" )
-#        str_maf_bam = os.path.join( self.str_test_data_dir, "test_tabs_comparisons_to_igv_batch_maf.bam" )
-#        str_dna_bam = os.path.join( self.str_test_data_dir, "test_tabs_comparisons_to_igv_batch_dna.bam" )
-#        str_rna_bam = os.path.join( self.str_test_data_dir, "test_tabs_comparisons_to_igv_batch_rna.bam" )
-        str_igv_maf_dna_result = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_maf_dna_RESULT.txt" )
-        str_igv_maf_dna_answer = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_maf_dna_ANSWER.txt" )
-        str_igv_maf_rna_result = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_maf_rna_RESULT.txt" )
-        str_igv_maf_rna_answer = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_maf_rna_ANSWER.txt" )
-        str_igv_maf_dna_rna_result = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_maf_dna_rna_RESULT.txt" )
-        str_igv_maf_dna_rna_answer = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_maf_dna_rna_ANSWER.txt" )
-        str_igv_dna_not_rna_result = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_dna_not_rna_RESULT.txt" )
-        str_igv_dna_not_rna_answer = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_dna_not_rna_ANSWER.txt" )
-        str_igv_maf_not_dna_result = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_maf_not_dna_RESULT.txt" )
-        str_igv_maf_not_dna_answer = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_maf_not_dna_ANSWER.txt" )
-        str_igv_maf_not_rna_result = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_maf_not_rna_RESULT.txt" )
-        str_igv_maf_not_rna_answer = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_maf_not_rna_ANSWER.txt" )
-        str_igv_dna_rna_not_maf_result = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_dna_rna_not_maf_RESULT.txt" )
-        str_igv_dna_rna_not_maf_answer = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_dna_rna_not_maf_ANSWER.txt" )
-        str_igv_maf_rna_not_dna_result = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_maf_rna_not_dna_RESULT.txt" )
-        str_igv_maf_rna_not_dna_answer = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_maf_rna_not_dna_ANSWER.txt" )
-        str_igv_error_result = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_error_RESULT.txt" )
-        str_igv_error_answer = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_error_ANSWER.txt" )
-        str_igv_error_depth_result = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_error_depth_RESULT.txt" )
-        str_igv_error_depth_answer = os.path.join( self.str_test_data_dir_working, "tabs_comparisons_to_igv_batch_error_depth_ANSWER.txt" )
+        # Create environment
+        str_vis_script = os.path.join( self.str_script_dir, "visualize_mutation_depth_tab_files.R" )
+        str_test_input_file = os.path.join( self.str_test_data_dir, "test_visualize_tab.tab" )
+        str_answer_file = os.path.join( self.str_test_data_dir, "test_visualize_mutation_depth_tab_files_for_error_counts_opt_ANSWER.txt" )
+        str_result_file = os.path.join( self.str_test_data_dir_working, "test_visualize_tab.tab_data.txt" )
         self.func_make_dummy_dir( self.str_test_data_dir_working )
-        # Call Example script
-        str_command = " ".join( [ str_igv_script, "--maf_dna", str_maf_dna,
-                                  "--maf_rna", str_maf_rna, "--dna_rna", str_dna_rna,
-#                                  "--maf_bam", str_maf_bam, "--dna_bam", str_dna_bam, "--rna_bam", str_rna_bam,
-                                  "--maf_dna_out", str_igv_maf_dna_result,
-                                  "--dna_not_rna_out", str_igv_dna_not_rna_result, "--maf_not_dna_out", str_igv_maf_not_dna_result, "--maf_rna_out", str_igv_maf_rna_result,
-                                  "--maf_not_rna_out", str_igv_dna_not_rna_result, "--dna_rna_not_maf_out", str_igv_dna_rna_not_maf_result, "--maf_rna_not_dna_out", str_igv_maf_rna_not_dna_result,
-                                  "--maf_dna_rna_out", str_igv_maf_dna_rna_result, "--error_out",str_igv_error_result, "--error_depth_out", str_igv_error_depth_result ] )
+        # Call example script
+        str_command = " ".join( [ str_vis_script, "-o", self.str_test_data_dir_working, "-k RNA_DNA", str_test_input_file ])
         Commandline.Commandline().func_CMD( str_command )
-        # Check test environment for results
-        f_success = self.func_are_files_equivalent( str_igv_maf_dna_result, str_igv_maf_dna_answer )
-        f_success = self.func_are_files_equivalent( str_igv_maf_rna_result, str_igv_maf_rna_answer )
-        f_success = self.func_are_files_equivalent( str_igv_maf_dna_rna_result, str_igv_maf_dna_rna_answer )
-        f_success = self.func_are_files_equivalent( str_igv_dna_not_rna_result, str_igv_dna_not_rna_answer )
-        f_success = self.func_are_files_equivalent( str_igv_maf_not_dna_result, str_igv_maf_not_dna_answer )
-        f_success = self.func_are_files_equivalent( str_igv_maf_not_rna_result, str_igv_maf_not_rna_answer )
-        f_success = self.func_are_files_equivalent( str_igv_error_result, str_igv_error_answer )
-        f_success = self.func_are_files_equivalent( str_igv_error_depth_result, str_igv_error_depth_answer )
-        f_success = self.func_are_files_equivalent( str_igv_dna_rna_not_maf_result, str_igv_dna_rna_not_maf_answer )
-        f_success = self.func_are_files_equivalent( str_igv_maf_rna_not_dna_result, str_igv_maf_rna_not_dna_answer )
+        # Check for sucess
+        f_success = self.func_are_files_equivalent( str_answer_file, str_result_file )
         # Destroy environment
-        self.func_remove_files( [ str_genotype_result ] )
+        self.func_remove_files( [ str_result_file, os.path.join( self.str_test_data_dir_working, "test_visualize_tab.tab_depth_distributions.pdf" ),
+                                  os.path.join( self.str_test_data_dir_working, "test_visualize_tab.tab_fdr_min_read_coverage_norm.pdf" ),
+                                  os.path.join( self.str_test_data_dir_working, "test_visualize_tab.tab_data_truth_held.txt" ),
+                                  os.path.join( self.str_test_data_dir_working, "test_visualize_tab.tab_optimize_detail_validation.pdf" ),
+                                  os.path.join( self.str_test_data_dir_working, "test_visualize_tab.tab_raw_class_distributions_detail_validation.pdf" ),
+                                  os.path.join( self.str_test_data_dir_working, "test_visualize_tab.tab_roc_detail_validation.pdf" ),
+                                  os.path.join( self.str_test_data_dir_working, "test_visualize_tab.tab_sensitivity_min_read_coverage_norm.pdf" ) ] )
         self.func_remove_dirs( [ self.str_test_data_dir_working ] )
         # Evaluate
         self.func_test_true( f_success )
-tabs_comparisons_to_igv_batch.py
+
+    def test_visualize_mutation_depth_tab_files_for_error_counts_roc( self ):
+        """
+        Tests to make sure the TP, FP, FN, senstivity, and specificity measurements are correct from a test data set.
+        This is testing output that has a set feature space (the "ROC" plot) and not the optimization plot.
+        """
+        # Create environment
+        str_vis_script = os.path.join( self.str_script_dir, "visualize_mutation_depth_tab_files.R" )
+        str_test_input_file = os.path.join( self.str_test_data_dir, "test_visualize_tab.tab" )
+        str_answer_file = os.path.join( self.str_test_data_dir, "test_visualize_mutation_depth_tab_files_for_error_counts_roc_ANSWER.txt" )
+        str_result_file = os.path.join( self.str_test_data_dir_working, "test_visualize_tab.tab_data_truth_held.txt" )
+        self.func_make_dummy_dir( self.str_test_data_dir_working )
+        # Call example script
+        str_command = " ".join( [ str_vis_script, "-o", self.str_test_data_dir_working, "-k RNA_DNA", str_test_input_file ])
+        Commandline.Commandline().func_CMD( str_command )
+        # Check for sucess
+        f_success = self.func_are_files_equivalent( str_answer_file, str_result_file )
+        # Destroy environment
+        self.func_remove_files( [ str_result_file, os.path.join( self.str_test_data_dir_working, "test_visualize_tab.tab_depth_distributions.pdf" ),
+                                  os.path.join( self.str_test_data_dir_working, "test_visualize_tab.tab_fdr_min_read_coverage_norm.pdf" ),
+                                  os.path.join( self.str_test_data_dir_working, "test_visualize_tab.tab_data.txt" ),
+                                  os.path.join( self.str_test_data_dir_working, "test_visualize_tab.tab_optimize_detail_validation.pdf" ),
+                                  os.path.join( self.str_test_data_dir_working, "test_visualize_tab.tab_raw_class_distributions_detail_validation.pdf" ),
+                                  os.path.join( self.str_test_data_dir_working, "test_visualize_tab.tab_roc_detail_validation.pdf" ),
+                                  os.path.join( self.str_test_data_dir_working, "test_visualize_tab.tab_sensitivity_min_read_coverage_norm.pdf" ) ] )
+        self.func_remove_dirs( [ self.str_test_data_dir_working ] )
+        # Evaluate
+        self.func_test_true( f_success )
 
 # Creates a suite of tests
 def suite():
