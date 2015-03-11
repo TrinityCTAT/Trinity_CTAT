@@ -742,7 +742,7 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
     lcmd_samtools_variants_commands.extend( [ Command.Command( str_cur_command = " ".join( [ "samtools mpileup -g -f", args_call.str_genome_fa, str_bam_sorted, ">", str_variants_bcf ] ),
                                             lstr_cur_dependencies = [ str_bam_sorted ],
                                             lstr_cur_products = [ str_variants_bcf ] ),
-                            Command.Command( str_cur_command = " ".join( [ "bcftools view -vcg", str_variants_bcf, ">", str_variants_vcf ] ),
+                            Command.Command( str_cur_command = " ".join( [ "bcftools call -mv -Ov", str_variants_bcf, ">", str_variants_vcf ] ),
                                             lstr_cur_dependencies = [ str_variants_bcf ],
                                             lstr_cur_products = [ str_variants_vcf ] )  ] )
     return lcmd_samtools_variants_commands
