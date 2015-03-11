@@ -31,7 +31,7 @@ lsArgs = parse_args( pArgs, positional_arguments=TRUE )
 # vi_primary_calls : indices of features that are calls in the primary ( truth ) data set
 # vi_secondary_calls : indices of features that are calls in the secondary ( evaluate ) data set
 # vi_depth : The depths of the features
-func_calculate_categories = function( i_alpha_depth, vi_primary_calls, vi_secondary_calls, vi_depth_indicies, vi_depth, i_hold_primary_at = NA )
+func_calculate_categories = function( i_alpha_depth, vi_primary_calls, vi_secondary_calls, vi_depth_indicies, vi_depth, i_hold_primary_at = NA, vi_primary_calls_hold = NA )
 {
   # Locations of interest for this depth
   # Matched at the depth given a min coverage in both evidence
@@ -40,9 +40,9 @@ func_calculate_categories = function( i_alpha_depth, vi_primary_calls, vi_second
   # The primary calls will either undr the same constraints as the secondary calls (requiring a certain depth) or
   # Will just have a floor to be held at (must atleast be a minimal depth)
   vi_primary_calls_at_depth = intersect( vi_features, vi_primary_calls )
-  if( ! is.na( i_hold_primary_at ))
+  if( !is.na( vi_primary_calls_hold ) && !is.na( vi_primary_calls_hold))
   {
-    vi_primary_calls_at_depth = intersect( vi_primary_calls, which( vi_depth > i_hold_primary_at ) )
+    vi_primary_calls_at_depth = vi_primary_calls_hold
   }
   vi_secondary_calls_at_depth = intersect( vi_features, vi_secondary_calls )
 
@@ -53,11 +53,17 @@ func_calculate_categories = function( i_alpha_depth, vi_primary_calls, vi_second
   vi_FP = setdiff( vi_secondary_calls_at_depth, vi_primary_calls_at_depth )
   # FN
   vi_FN = setdiff( vi_primary_calls_at_depth, vi_secondary_calls_at_depth )
-  if( ! is.na( i_hold_primary_at ) )
+  if( !is.na( vi_primary_calls_hold ) && !is.na( i_hold_primary_at ) )
   {
+    # FN accumulate TP that are less than i_alpha_depth
+    # FN stay FN
+    # FP are ignored once they are below i_alpha_depth
+    # FN that are being dropped are not na, are alteast the hold, less than the alpha, and otherwise a true positive
     vi_FN_by_depth = intersect( vi_secondary_calls, which( !is.na( vi_depth )) )
     vi_FN_by_depth = intersect( vi_FN_by_depth, which( vi_depth >= i_hold_primary_at ))
     vi_FN_by_depth = intersect( vi_FN_by_depth, which( vi_depth < i_alpha_depth ) )
+    vi_global_TP = intersect( vi_primary_calls, vi_secondary_calls )
+    vi_FN_by_depth = intersect( vi_global_TP, vi_FN_by_depth )
     vi_FN = union( setdiff( vi_primary_calls_at_depth, vi_secondary_calls_at_depth ), vi_FN_by_depth )
   }
 
@@ -209,7 +215,8 @@ for( str_file in v_str_files )
                                                  vi_depth=vi_min_depth )
     list_categories_at_2 = func_calculate_categories( i_alpha_depth=i_alpha_depth, vi_primary_calls=vi_primary_calls,
                                                  vi_secondary_calls=vi_secondary_calls, vi_depth_indicies=vi_min_depth_no_na_indicies,
-                                                 vi_depth=df_tab[[ C_I_SECONDARY_DEPTH ]], i_hold_primary_at = C_I_HOLD_TRUTH_AT_DEPTH )
+                                                 vi_depth=df_tab[[ C_I_SECONDARY_DEPTH ]], i_hold_primary_at = C_I_HOLD_TRUTH_AT_DEPTH,
+                                                 vi_primary_calls_hold = intersect( which( df_tab[[ C_I_SECONDARY_DEPTH ]] >= C_I_HOLD_TRUTH_AT_DEPTH), which( !is.na( df_tab[[ C_I_SECONDARY_DEPTH ]] ) ) ) )
     # Check to make sure we have at least the min percent of features or break
     if( ( list_categories$Feature_count / i_min_depth_no_na ) < C_I_MIN_PERCENT_FEATURES )
     {
