@@ -35,7 +35,7 @@ main: {
 
     ## Run Star
     
-    my $cmd = "STAR --genomeDir /seq/regev_genome_portal/RESOURCES/human/Hg19/Hg19.fa_star_index "
+    my $cmd = "STAR --genomeDir $FUSION_ANNOTATOR_LIB/Hg19.fa_star_index "
         . " --readFilesIn $left_fq $right_fq "
         . " --outSAMstrandField intronMotif "
         . " --outFilterIntronMotifs RemoveNoncanonicalUnannotated "

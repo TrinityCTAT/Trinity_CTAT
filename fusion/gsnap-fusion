@@ -6,6 +6,7 @@ use Carp;
 use Cwd;
 use FindBin;
 use lib ("$FindBin::Bin/PerlLib");
+use __GLOBALS__;
 use Pipeliner;
 
 
@@ -32,10 +33,10 @@ main: {
     my $pipeliner = new Pipeliner( -verbose => 1);
 
     ## Run GSNAP
-    my $cmd = "gsnap -D /seq/regev_genome_portal/RESOURCES/human/Hg19 " 
+    my $cmd = "gsnap -D $FUSION_ANNOTATOR_LIB " 
         . " -d Hg19.fa.gmap -A sam -N 1 -w 200000  -n 1 -t 2 "
         . " $left_fq $right_fq "
-        . " --use-splicing=/seq/regev_genome_portal/RESOURCES/human/Hg19/Annotations/Hg19_Gencode/gencode.v19.rna_seq_pipeline.gtf.gsnap.splice.iit "
+        . " --use-splicing=$FUSION_ANNOTATOR_LIB/gencode.v19.rna_seq_pipeline.gtf.gsnap.splice.iit "
         . " --split-output=split ";
 
     if ($left_fq =~ /\.gz$/) {
