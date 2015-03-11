@@ -594,7 +594,6 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
     str_replace_bam = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.bam" ] ) )
     str_replace_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.bai" ] ) )
 
-
     # DNA-seq best practices
     # java -jar MarkDuplicates.jar I=input.sam O=output.bam
     cmd_dedup = Command.Command( str_cur_command = "".join( [ "java -jar MarkDuplicates.jar I=", str_align_file,
@@ -860,6 +859,7 @@ def run( args_call, f_do_index = False ):
     # Alignment method is previously used for indexing but at this point, if a bam is given, the pipeline ignores alignment method and uses the bam
     if args_call.str_bam_file:
         lcmd_commands = []
+        dict_align_info = { INDEX_FILE : args_call.str_bam_file, INDEX_FOLDER : args_call.str_bam_file }
 
     # Make directories
     if not pline_cur.func_mkdirs( [ str_misc_dir ] ):
