@@ -96,6 +96,9 @@ main: {
           if ($chim_pair =~ /^(\S+)--(\S+)$/) {
               
               my ($geneA, $geneB) = ($1, $2);
+              
+              if ($geneA eq $geneB) { next; } ## no selfies
+
               $in_fusion{$geneA}++;
               $in_fusion{$geneB}++;
               push (@chim_pairs, $chim_pair);
