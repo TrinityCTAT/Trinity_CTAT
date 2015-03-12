@@ -36,6 +36,7 @@ my $usage = <<__EOUSAGE__;
 #
 #  --out_prefix <string>            output prefix for output files (gtf and fasta) default: geneMergeContig.\${process_id}
 #
+#  --exclude_paralogs               excludes those fusion candidates that have a 'PARALOG' annotation added.
 #
 ###############################################################################################
 
@@ -51,6 +52,7 @@ my $gtf_file;
 my $genome_fasta_file;
 my $out_prefix = "geneMergeContig.$$";
 my $shrink_introns_flag = 0;
+my $exclude_paralogs_flag = 0;
 
 &GetOptions ( 'h' => \$help_flag,
               
@@ -65,6 +67,8 @@ my $shrink_introns_flag = 0;
               
               'out_prefix=s' => \$out_prefix,
               
+              'exclude_paralogs' => \$exclude_paralogs_flag,
+
     );
 
 
@@ -77,18 +81,30 @@ unless ($fusions_file && $gtf_file && $genome_fasta_file) {
 }
 
 main: {
-        
-    my @chim_pairs = `cat $fusions_file`;
-    chomp @chim_pairs;
-    
+
     my %in_fusion;
-    foreach my $chim_pair (@chim_pairs) {
-        
-        $chim_pair =~ s/^\s+|\s+$//g; # trim trailing ws if any
-        
-        my ($geneA, $geneB) = split(/--/, $chim_pair);
-        $in_fusion{$geneA}++;
-        $in_fusion{$geneB}++;
+    my @chim_pairs;
+    
+  parse_fusion_candidates: {
+      open (my $fh, $fusions_file) or die "Error, cannot open file $fusions_file";
+      while (<$fh>) {
+          if ($exclude_paralogs_flag && /PARALOG/) { next; }
+          if (/^\#/) { next; }
+          unless (/\w/) { next; }
+          
+          my ($chim_pair, @rest) = split(/\s+/);
+          if ($chim_pair =~ /^(\S+)--(\S+)$/) {
+              
+              my ($geneA, $geneB) = ($1, $2);
+              $in_fusion{$geneA}++;
+              $in_fusion{$geneB}++;
+              push (@chim_pairs, $chim_pair);
+          }
+          else {
+              die "Error, cannot parse $chim_pair as a fusion-gene candidate.";
+          }
+      }
+      close $fh;
     }
     
     my %gene_to_gtf = &extract_gene_gtfs($gtf_file, \%in_fusion);
