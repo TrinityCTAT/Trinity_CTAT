@@ -19,7 +19,7 @@ unless (@sam_files) {
     die $usage;
 }
 
-my $gtf_file = "/seq/regev_genome_portal/RESOURCES/human/Hg19/gencode.v19/gencode.v19.rna_seq_pipeline.gtf.exons";
+my $gtf_file = "$FUSION_ANNOTATOR_LIB/gencode.v19.rna_seq_pipeline.gtf.exons";
 
 
 main: {
