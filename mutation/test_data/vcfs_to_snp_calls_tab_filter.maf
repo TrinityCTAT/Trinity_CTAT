@@ -1,0 +1,20 @@
+Hugo_Symbol	Entrez_Gene_Id	Center	NCBI_Build	Chromosome	Start_position	End_position	Strand	Variant_Classification	Variant_Type	Reference_Allele	Tumor_Seq_Allele1	Tumor_Seq_Allele2	dbSNP_RS	dbSNP_Val_Status	Tumor_Sample_Barcode
+ZNF674	641339	broad.mit.edu	37	1	46359304	46359304	+	Missense_Mutation	notSNP	T	T	C			test
+YLPM1	56252	broad.mit.edu	37	1	75276935	75276935	+	Silent	SNP	A	A	C			test
+ABHD4	63874	broad.mit.edu	37	2	23072590	23072590	+	Silent	SNP	G	G	A			nottest
+COL17A1	1308	broad.mit.edu	37	2	105819418	105819418	+	Silent	SNP	T	T	C			test
+PTPRK	5796	broad.mit.edu	37	3	128294963	128294963	+	Missense_Mutation	SNP	C	C	C			test
+CDK19	23097	broad.mit.edu	37	4	110944021	110944021	+	Missense_Mutation	SNP	A	A	A			test
+OXSM	54995	broad.mit.edu	37	5	25832567	25832567	+	Nonsense_Mutation	SNP	C	C	C			test
+PPCDC	60490	broad.mit.edu	37	3	75341043	75341043	+	Missense_Mutation	SNP	G	G	T			test
+ATRX	546	broad.mit.edu	37	4	76907656	76907656	+	Missense_Mutation	SNP	T	T	A			test
+C9	735	broad.mit.edu	37	5	39341317	39341317	+	Missense_Mutation	SNP	C	C	T			test
+MYH9	4627	broad.mit.edu	37	6	36717836	36717836	+	Missense_Mutation	notSNP	T	T	G			test
+PSMB11	122706	broad.mit.edu	37	6	23511840	23511840	+	Missense_Mutation	SNP	A	A	G			test
+UBQLN4	56893	broad.mit.edu	37	7	156012022	156012022	+	Missense_Mutation	notSNP	C	C	C			nottest
+CEP164	22897	broad.mit.edu	37	7	117265692	117265692	+	Silent	SNP	G	G	A			test
+GNA15	2769	broad.mit.edu	37	8	3155910	3155910	+	Missense_Mutation	SNP	T	T	G			test
+DHRS7C	201140	broad.mit.edu	37	9	9676157	9676157	+	Silent	SNP	G	G	A			test
+NFATC4	4776	broad.mit.edu	37	10	24846106	24846106	+	Missense_Mutation	SNP	G	G	C			test
+PTPRM	5797	broad.mit.edu	37	X	8343504	8343504	+	Missense_Mutation	SNP	G	G	A			test
+AHCTF1	25909	broad.mit.edu	37	Y	247014086	247014086	+	Missense_Mutation	SNP	G	G	C	rs149320039		test
