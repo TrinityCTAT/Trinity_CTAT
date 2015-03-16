@@ -20,6 +20,7 @@ my %keep = map { + $_ => 1 } @files_to_keep;
 
 
 `rm -rf ./cufflinks_outdir` if (-d "cufflinks_outdir");
+`rm -f ./.*ok`; # remove hidden checkpoint files
 
 foreach my $file (<*>) {
 	
