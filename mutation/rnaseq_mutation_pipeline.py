@@ -35,7 +35,7 @@ LSTR_ALIGN_CHOICES = [ STR_ALIGN_STAR, STR_ALIGN_STAR_LIMITED ]
 # Choices for variant calling
 STR_VARIANT_GATK = "GATK"
 STR_VARIANT_SAMTOOLS = "SAM"
-LSTR_VARIANT_CALLING_CHOICES = [ STR_VARIANT_GATK ]
+LSTR_VARIANT_CALLING_CHOICES = [ STR_VARIANT_GATK, STR_VARIANT_SAMTOOLS ]
 
 # This mode is used in validating the method in teh context fo DNA-seq
 # It is not intended to be ran on biological samples for studies.
@@ -44,13 +44,18 @@ STR_DNASEQ_VALIDATION = "DNASEQ"
 
 def func_do_star_alignment( args_call, str_unique_id, pline_cur, f_index_only = False ):
     """
-    Manages the calls for star alignment.
+    Manages commands for star alignment.
     
-    args_call : Arguments
-              : Arguments used to run pipeline
-              
-    Return : List of commands
-           : List of commands to run for star alignment
+    * args_call : Arguments
+                : Arguments used to run pipeline
+    * str_unique_id : Unique key string for this sample run, to keep files unique
+                    : String
+    * pline_cur : Instance of the pipeline
+                : Pipeline
+    * f_index_only : Indicates that indexing only should result.
+                   : Boolean (True indicates indexing only, no alignment)
+    * return : Dict containing commands, resulting alignemnt file and the alignment folder
+           : dict
     """
     
     STR_ALIGN_1 = "_".join( [ "star_align_1", str_unique_id ] )
@@ -146,13 +151,18 @@ def func_do_star_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
 
 def func_do_top_hat_alignment( args_call, str_unique_id, pline_cur, f_index_only = False ):
     """
-    Manages the calls for the top hat alignment.
+    Manages the commands for top hat alignment.
     
-    args_call : Arguments
-              : Arguments used to run pipeline
-              
-    Return : List of commands
-           : List of commands to run for top hat alignment
+    * args_call : Arguments
+                : Arguments used to run pipeline
+    * str_unique_id : Unique key string for this sample run, to keep files unique
+                    : String
+    * pline_cur : Instance of the pipeline
+                : Pipeline
+    * f_index_only : Indicates that indexing only should result.
+                   : Boolean (True indicates indexing only, no alignment)
+    * return : Dict containing commands, resulting alignemnt file and the alignment folder
+           : dict
     """
     
     # Holds the commands which will eventually be returned.
@@ -209,13 +219,18 @@ def func_do_top_hat_alignment( args_call, str_unique_id, pline_cur, f_index_only
 
 def func_do_gsnp_alignment( args_call, str_unique_id, pline_cur, f_index_only = False ):
     """
-    Manages the calls for gsnp alignment.
-    
-    args_call : Arguments
-              : Arguments used to run pipeline
-              
-    Return : List of commands
-           : List of commands to run for gsnp alignment
+    Manages the commands for gsnp alignment.
+
+    * args_call : Arguments
+                : Arguments used to run pipeline
+    * str_unique_id : Unique key string for this sample run, to keep files unique
+                    : String
+    * pline_cur : Instance of the pipeline
+                : Pipeline
+    * f_index_only : Indicates that indexing only should result.
+                   : Boolean (True indicates indexing only, no alignment)
+    * return : Dict containing commands, resulting alignemnt file and the alignment folder
+           : dict
     """
 
     # Holds the commands which will eventually be returned.
@@ -296,11 +311,16 @@ def func_do_BWA_alignment( args_call, str_unique_id, pline_cur, f_index_only = F
     Development use only, not intended to be used with studies.
     Used to validate technical properties of the RNA-seq pipeline.
     
-    args_call : Arguments
-              : Arguments used to run pipeline
-              
-    Return : List of commands
-           : List of commands to run for BWA alignment
+    * args_call : Arguments
+                : Arguments used to run pipeline
+    * str_unique_id : Unique key string for this sample run, to keep files unique
+                    : String
+    * pline_cur : Instance of the pipeline
+                : Pipeline
+    * f_index_only : Indicates that indexing only should result.
+                   : Boolean (True indicates indexing only, no alignment)
+    * return : Dict containing commands, resulting alignemnt file and the alignment folder
+           : dict
     """
     
     # Files
@@ -344,7 +364,25 @@ def func_do_BWA_alignment( args_call, str_unique_id, pline_cur, f_index_only = F
 
 
 def func_do_recalibration_gatk( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur ):
+    """
+    Manages the commands for the recalibration step in the GATK RNASEq mutation calling best practices.
 
+    * args_call : Arguments for the pipeline
+                : Dict
+    * str_align_file : The file from the alignment (sam or bam file). If sam file, will be changed to bam file
+                     : File path
+    * str_unique_id : Key string for the smaple run (to keep files unique) 
+                    : String
+    * str_project_dir : Output directory
+                      : String file path
+    * str_tmp_dir : Directory used to put intermediary files (part of the pipeline organization
+                  : String file path
+    * lstr_dependencies : List of file paths of dependencies from any previously running commands.
+                        : List of strings
+    * logr_cur : Pipeline logger
+               : Logger
+    """
+    
     # Check for the known vcf file
     # If it does not exist, warn that the associated steps will not be ran.
     if args_call.str_vcf_file is None:
@@ -441,7 +479,23 @@ def func_do_recalibration_gatk( args_call, str_align_file, str_unique_id, str_pr
 
 
 def func_do_rnaseq_caller_gatk( args_call, str_input_bam, str_unique_id, str_project_dir, str_tmp_dir ):
-    
+    """
+    Creates the commands for the GATK RNASeq calling.
+
+    * args_call : Arguments for running the pipeline
+                : dict
+    * str_input_bam : bam to call against
+                    : string file path
+    * str_unique_id : Unique key for this sample run used to keep files unique
+                    : string
+    * str_project_dir : Output directory for project
+                      : string path
+    * str_tmp_dir : Directory used to place intermediary files in the pipeline (mainly for organization)
+                  : stribg directory
+    * return : List of commands
+             : list
+    """
+
     # Files 
     str_filtered_variants_file = os.path.join( str_project_dir, "_".join( [ str_unique_id, "filtered_variants.vcf" ] ) )
     str_variants_file = os.path.join( str_tmp_dir, "variants.vcf" )
@@ -466,8 +520,25 @@ def func_do_rnaseq_caller_gatk( args_call, str_input_bam, str_unique_id, str_pro
 def func_do_variant_calling_gatk( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur ):
     """
     Creates the commands for the GATK variant calling pipeline.
-    """
 
+    * args_call : Arguments for the pipeline
+                : Dict
+    * str_align_file : The file from the alignment (sam or bam file). If sam file, will be changed to bam file
+                     : File path
+    * str_unique_id : Key string for the smaple run (to keep files unique) 
+                    : String
+    * str_project_dir : Output directory
+                      : String file path
+    * str_tmp_dir : Directory used to put intermediary files (part of the pipeline organization
+                  : String file path
+    * lstr_dependencies : List of file paths of dependencies from any previously running commands.
+                        : List of strings
+    * logr_cur : Pipeline logger
+               : Logger
+    * return : List of commands
+           : List of commands to run for BWA alignment
+    """
+    
     # Commands which will be returned
     lcmd_gatk_variants_commands = []
 
@@ -488,10 +559,23 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
     Development use only, not intended to be used with studies.
     Used to validate technical properties of the RNA-seq pipeline.
     
-    args_call : Arguments
-              : Arguments used to run pipeline
-              
-    Return : List of commands
+    Creates the commands for the SamTools variant calling pipeline.
+    
+    * args_call : Arguments for the pipeline
+                : Dict
+    * str_align_file : The file from the alignment (sam or bam file). If sam file, will be changed to bam file
+                     : File path
+    * str_unique_id : Key string for the smaple run (to keep files unique) 
+                    : String
+    * str_project_dir : Output directory
+                      : String file path
+    * str_tmp_dir : Directory used to put intermediary files (part of the pipeline organization
+                  : String file path
+    * lstr_dependencies : List of file paths of dependencies from any previously running commands.
+                        : List of strings
+    * logr_cur : Pipeline logger
+               : Logger
+    * return : List of commands
            : List of commands to run for BWA alignment
     """
     
@@ -509,7 +593,6 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
     str_recal_table_2 = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal_2.table" ] ) )
     str_replace_bam = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.bam" ] ) )
     str_replace_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.bai" ] ) )
-
 
     # DNA-seq best practices
     # java -jar MarkDuplicates.jar I=input.sam O=output.bam
@@ -600,10 +683,20 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
     """
     Creates the commands for the SamTools variant calling pipeline.
     
-    * str_reads_path : File path that points to either the Sam or Bam file
-    * str_reference_file :  Fasta reference file, used in indexing the reads.
-    * str_main_dir : Directory to place main results
-    * str_tmp_dir : Directory to place intermediary files
+    * args_call : Arguments for the pipeline
+                : Dict
+    * str_align_file : The file from the alignment (sam or bam file). If sam file, will be changed to bam file
+                     : File path
+    * str_unique_id : Key string for the smaple run (to keep files unique) 
+                    : String
+    * str_project_dir : Output directory
+                      : String file path
+    * str_tmp_dir : Directory used to put intermediary files (part of the pipeline organization
+                  : String file path
+    * lstr_dependencies : List of file paths of dependencies from any previously running commands.
+                        : List of strings
+    * logr_cur : Pipeline logger
+               : Logger
     """
 
     # Commands to run
@@ -619,7 +712,7 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
     str_bam_sorted_file = os.path.split( str_bam_sorted )[1]
     str_variants_bcf = os.path.join( str_project_dir, ".".join( [ os.path.splitext( str_bam_sorted_file )[0],"bcf" ] ) )
     # Uncompressed variant calling file
-    str_variants_vcf = ".".join( [ os.path.splitext( str_bam_sorted )[0],"vcf" ] )
+    str_variants_vcf = ".".join( [ os.path.splitext( str_variants_bcf )[0],"vcf" ] )
 
     # Optional SAM to BAM
     if os.path.splitext( str_align_file )[1].lower() == ".sam":
@@ -633,7 +726,7 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
     if args_call.f_recalibrate_sam:
         # Create commands for recalibration
         # Update files to recalibrated files
-        dict_recalibration = func_do_recalibration_gatk( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies )
+        dict_recalibration = func_do_recalibration_gatk( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur )
         lcmd_samtools_variants_commands.extend( dict_recalibration[ INDEX_CMD ] )
         str_bam_sorted = dict_recalibration[ INDEX_FILE ]
         str_bam_sorted_index = ".".join( [ os.path.splitext( str_bam_sorted )[ 0 ], "bai" ] )
@@ -646,14 +739,10 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
                                             lstr_cur_dependencies = [ str_bam_sorted ],
                                             lstr_cur_products = [ str_bam_sorted_index ] ) ] )   
     # Identify variants
-    lcmd_samtools_variants_commands.extend( [ Command.Command( str_cur_command = " ".join( [ "samtools mpileup -g -f", args_call.str_genome_fa, str_bam_sorted, ">", str_variants_bcf ] ),
+    lcmd_samtools_variants_commands.extend( [ Command.Command( str_cur_command = " ".join( [ "samtools mpileup -ugf", args_call.str_genome_fa, str_bam_sorted, "| bcftools call -mv -Ov >", str_variants_vcf ] ),
                                             lstr_cur_dependencies = [ str_bam_sorted ],
-                                            lstr_cur_products = [ str_variants_bcf ] ),
-                            Command.Command( str_cur_command = " ".join( [ "bcftools view -vcg", str_variants_bcf, ">", str_variants_vcf ] ),
-                                            lstr_cur_dependencies = [ str_variants_bcf ],
                                             lstr_cur_products = [ str_variants_vcf ] )  ] )
     return lcmd_samtools_variants_commands
-
 
 def run( args_call, f_do_index = False ):
     """
@@ -676,12 +765,19 @@ def run( args_call, f_do_index = False ):
         args.str_variant_call_mode = STR_DNASEQ_VALIDATION
         args.f_recalibrate_sam = True
 
+    # Fastq files or bam files must be given or index only should be true
+    if not ( args_call.str_sample_file_left_fq and args_call.str_sample_file_right_fq ) and not args_call.str_bam_file:
+      if not f_do_index:
+          print "RNASEQ MUTATION PIPELINE, please make sure to inclue a bam file or paired fastq files unless running in index only mode (which does no mutation calling)."
+          exit( 7 )
+
     # Constants
     # If not using a premade index and indexing only, do not update the name of the index dir with the sample name
     # Does not need to be unique. Otherwise update the name of the index directory so it is unique,
     # In case the pipeline is ran for multiple samples at once.
-    str_sample_postfix = os.path.splitext( os.path.basename( args_call.str_genome_fa if f_do_index 
-                                                             else args_call.str_sample_file_left_fq ) )[ 0 ]
+    str_sample_postfix = os.path.splitext( os.path.basename(  args_call.str_sample_file_left_fq if args_call.str_sample_file_left_fq else  args_call.str_bam_file ) )[ 0 ]
+    if f_do_index:
+        str_sample_postfix = os.path.splitext( os.path.basename( args_call.str_genome_fa ) )[ 0 ]
     str_sample_postfix = str_sample_postfix.replace(".","_")
 
     STR_MISC_DIR = "_".join( [ "misc", str_sample_postfix ] )
@@ -707,8 +803,7 @@ def run( args_call, f_do_index = False ):
 
     # If the output directory is not given, get the file base from a sample file
     if not args_call.str_file_base:
-        args_call.str_file_base = os.path.splitext( os.path.basename( args_call.str_sample_file_left_fq ) )[0]
-        args_call.str_file_base = args_call.str_file_base.replace(".","_")
+        args_call.str_file_base = args_call.str_sample_postix
 
     # Make sure the output directory is absolute
     args_call.str_file_base = os.path.abspath( args_call.str_file_base )
@@ -736,21 +831,29 @@ def run( args_call, f_do_index = False ):
     
     # Check to make sure input files exist
     lstr_files_to_check = [ args_call.str_genome_fa ]
-    if not f_do_index:
+    if args_call.str_bam_file:
+        lstr_files_to_check.append( args_call.str_bam_file )
+    elif f_do_index:
         lstr_files_to_check.extend( Command.Command.func_remove_temp_files( [ args_call.str_sample_file_left_fq, args_call.str_sample_file_right_fq ] ))
     if not pline_cur.func_check_files_exist( lstr_files_to_check ):
         if not args_call.f_Test:
             exit( 2 )
 
-    # Handle indexing and alignment
-    # Vary handling based on alignment type
-    dict_align_info = dict_align_funcs[ args_call.str_alignment_mode ]( args_call = args_call,
+    # Start commands
+    lcmd_commands = []
+    dict_align_info = {}
+
+    if not args_call.str_bam_file:
+        # If a bam file is given, ignore alignment and use the bam.
+        # Handle indexing and alignment
+        # Vary handling based on alignment type
+        dict_align_info = dict_align_funcs[ args_call.str_alignment_mode ]( args_call = args_call,
                                                                         str_unique_id = str_sample_postfix, 
                                                                         pline_cur = pline_cur, f_index_only = f_do_index )
-    # Commands to be ran, here the alignment commands
-    lcmd_commands = dict_align_info[ INDEX_CMD ]
-        
-    # Just do the initial indexing. No other part
+
+        # Run commands but indexing only
+        lcmd_commands.extend( dict_align_info[ INDEX_CMD ] )
+
     if f_do_index:
         # Run commands lcmd_commands, str_output_dir, i_clean_level = Command.CLEAN_NEVER, str_run_name = ""
         if not pline_cur.func_run_commands( lcmd_commands = lcmd_commands,
@@ -761,7 +864,12 @@ def run( args_call, f_do_index = False ):
                                             f_clean = args_call.f_clean ):
             exit( 4 )
         exit( 0 )
-        
+    
+  
+    # Alignment method is previously used for indexing but at this point, if a bam is given, the pipeline ignores alignment method and uses the bam
+    if args_call.str_bam_file:
+        dict_align_info = { INDEX_FILE : args_call.str_bam_file, INDEX_FOLDER : args_call.str_bam_file }
+
     # Make directories
     if not pline_cur.func_mkdirs( [ str_misc_dir ] ):
         exit( 3 )
@@ -775,14 +883,14 @@ def run( args_call, f_do_index = False ):
                                                                                         lstr_dependencies = [ dict_align_info[ INDEX_FOLDER ] ],
                                                                                         logr_cur = pline_cur.logr_logger ) )
 
-    # Run commands
+    # Run commands including variant calling
     if not pline_cur.func_run_commands( lcmd_commands = lcmd_commands, 
                                         str_output_dir = args_call.str_file_base,
                                         lstr_copy = args_call.lstr_copy if args_call.lstr_copy else None,
                                         str_move = args_call.str_move_dir if args_call.str_move_dir else None,
                                         str_compression_mode = args_call.str_compress,
                                         f_clean = args_call.f_clean ):
-        exit( 4 )
+        exit( 5 )
     exit( 0 )
 
 
@@ -794,6 +902,7 @@ if __name__ == "__main__":
     prsr_arguments = argparse.ArgumentParser( prog = "rnaseq_mutation_pipeline.py", description = "Variant calling using RNASeq NGS sequencing", formatter_class = argparse.ArgumentDefaultsHelpFormatter )
     prsr_arguments.add_argument( "-a", "--realign", dest = "f_stop_optional_realignment", default = False, action = "store_true", help = "Turns off optional indel realignment step." )
     prsr_arguments.add_argument( "-b", "--bsub_queue", metavar = "BSUB_Queue", dest = "str_bsub_queue", default = None, help = "If given, each command will sequentially be ran on this queue with bsub." )
+    prsr_arguments.add_argument( "--bam", metavar = "bam_file", dest = "str_bam_file", default = None, help = "Sample file in the form of a bam, if this is given NO alignment will be performed; the alignment mode command line will be ignored; let and right sample files will be ignored. Normal pipeline processing will pick up directly after alignment in the pipeline with the supplied bam." )
     prsr_arguments.add_argument( "-c", "--clean", dest = "f_clean", default = False, action="store_true", help = "Turns on (true) or off (false) cleaning of intermediary product files." ) 
     prsr_arguments.add_argument( "--copy", metavar = "Copy_location", dest = "lstr_copy", default = None, action="append", help="Paths to copy the output directory after the pipeline is completed. Output directory must be specified; can be used more than once for multiple copy locations.")
     prsr_arguments.add_argument( "--compress", dest = "str_compress", default = "none", choices = Pipeline.LSTR_COMPRESSION_HANDLING_CHOICES, help = "Turns on compression of products and intermediary files made by the pipeline. Valid choices include:" + str( Pipeline.LSTR_COMPRESSION_HANDLING_CHOICES ) )
@@ -804,13 +913,13 @@ if __name__ == "__main__":
     prsr_arguments.add_argument( "-i", "--index", metavar = "Use_premade_index", dest = "str_initial_index", default = None, help = "The initial index is made only from the reference genome and can be shared. If premade, supply a path here to the index directory so that it is not rebuilt for every alignment. Please provide the full path." )
     prsr_arguments.add_argument( "-j", "--recalibrate_sam", dest = "f_recalibrate_sam", default = True, action="store_false", help = "If used, turns off gatk recalibration of bam files before samtools variant calling." ) 
     prsr_arguments.add_argument( "-k", "--gtf", metavar = "Reference GTF", dest = "str_gtf_file_path", default = None, help = "GTF file for reference genome.")
-    prsr_arguments.add_argument( "-l", "--left", metavar = "Left_sample_file", dest = "str_sample_file_left_fq", required = True, help = "Path to one of the two paired RNAseq samples ( left )" )
+    prsr_arguments.add_argument( "-l", "--left", metavar = "Left_sample_file", dest = "str_sample_file_left_fq", required = False, help = "Path to one of the two paired RNAseq samples ( left )" )
     prsr_arguments.add_argument( "-m", "--max_bsub_memory", metavar = "Max_BSUB_Mem", dest = "str_max_memory", default = "8", help = "The max amount of memory in GB requested when running bsub commands." )
     prsr_arguments.add_argument( "--move", metavar = "Move_location", dest = "str_move_dir", default = None, help = "The path where to move the output directory after the pipeline ends. Can be used with the copy argument if both copying to one location(s) and moving to another is needed. Must specify output directory." )
     prsr_arguments.add_argument( "-n", "--threads", metavar = "Process_threads", dest = "i_number_threads", type = int, default = 1, help = "The number of threads to use for multi-threaded steps." )
     prsr_arguments.add_argument( "-o", "--out_dir", metavar = "Output_directory", dest = "str_file_base", default = None, help = "The output directory where results will be placed. If not given a directory will be created from sample names and placed with the samples." )
     prsr_arguments.add_argument( "-p", "--plot", dest = "f_optional_recalibration_plot", default = True, action = "store_false", help = "Turns off plotting recalibration of alignments." )
-    prsr_arguments.add_argument( "-r", "--right", metavar = "Right_sample_file", dest = "str_sample_file_right_fq", required = True, help = "Path to one of the two paired RNAseq samples ( right )" )
+    prsr_arguments.add_argument( "-r", "--right", metavar = "Right_sample_file", dest = "str_sample_file_right_fq", required = False, help = "Path to one of the two paired RNAseq samples ( right )" )
     prsr_arguments.add_argument( "-s", "--sequencing_platform", metavar = "Sequencing Platform", dest = "str_sequencing_platform", default = "ILLUMINA", choices = LSTR_SEQ_CHOICES, help = "The sequencing platform used to generate the samples choices include " + " ".join( LSTR_SEQ_CHOICES ) + "." )
     prsr_arguments.add_argument( "-t", "--test", dest = "f_Test", default = False, action = "store_true", help = "Will check the environment and display commands line but not run.")
     prsr_arguments.add_argument( "-u", "--update_command", dest = "str_update_classpath", default = None, help = "Allows a class path to be added to the jars. eg. 'command.jar:/APPEND/THIS/PATH/To/JAR,java.jar:/Append/Path'")
