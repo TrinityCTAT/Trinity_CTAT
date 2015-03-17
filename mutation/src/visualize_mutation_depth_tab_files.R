@@ -20,7 +20,7 @@ C_I_MIN_PERCENT_FEATURES = .1
 C_I_INDIVIDUALS_PER_BIN = 5
 C_I_HOLD_TRUTH_AT_DEPTH = 2
 
-I_ROC_LINES = 6
+I_ROC_LINES = 10
 I_ROC_TRUTH_MIN_DEPTH = 1
 
 # Argument parsing
@@ -97,7 +97,7 @@ func_calculate_categories = function( i_alpha_depth, vi_primary_calls, vi_second
                 FN_depths = vi_depth[ vi_FN ],
                 Calls_primary_indices = vi_primary_calls_at_depth,
                 Calls_secondary_indices = vi_secondary_calls_at_depth,
-                Feature_count = length( vi_features )))
+                Feature_count = length( vi_features ) ) )
 }
 
 # Calculate rocs
@@ -116,38 +116,20 @@ func_calculate_roc_values = function( vi_primary_calls, vi_secondary_calls, vi_d
   vi_cumulative_ppv_r = c()
   i_cumulative_ppv = 0
 
-
-  print("primary_calls")
-  print( vi_primary_calls )
-  print( " secondary calls")
-  print( vi_secondary_calls)
-  print("Depth indicies")
-  print( vi_depth_indicies )
-  print( "Depth" )
-  print( vi_depth )
   # Get the calls given the depth restrictions
   vi_positives = intersect( vi_primary_calls, vi_depth_indicies )
-  print( "positives" )
-  print( vi_positives )
   # Total positives and negative to use when calculating cumulative rates 
   i_total_positive = length( vi_positives )
   i_total_tp = length( intersect( intersect( vi_secondary_calls, vi_depth_indicies ), intersect( vi_primary_calls, vi_depth_indicies ) ))
   i_total_fp = length( setdiff( intersect( vi_secondary_calls, vi_depth_indicies ), intersect( vi_primary_calls, vi_depth_indicies ) ))
-  print( "total TP / FP " )
-  print( i_total_tp )
-  print( i_total_fp )
 
   # Calculate per depth
   for( i_cur_depth in sort( unique( vi_depth[ vi_depth_indicies ] ), decreasing = FALSE ) )
   {
-    print("depth")
-    print( i_cur_depth )
     # Select the indicies for the depth
     vi_cur_features = intersect( which( vi_depth == i_cur_depth ), vi_depth_indicies )
     vi_primary_features = intersect( vi_cur_features, vi_primary_calls )
     vi_secondary_features = intersect( vi_cur_features, vi_secondary_calls )
-    print( "Features")
-    print( vi_cur_features )
     # Of these indices which are called
     # In both (TP)
     vi_cur_tp = intersect( vi_primary_features, vi_secondary_features )
@@ -302,6 +284,7 @@ for( str_file in v_str_files )
     list_categories = func_calculate_categories( i_alpha_depth=i_alpha_depth, vi_primary_calls=vi_primary_calls,
                                                  vi_secondary_calls=vi_secondary_calls, vi_depth_indicies=vi_min_depth_no_na_indicies,
                                                  vi_depth=vi_min_depth )
+
     # Check to make sure we have at least the min percent of features or break
     if( ( list_categories$Feature_count / i_min_depth_no_na ) < C_I_MIN_PERCENT_FEATURES )
     {
@@ -312,6 +295,7 @@ for( str_file in v_str_files )
     i_TP = list_categories$TP
     i_FP = list_categories$FP
     i_FN = list_categories$FN
+
     # Calculating Sensitivity / Specificity Measurements
     if( ( i_TP + i_FN ) > 0 && ( i_TP + i_FP ) > 0 )
     {
@@ -321,7 +305,7 @@ for( str_file in v_str_files )
       Sensitivity = c( Sensitivity, i_sensitivity )
       # TP / ( TP + FP )
       # FDR
-      i_specificity = 1 - ( i_TP / ( i_TP + i_FP ))
+      i_specificity = i_TP / ( i_TP + i_FP )
       Specificity = c( Specificity, i_specificity )
       # Record the depth measurement
       vi_roc_depth_used = c( vi_roc_depth_used, i_alpha_depth )
@@ -365,10 +349,10 @@ for( str_file in v_str_files )
                                vi_depth = df_tab[[ C_I_SECONDARY_DEPTH ]] )
       lines( x = c(0,df_roc_results[[ "PPV" ]],1), y = c(0,df_roc_results[[ "TPR" ]],1), col = vstr_roc_colors[ i_roc_index ], type = "b" )
       i_roc_index = i_roc_index + 1
-      write.table( df_roc_results, file = file.path( str_output_dir, paste( basename( str_file ), "data_roc", paste(i_cur_roc_depth,"cut.txt",sep=""), sep = "_" ) ) )
+      write.table( df_roc_results, file = file.path( str_output_dir, paste( basename( str_file ), "data_roc", paste(i_cur_roc_depth,"_cut_at_depth.txt",sep=""), sep = "_" ) ) )
     }
   }
-  title( main="TPR vs FPR varying by depth (Min 10% data)" )
+  title( main="TPR vs PPV varying by depth (Min 10% data)" )
   legend( "bottomright", legend= c( vi_selected_depths, "Random" ), fill = c( vstr_roc_colors, "grey" ), border = "black", title = "Min Depth" )
   vstr_roc_ticks = paste( vi_roc_ticks )
   axis( 2, at=vi_roc_ticks, labels=vstr_roc_ticks )
@@ -402,10 +386,10 @@ for( str_file in v_str_files )
                                vi_depth = df_tab[[ C_I_SECONDARY_DEPTH ]] )
       lines( x = c(0,df_roc_results[[ "PPV" ]],1), y = c(0,df_roc_results[[ "TPR" ]],1), col = vstr_roc_colors[ i_roc_index ], type = "b" )
       i_roc_index = i_roc_index + 1
-      write.table( df_roc_results, file = file.path( str_output_dir, paste( basename( str_file ), "data_roc", paste(i_cur_roc_depth,"cut.txt",sep=""), sep = "_" ) ) )
+      write.table( df_roc_results, file = file.path( str_output_dir, paste( basename( str_file ), "data_roc", paste(i_cur_roc_depth,"_changed_at_depth.txt",sep=""), sep = "_" ) ) )
     }
   }
-  title( main="TPR vs FPR varying by depth (Min 10% RNASEQ)" )
+  title( main="TPR vs PPV varying by depth (Min 10% RNASEQ)" )
   legend( "bottomright", legend= c( vi_selected_depths, "Random" ), fill = c( vstr_roc_colors, "grey" ), border = "black", title = "Min Depth" )
   vstr_roc_ticks = paste( vi_roc_ticks )
   axis( 2, at=vi_roc_ticks, labels=vstr_roc_ticks )
@@ -430,17 +414,17 @@ for( str_file in v_str_files )
   dev.off()
 
   # At a given minimum, x = depth, (y) postivive predictive value vs ( x ) minimum read threshold
-  pdf( file.path( str_output_dir, paste( basename( str_file ), "fdr_min_read_coverage_norm.pdf", sep = "_" ) ), useDingbats = FALSE )
-  plot( df_cur$depth, df_cur$specificity, main = "False Discovery Rate vs Min Read Coverage", xlab = paste("Minimum Read Coverage (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), ylab = "False Discovery Rate", pch = 21, col = plt_border, bg = plt_blues ) 
+  pdf( file.path( str_output_dir, paste( basename( str_file ), "ppv_min_read_coverage_norm.pdf", sep = "_" ) ), useDingbats = FALSE )
+  plot( df_cur$depth, df_cur$specificity, main = "Positive Predictive Value vs Min Read Coverage", xlab = paste("Minimum Read Coverage (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), ylab = "Positive Predictive Value", pch = 21, col = plt_border, bg = plt_blues ) 
   abline( v = i_center_raw, col = "darkgoldenrod1" )
   dev.off()
 
   # Optimization plot
   pdf( file.path( str_output_dir, paste( basename( str_file ), "optimize", C_STR_DETAIL_FILE, sep = "_" )), useDingbats = FALSE )
-  plot( df_cur$specificity, df_cur$sensitivity, main = paste("Sensitivity vs False Discovery Rate (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), xlab = "False Discovery Rate 1 - ( TP/TP+FP )", ylab = "Sensitivity (TP/TP+FN)", pch = 21, col = plt_border, bg = plt_blues )
+  plot( df_cur$specificity, df_cur$sensitivity, main = paste("Sensitivity vs Positive Predictive Value (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), xlab = "Positive Predictive Value ( TP/TP+FP )", ylab = "Sensitivity (TP/TP+FN)", pch = 21, col = plt_border, bg = plt_blues )
   lines( x = c( i_specificity_at_center, 1 ), y = c( i_sensitivity_at_center, i_sensitivity_at_center ), col = "darkgoldenrod1" )
   lines( x = c( i_specificity_at_center, i_specificity_at_center ), y = c( 0, i_sensitivity_at_center ), col = "darkgoldenrod1" )
-  plot( df_cur$specificity, df_cur$sensitivity, main = "Sensitivity vs False Discovery Rate", xlab = "False Discovery Rate 1 - ( TP/TP+FP )", ylab = "Sensitivity (TP/TP+FN)", pch = 21, 
+  plot( df_cur$specificity, df_cur$sensitivity, main = "Sensitivity vs Positive Predictive Value", xlab = "Positive Predictive Value ( TP/TP+FP )", ylab = "Sensitivity (TP/TP+FN)", pch = 21, 
                                                 xlim = c( 0, max( df_cur$specificity ) ), ylim = c( 0, max( df_cur$sensitivity ) ), col = plt_border, bg = plt_blues )
   lines( x = c( i_specificity_at_center, 1 ), y = c( i_sensitivity_at_center, i_sensitivity_at_center ), col = "darkgoldenrod1" )
   lines( x = c( i_specificity_at_center, i_specificity_at_center ), y = c( 0, i_sensitivity_at_center ), col = "darkgoldenrod1" )
