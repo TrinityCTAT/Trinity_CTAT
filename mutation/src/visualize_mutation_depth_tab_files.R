@@ -112,16 +112,16 @@ func_calculate_roc_values = function( vi_primary_calls, vi_secondary_calls, vi_d
   vi_fn = c()
   vi_cumulative_tp_r = c()
   i_cumulative_tp = 0
-  vi_cumulative_fp_r = c()
-  i_cumulative_fp = 0
+  vi_cumulative_ppv_r = c()
+  i_cumulative_ppv = 0
 
   # Get the calls given the depth restrictions
   vi_positives = intersect( vi_primary_calls, vi_depth_indicies )
-  vi_negatives = setdiff( intersect( vi_secondary_calls, vi_depth_indicies ),intersect( vi_primary_calls, vi_depth_indicies ) )
 
   # Total positives and negative to use when calculating cumulative rates 
   i_total_positive = length( vi_positives )
-  i_total_negative = length( vi_negatives )
+  i_total_tp = length( intersect( intersect( vi_secondary_calls, vi_depth_indicies ), intersect( vi_primary_calls, vi_depth_indicies ) ))
+  i_total_fp = length( setdiff( intersect( vi_secondary_calls, vi_depth_indicies ), intersect( vi_primary_calls, vi_depth_indicies ) ))
 
   # Calculate per depth
   for( i_cur_depth in sort( unique( vi_depth[ vi_depth_indicies ] ), decreasing = FALSE ) )
@@ -150,12 +150,12 @@ func_calculate_roc_values = function( vi_primary_calls, vi_secondary_calls, vi_d
     vi_fp = c( vi_fp, i_cur_fp )
     vi_fn = c( vi_fn, i_cur_fn )
     i_cumulative_tp = i_cumulative_tp + ( i_cur_tp / i_total_positive )
-    i_cumulative_fp = i_cumulative_fp + ( i_cur_fp / i_total_negative )
+    i_cumulative_ppv = i_cumulative_ppv + ( i_cur_tp / ( i_total_fp + i_total_tp ))
     vi_cumulative_tp_r = c( vi_cumulative_tp_r, round( i_cumulative_tp, 3 ) )
-    vi_cumulative_fp_r = c( vi_cumulative_fp_r, round( i_cumulative_fp, 3 ) )
+    vi_cumulative_ppv_r = c( vi_cumulative_ppv_r, round( i_cumulative_ppv, 3 ) )
   }
   # Return Depth, TP , FP, FN and cumulative sums
-  return( data.frame( Depth=vi_depth_used, TP=vi_tp, FP=vi_fp, FN=vi_fn, TPR=vi_cumulative_tp_r, FPR=vi_cumulative_fp_r ) )
+  return( data.frame( Depth=vi_depth_used, TP=vi_tp, FP=vi_fp, FN=vi_fn, TPR=vi_cumulative_tp_r, PPV=vi_cumulative_ppv_r ) )
 }
 
 # Handle arguments
@@ -334,17 +334,17 @@ for( str_file in v_str_files )
                                vi_secondary_calls = vi_secondary_calls, 
                                vi_depth_indicies = which( vi_min_depth >= i_cur_roc_depth ),
                                vi_depth = vi_min_depth )
-    lines( x = c(0,df_roc_results[[ "FPR" ]],1), y = c(0,df_roc_results[[ "TPR" ]],1), col = vstr_roc_colors[ i_roc_index ]  )
+    lines( x = c(0,df_roc_results[[ "PPV" ]],1), y = c(0,df_roc_results[[ "TPR" ]],1), col = vstr_roc_colors[ i_roc_index ], type = "b" )
     i_roc_index = i_roc_index + 1
     write.table( df_roc_results, file = file.path( str_output_dir, paste( basename( str_file ), "data_roc", paste(i_cur_roc_depth,".txt",sep=""), sep = "_" ) ) )
   }
   title( main="TPR vs FPR varying by depth *remeber remove 10%" )
   legend( "bottomright", legend= c( vi_selected_depths, "Random" ), fill = c( vstr_roc_colors, "grey" ), border = "black", title = "Min Depth" )
   vstr_roc_ticks = paste( vi_roc_ticks )
-  axis( 1, at=vi_roc_ticks, labels=vstr_roc_ticks )
-  mtext( side = 1, "False Positive Rate", line = 2 )
-  axis( 2, at=vi_roc_ticks, labels=vstr_roc_ticks ) 
+  axis( 2, at=vi_roc_ticks, labels=vstr_roc_ticks )
   mtext( side = 2, "True Positive Rate", line = 2 )
+  axis( 1, at=vi_roc_ticks, labels=vstr_roc_ticks ) 
+  mtext( side = 1, "Positive Predictive Value", line = 2 )
   dev.off()
 
   # Colors used in plotting

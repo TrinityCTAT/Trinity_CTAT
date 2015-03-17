@@ -1,2 +1,2 @@
-"Depth" "TP" "FP" "FN" "TPR" "FPR"
-"1" 4 3 39 1 0.75 1
+"Depth" "TP" "FP" "FN" "TPR" "PPV"
+"1" 4 3 39 1 0.75 0.071
