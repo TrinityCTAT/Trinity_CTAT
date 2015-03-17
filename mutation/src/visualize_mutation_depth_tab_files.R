@@ -115,45 +115,21 @@ func_calculate_roc_values = function( vi_primary_calls, vi_secondary_calls, vi_d
   vi_cumulative_fp_r = c()
   i_cumulative_fp = 0
 
-  print( "Primary")
-  print( vi_primary_calls )
-  print( "Secondary" )
-  print( vi_secondary_calls )
-  print( "vi_depth_indicies" )
-  print( vi_depth_indicies )
-
   # Get the calls given the depth restrictions
   vi_positives = intersect( vi_primary_calls, vi_depth_indicies )
-  print("positives")
-  print( vi_positives )
   vi_negatives = setdiff( intersect( vi_secondary_calls, vi_depth_indicies ),intersect( vi_primary_calls, vi_depth_indicies ) )
-  print("negatives")
-  print( vi_negatives )
 
   # Total positives and negative to use when calculating cumulative rates 
   i_total_positive = length( vi_positives )
   i_total_negative = length( vi_negatives )
-  print( "Total pos / neg" )
-  print( i_total_positive )
-  print( i_total_negative )
 
   # Calculate per depth
-  print( "D")
-  print( vi_depth[ vi_depth_indicies ] )
-  print( sort( vi_depth[ vi_depth_indicies ], decreasing = FALSE ) )
   for( i_cur_depth in sort( unique( vi_depth[ vi_depth_indicies ] ), decreasing = FALSE ) )
   {
-    print("Depth")
-    print( i_cur_depth )
     # Select the indicies for the depth
     vi_cur_features = intersect( which( vi_depth == i_cur_depth ), vi_depth_indicies )
-    print( "features")
-    print( vi_cur_features )
     vi_primary_features = intersect( vi_cur_features, vi_primary_calls )
     vi_secondary_features = intersect( vi_cur_features, vi_secondary_calls )
-    print( "Pri / sec features" )
-    print( vi_primary_features )
-    print( vi_secondary_features )
 
     # Of these indices which are called
     # In both (TP)
@@ -173,14 +149,10 @@ func_calculate_roc_values = function( vi_primary_calls, vi_secondary_calls, vi_d
     vi_tp = c( vi_tp, i_cur_tp )
     vi_fp = c( vi_fp, i_cur_fp )
     vi_fn = c( vi_fn, i_cur_fn )
-    print( i_cur_tp / i_total_positive )
-    print( i_cur_fp / i_total_negative )
     i_cumulative_tp = i_cumulative_tp + ( i_cur_tp / i_total_positive )
     i_cumulative_fp = i_cumulative_fp + ( i_cur_fp / i_total_negative )
     vi_cumulative_tp_r = c( vi_cumulative_tp_r, round( i_cumulative_tp, 3 ) )
     vi_cumulative_fp_r = c( vi_cumulative_fp_r, round( i_cumulative_fp, 3 ) )
-    print( vi_cumulative_tp_r )
-    print( vi_cumulative_fp_r )
   }
   # Return Depth, TP , FP, FN and cumulative sums
   return( data.frame( Depth=vi_depth_used, TP=vi_tp, FP=vi_fp, FN=vi_fn, TPR=vi_cumulative_tp_r, FPR=vi_cumulative_fp_r ) )
@@ -355,10 +327,6 @@ for( str_file in v_str_files )
   vi_roc_ticks = c(0.0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0)
   lines( x = vi_roc_ticks, y = vi_roc_ticks, col = "grey" )
   i_roc_index = 1
-  print("Primary calls" )
-  print( vi_primary_calls )
-  print("Secondary calls" )
-  print( vi_secondary_calls )
   vstr_roc_colors = rainbow( length( vi_selected_depths ) )
   for( i_cur_roc_depth in vi_selected_depths )
   {
@@ -366,12 +334,9 @@ for( str_file in v_str_files )
                                vi_secondary_calls = vi_secondary_calls, 
                                vi_depth_indicies = which( vi_min_depth >= i_cur_roc_depth ),
                                vi_depth = vi_min_depth )
-    print( "df_roc_results" )
-    print( df_roc_results )
     lines( x = c(0,df_roc_results[[ "FPR" ]],1), y = c(0,df_roc_results[[ "TPR" ]],1), col = vstr_roc_colors[ i_roc_index ]  )
     i_roc_index = i_roc_index + 1
-    write.table( df_roc_results, file = file.path( str_output_dir, paste( basename( str_file ), "data_roc", i_cur_roc_depth,".txt", sep = "_" ) ) )
-#    return( list( Depth=vi_depth_used, TP=vi_tp, FP=vi_fp, FN=vi_fn, TPR=vi_cumulative_tp_r, FPR=vi_cumulative_fp_r ) )
+    write.table( df_roc_results, file = file.path( str_output_dir, paste( basename( str_file ), "data_roc", paste(i_cur_roc_depth,".txt",sep=""), sep = "_" ) ) )
   }
   title( main="TPR vs FPR varying by depth *remeber remove 10%" )
   legend( "bottomright", legend= c( vi_selected_depths, "Random" ), fill = c( vstr_roc_colors, "grey" ), border = "black", title = "Min Depth" )
