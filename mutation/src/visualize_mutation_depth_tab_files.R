@@ -325,15 +325,21 @@ for( str_file in v_str_files )
   # Go through indices for each ROC line, filter at depth in RNASEQ
   pdf( file.path( str_output_dir, paste( basename( str_file ), "roc_cut_at_depth.pdf", sep = "_" ) ), useDingbats = FALSE )
   plot.new()
-  vi_roc_ticks = c(0.0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0)
-  lines( x = vi_roc_ticks, y = vi_roc_ticks, col = "grey" )
-  i_roc_index = 1
-  vstr_roc_colors = rainbow( length( vi_selected_depths ) )
 
   # This is the ROC that cutts off calls less than the depth
+  vi_roc_ticks = c(0.0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0)
+  lines( x = vi_roc_ticks, y = vi_roc_ticks, col = "grey" )
+  i_roc_index = 0
   # Ignore NA depth and exome depth less than I_ROC_TRUTH_MIN_DEPTH
   vi_ignore = union( which( is.na( df_tab[[ C_I_PRIMARY_DEPTH ]] ) ), which( is.na( df_tab[[ C_I_SECONDARY_DEPTH ]] ) ) )
   vi_ignore = union( vi_ignore, which( df_tab[[ C_I_PRIMARY_DEPTH ]] < I_ROC_TRUTH_MIN_DEPTH ) )
+
+  # These ROCs select on the secondary data depth
+  vi_selected_depths = func_select_even_roc_depths( vi_depths=df_tab[[ C_I_SECONDARY_DEPTH ]],
+                                                    vi_depths_indicies=setdiff( 1:nrow( df_tab ), vi_ignore ),
+                                                    i_number_of_selections=I_ROC_LINES )
+  vstr_roc_colors = rainbow( length( vi_selected_depths ) )
+  i_vi_mean_secondary_depth_not_ignored = round( mean( df_tab[[ C_I_SECONDARY_DEPTH ]][ -1 * vi_ignore ] ),2 )
   # How many calls are looked at
   i_roc_total_features = length( setdiff( 1:nrow(df_tab),vi_ignore ) )
   i_roc_min_features = max( 1, round( i_roc_total_features * C_I_MIN_PERCENT_FEATURES ) )
@@ -343,17 +349,17 @@ for( str_file in v_str_files )
     vi_ignore = union( vi_ignore, which( df_tab[[ C_I_SECONDARY_DEPTH ]] < i_cur_roc_depth ) )
     if( ( i_roc_total_features - length( vi_ignore )) >= i_roc_min_features )
     {
+      i_roc_index = i_roc_index + 1
       df_roc_results = func_calculate_roc_values( vi_primary_calls = vi_primary_calls,
                                vi_secondary_calls = vi_secondary_calls, 
                                vi_depth_indicies = setdiff( 1:nrow( df_tab), vi_ignore ),
                                vi_depth = df_tab[[ C_I_SECONDARY_DEPTH ]] )
       lines( x = c(0,df_roc_results[[ "PPV" ]],1), y = c(0,df_roc_results[[ "TPR" ]],1), col = vstr_roc_colors[ i_roc_index ], type = "b" )
-      i_roc_index = i_roc_index + 1
       write.table( df_roc_results, file = file.path( str_output_dir, paste( basename( str_file ), "data_roc", paste(i_cur_roc_depth,"_cut_at_depth.txt",sep=""), sep = "_" ) ) )
     }
   }
   title( main="TPR vs PPV varying by depth (Min 10% data)" )
-  legend( "bottomright", legend= c( vi_selected_depths, "Random" ), fill = c( vstr_roc_colors, "grey" ), border = "black", title = "Min Depth" )
+  legend( "bottomright", legend= c( vi_selected_depths[ 1 : i_roc_index ], "Random", paste( "Mean (", i_vi_mean_secondary_depth_not_ignored , ")",sep="" )), fill = c( vstr_roc_colors[ 1 : i_roc_index ], "grey","white" ), border=c(rep("black",i_roc_index+1),"white"), title="Min Depth" )
   vstr_roc_ticks = paste( vi_roc_ticks )
   axis( 2, at=vi_roc_ticks, labels=vstr_roc_ticks )
   mtext( side = 2, "True Positive Rate", line = 2 )
@@ -367,7 +373,7 @@ for( str_file in v_str_files )
   plot.new()
   vi_roc_ticks = c(0.0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0)
   lines( x = vi_roc_ticks, y = vi_roc_ticks, col = "grey" )
-  i_roc_index = 1
+  i_roc_index = 0
   vstr_roc_colors = rainbow( length( vi_selected_depths ) )
   # Ignore NA depth and exome depth less than I_ROC_TRUTH_MIN_DEPTH
   vi_ignore = union( which( is.na( df_tab[[ C_I_PRIMARY_DEPTH ]] ) ), which( is.na( df_tab[[ C_I_SECONDARY_DEPTH ]] ) ) )
@@ -380,17 +386,17 @@ for( str_file in v_str_files )
     # Ignore the case of the secondary not at the depth level
     if( ( i_roc_total_features - length( setdiff( vi_roc_secondary_calls, vi_ignore ))) >= i_roc_min_features )
     {
+      i_roc_index = i_roc_index + 1
       df_roc_results = func_calculate_roc_values( vi_primary_calls = vi_primary_calls,
                                vi_secondary_calls = vi_roc_secondary_calls, 
                                vi_depth_indicies = setdiff( 1:nrow( df_tab), vi_ignore ),
                                vi_depth = df_tab[[ C_I_SECONDARY_DEPTH ]] )
       lines( x = c(0,df_roc_results[[ "PPV" ]],1), y = c(0,df_roc_results[[ "TPR" ]],1), col = vstr_roc_colors[ i_roc_index ], type = "b" )
-      i_roc_index = i_roc_index + 1
       write.table( df_roc_results, file = file.path( str_output_dir, paste( basename( str_file ), "data_roc", paste(i_cur_roc_depth,"_changed_at_depth.txt",sep=""), sep = "_" ) ) )
     }
   }
   title( main="TPR vs PPV varying by depth (Min 10% RNASEQ)" )
-  legend( "bottomright", legend= c( vi_selected_depths, "Random" ), fill = c( vstr_roc_colors, "grey" ), border = "black", title = "Min Depth" )
+  legend( "bottomright", legend= c( vi_selected_depths[ 1 : i_roc_index ], "Random", paste( "Mean (", i_vi_mean_secondary_depth_not_ignored , ")",sep="" )), fill = c( vstr_roc_colors[ 1 : i_roc_index ], "grey","white" ), border=c(rep("black",i_roc_index+1),"white"), title="Min Depth" )
   vstr_roc_ticks = paste( vi_roc_ticks )
   axis( 2, at=vi_roc_ticks, labels=vstr_roc_ticks )
   mtext( side = 2, "True Positive Rate", line = 2 )
