@@ -21,6 +21,7 @@ C_I_INDIVIDUALS_PER_BIN = 5
 C_I_HOLD_TRUTH_AT_DEPTH = 2
 
 I_ROC_LINES = 6
+I_ROC_TRUTH_MIN_DEPTH = 1
 
 # Argument parsing
 pArgs = OptionParser( usage ="%prog files1.tab files2.tab" )
@@ -115,22 +116,38 @@ func_calculate_roc_values = function( vi_primary_calls, vi_secondary_calls, vi_d
   vi_cumulative_ppv_r = c()
   i_cumulative_ppv = 0
 
+
+  print("primary_calls")
+  print( vi_primary_calls )
+  print( " secondary calls")
+  print( vi_secondary_calls)
+  print("Depth indicies")
+  print( vi_depth_indicies )
+  print( "Depth" )
+  print( vi_depth )
   # Get the calls given the depth restrictions
   vi_positives = intersect( vi_primary_calls, vi_depth_indicies )
-
+  print( "positives" )
+  print( vi_positives )
   # Total positives and negative to use when calculating cumulative rates 
   i_total_positive = length( vi_positives )
   i_total_tp = length( intersect( intersect( vi_secondary_calls, vi_depth_indicies ), intersect( vi_primary_calls, vi_depth_indicies ) ))
   i_total_fp = length( setdiff( intersect( vi_secondary_calls, vi_depth_indicies ), intersect( vi_primary_calls, vi_depth_indicies ) ))
+  print( "total TP / FP " )
+  print( i_total_tp )
+  print( i_total_fp )
 
   # Calculate per depth
   for( i_cur_depth in sort( unique( vi_depth[ vi_depth_indicies ] ), decreasing = FALSE ) )
   {
+    print("depth")
+    print( i_cur_depth )
     # Select the indicies for the depth
     vi_cur_features = intersect( which( vi_depth == i_cur_depth ), vi_depth_indicies )
     vi_primary_features = intersect( vi_cur_features, vi_primary_calls )
     vi_secondary_features = intersect( vi_cur_features, vi_secondary_calls )
-
+    print( "Features")
+    print( vi_cur_features )
     # Of these indices which are called
     # In both (TP)
     vi_cur_tp = intersect( vi_primary_features, vi_secondary_features )
@@ -321,24 +338,74 @@ for( str_file in v_str_files )
   }
   df_cur = data.frame( sensitivity=Sensitivity, specificity=Specificity, depth=vi_roc_depth_used, tp=TP, fp=FP, fn=FN )
 
-  # Go through indices for each ROC line
-  pdf( file.path( str_output_dir, paste( basename( str_file ), "roc.pdf", sep = "_" ) ), useDingbats = FALSE )
+  # Go through indices for each ROC line, filter at depth in RNASEQ
+  pdf( file.path( str_output_dir, paste( basename( str_file ), "roc_cut_at_depth.pdf", sep = "_" ) ), useDingbats = FALSE )
   plot.new()
   vi_roc_ticks = c(0.0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0)
   lines( x = vi_roc_ticks, y = vi_roc_ticks, col = "grey" )
   i_roc_index = 1
   vstr_roc_colors = rainbow( length( vi_selected_depths ) )
+
+  # This is the ROC that cutts off calls less than the depth
+  # Ignore NA depth and exome depth less than I_ROC_TRUTH_MIN_DEPTH
+  vi_ignore = union( which( is.na( df_tab[[ C_I_PRIMARY_DEPTH ]] ) ), which( is.na( df_tab[[ C_I_SECONDARY_DEPTH ]] ) ) )
+  vi_ignore = union( vi_ignore, which( df_tab[[ C_I_PRIMARY_DEPTH ]] < I_ROC_TRUTH_MIN_DEPTH ) )
+  # How many calls are looked at
+  i_roc_total_features = length( setdiff( 1:nrow(df_tab),vi_ignore ) )
+  i_roc_min_features = max( 1, round( i_roc_total_features * C_I_MIN_PERCENT_FEATURES ) )
   for( i_cur_roc_depth in vi_selected_depths )
   {
-    df_roc_results = func_calculate_roc_values( vi_primary_calls = vi_primary_calls,
+    # Ignore the case of the secondary not at the depth level
+    vi_ignore = union( vi_ignore, which( df_tab[[ C_I_SECONDARY_DEPTH ]] < i_cur_roc_depth ) )
+    if( ( i_roc_total_features - length( vi_ignore )) >= i_roc_min_features )
+    {
+      df_roc_results = func_calculate_roc_values( vi_primary_calls = vi_primary_calls,
                                vi_secondary_calls = vi_secondary_calls, 
-                               vi_depth_indicies = which( vi_min_depth >= i_cur_roc_depth ),
-                               vi_depth = vi_min_depth )
-    lines( x = c(0,df_roc_results[[ "PPV" ]],1), y = c(0,df_roc_results[[ "TPR" ]],1), col = vstr_roc_colors[ i_roc_index ], type = "b" )
-    i_roc_index = i_roc_index + 1
-    write.table( df_roc_results, file = file.path( str_output_dir, paste( basename( str_file ), "data_roc", paste(i_cur_roc_depth,".txt",sep=""), sep = "_" ) ) )
+                               vi_depth_indicies = setdiff( 1:nrow( df_tab), vi_ignore ),
+                               vi_depth = df_tab[[ C_I_SECONDARY_DEPTH ]] )
+      lines( x = c(0,df_roc_results[[ "PPV" ]],1), y = c(0,df_roc_results[[ "TPR" ]],1), col = vstr_roc_colors[ i_roc_index ], type = "b" )
+      i_roc_index = i_roc_index + 1
+      write.table( df_roc_results, file = file.path( str_output_dir, paste( basename( str_file ), "data_roc", paste(i_cur_roc_depth,"cut.txt",sep=""), sep = "_" ) ) )
+    }
   }
-  title( main="TPR vs FPR varying by depth *remeber remove 10%" )
+  title( main="TPR vs FPR varying by depth (Min 10% data)" )
+  legend( "bottomright", legend= c( vi_selected_depths, "Random" ), fill = c( vstr_roc_colors, "grey" ), border = "black", title = "Min Depth" )
+  vstr_roc_ticks = paste( vi_roc_ticks )
+  axis( 2, at=vi_roc_ticks, labels=vstr_roc_ticks )
+  mtext( side = 2, "True Positive Rate", line = 2 )
+  axis( 1, at=vi_roc_ticks, labels=vstr_roc_ticks ) 
+  mtext( side = 1, "Positive Predictive Value", line = 2 )
+  dev.off()
+
+  # This is the ROC that cutts off calls less than the depth
+  # Go through indices for each ROC line, filter at depth in RNASEQ
+  pdf( file.path( str_output_dir, paste( basename( str_file ), "roc_changed_at_depth.pdf", sep = "_" ) ), useDingbats = FALSE )
+  plot.new()
+  vi_roc_ticks = c(0.0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0)
+  lines( x = vi_roc_ticks, y = vi_roc_ticks, col = "grey" )
+  i_roc_index = 1
+  vstr_roc_colors = rainbow( length( vi_selected_depths ) )
+  # Ignore NA depth and exome depth less than I_ROC_TRUTH_MIN_DEPTH
+  vi_ignore = union( which( is.na( df_tab[[ C_I_PRIMARY_DEPTH ]] ) ), which( is.na( df_tab[[ C_I_SECONDARY_DEPTH ]] ) ) )
+  vi_ignore = union( vi_ignore, which( df_tab[[ C_I_PRIMARY_DEPTH ]] < I_ROC_TRUTH_MIN_DEPTH ) )
+  vi_roc_secondary_calls = vi_secondary_calls
+  for( i_cur_roc_depth in vi_selected_depths )
+  {
+    # Change any secondary call under the depth to not a secondary call.
+    vi_roc_secondary_calls = setdiff( vi_roc_secondary_calls, which( df_tab[[ C_I_SECONDARY_DEPTH ]] < i_cur_roc_depth ) )
+    # Ignore the case of the secondary not at the depth level
+    if( ( i_roc_total_features - length( setdiff( vi_roc_secondary_calls, vi_ignore ))) >= i_roc_min_features )
+    {
+      df_roc_results = func_calculate_roc_values( vi_primary_calls = vi_primary_calls,
+                               vi_secondary_calls = vi_roc_secondary_calls, 
+                               vi_depth_indicies = setdiff( 1:nrow( df_tab), vi_ignore ),
+                               vi_depth = df_tab[[ C_I_SECONDARY_DEPTH ]] )
+      lines( x = c(0,df_roc_results[[ "PPV" ]],1), y = c(0,df_roc_results[[ "TPR" ]],1), col = vstr_roc_colors[ i_roc_index ], type = "b" )
+      i_roc_index = i_roc_index + 1
+      write.table( df_roc_results, file = file.path( str_output_dir, paste( basename( str_file ), "data_roc", paste(i_cur_roc_depth,"cut.txt",sep=""), sep = "_" ) ) )
+    }
+  }
+  title( main="TPR vs FPR varying by depth (Min 10% RNASEQ)" )
   legend( "bottomright", legend= c( vi_selected_depths, "Random" ), fill = c( vstr_roc_colors, "grey" ), border = "black", title = "Min Depth" )
   vstr_roc_ticks = paste( vi_roc_ticks )
   axis( 2, at=vi_roc_ticks, labels=vstr_roc_ticks )
