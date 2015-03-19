@@ -251,7 +251,7 @@ class FusionInspector( ParentScript.ParentScript ):
         
 
 
-        consolidated_junction_reads_bam = fusion_summary_file + ".junction_reads.bam"
+        consolidated_junction_reads_bam =  os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".junction_reads.bam"])
         cmdstr = str("set -o pipefail && " + UTILDIR + "/retrieve_fusion_junction_reads_by_accession.pl " + summary_junction_reads_list
                      + " " + ",".join([gsnap_rmdup_bam_file + ".fusion_junc_reads.sam",
                                        hisat_rmdup_bam_file + ".fusion_junc_reads.sam"]) +
@@ -280,7 +280,7 @@ class FusionInspector( ParentScript.ParentScript ):
                                                lstr_cur_dependencies = [ fusion_summary_file ],
                                                lstr_cur_products = [ summary_spanning_reads_list ] ) )
         
-        consolidated_spanning_reads_bam = fusion_summary_file + ".spanning_reads.bam"
+        consolidated_spanning_reads_bam =  os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".spanning_reads.bam"])
         cmdstr = str("set -o pipefail && " + UTILDIR + "/retrieve_fusion_spanning_reads_by_accession.pl " + summary_spanning_reads_list
                      + " " + ",".join([gsnap_rmdup_bam_file + ".fusion_span_reads.sam",
                                        hisat_rmdup_bam_file + ".fusion_span_reads.sam"]) +
@@ -385,7 +385,7 @@ class FusionInspector( ParentScript.ParentScript ):
         
         ## Prep IGV fusion junction view
 
-        frag_coords_file = consolidated_bam_file + ".frag_coords"
+        frag_coords_file = workdir_consolidated_bam_file + ".frag_coords"
         igv_junc_view_file = os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".igv.FusionJuncSpan"])
         
         cmdstr = str(UTILDIR + "/fusion_summary_to_igv_JuncSpan_fmt.pl " + fusion_summary_file + " " +
