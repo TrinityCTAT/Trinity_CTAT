@@ -34,7 +34,8 @@ main: {
     push (@tmp_files, $tmp_sam);
     
 
-    my $cmd = "sort -k2,2 -k1,1 -k4,4n $tmp_sam > $tmp_sam.nameSorted";
+    # sort by scaff, readname, coordinate
+    my $cmd = "sort -k3,3 -k1,1 -k4,4n $tmp_sam > $tmp_sam.nameSorted";
     &process_cmd($cmd);
     push (@tmp_files, "$tmp_sam.nameSorted");
     
