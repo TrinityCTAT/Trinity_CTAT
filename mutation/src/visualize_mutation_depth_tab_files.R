@@ -1,9 +1,9 @@
 #!/usr/bin/env Rscript
 
+library(colorRamps )
 library( RColorBrewer )
 library( ggplot2 )
 library( optparse )
-library( vioplot )
 
 C_I_PRIMARY_POS = 1
 C_I_PRIMARY_REF = 2
@@ -18,10 +18,12 @@ C_STR_DETAIL_FILE = "detail_validation.pdf"
 
 C_I_MIN_PERCENT_FEATURES = .1
 C_I_INDIVIDUALS_PER_BIN = 5
-C_I_HOLD_TRUTH_AT_DEPTH = 2
 
-I_ROC_LINES = 10
-I_ROC_TRUTH_MIN_DEPTH = 1
+VI_ROC_DEPTHS = c( 1:10, 20, 30, 40, 50, 60 )
+VI_ROC_RNA_DEPTHS = c( 1, 2, 3, 4, 5, 10, 15, 20 )
+VI_ROC_TRUTH_MIN_DEPTH = c( 1, 2, 3, 4, 5, 10, 15, 20 )
+I_SELECTED_EVAL_MIN_COV = 1
+I_SELECTED_TRUTH_MIN_COV = 10
 
 # Argument parsing
 pArgs = OptionParser( usage ="%prog files1.tab files2.tab" )
@@ -29,132 +31,92 @@ pArgs = add_option( pArgs, c("-k","--title_key"),type="character",action="store"
 pArgs = add_option( pArgs, c("-o","--group_output_dir"),type="character",action="store",dest="str_output_dir",default=NA,help="Output directory (required).")
 lsArgs = parse_args( pArgs, positional_arguments=TRUE )
 
-func_select_even_roc_depths = function( vi_depths, vi_depths_indicies, i_number_of_selections = length( vi_depths_indicies ) )
+func_plot_roc = function( list_TPR, list_FDR, vi_depths, i_mean_depth, str_pdf_file_name, str_title, str_legend_vary_title  )
 {
-  # Given a list of depths and indicies indicating which depths are of interest.
-  # Return depths that are in order, and even selected throughout the sequence of depths (even in order not value)
-  # Will return the number of selections or the max number of unique depths, which ever is smaller
-  # Also select representative depths from the data
-  # Order the indices by the depth and then evenly subselect a group of indices
-  vi_unique_indicies = vi_depths_indicies[ which( ! duplicated( vi_depths[ vi_depths_indicies ] ) ) ]
-  vi_ordered_unique_indicies = vi_unique_indicies[ order( vi_depths[ vi_unique_indicies ], decreasing = FALSE )]
-  i_max_lines = min( i_number_of_selections, length( vi_ordered_unique_indicies ) )
-  vi_selected_depth_indicies = vi_ordered_unique_indicies[ seq(1, length( vi_ordered_unique_indicies ), floor( length( vi_ordered_unique_indicies ) / i_max_lines))]
-  vi_selected_depths = vi_depths[ vi_selected_depth_indicies ]
-  return( vi_selected_depths )
+  pdf( str_pdf_file_name, useDingbats = FALSE )
+  plot.new()
+  # This is the ROC that cutts off calls less than the depth
+  vi_roc_ticks = c(0.0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0)
+  lines( x = vi_roc_ticks, y = vi_roc_ticks, col = "grey" )
+  # These ROCs select on the secondary data depth
+  vstr_roc_colors = rainbow( length( vi_depths ))
+  # Plot lines
+  vstr_exome_cov = names( list_TPR )
+  # Exome cov colors
+  vstr_exome_colors = primary.colors( length( vstr_exome_cov ) )
+  for( i_exome_cov_i in 1:length( vstr_exome_cov ))
+  {
+    vi_FDR = list_FDR[[ vstr_exome_cov[ i_exome_cov_i ] ]]
+    vi_TPR = list_TPR[[ vstr_exome_cov[ i_exome_cov_i ] ]]
+    lines( x=vi_FDR, y=vi_TPR, col=vstr_exome_colors[ i_exome_cov_i ] )
+    points( x=vi_FDR, y=vi_TPR, pch=21, col=vstr_exome_colors[ i_exome_cov_i ], bg= vstr_roc_colors )
+  }
+  title( str_title )
+  # Legend Parameters
+  vstr_legend_labels_exome = c( vstr_exome_cov, "Random" )
+  vstr_legend_labels_rna = c( vi_depths, paste("Mean (",i_mean_depth,")",sep="" ))
+  vstr_legend_col_exome = c( vstr_exome_colors, "grey" )
+  vstr_legend_fill_rna = c( vstr_roc_colors, "white" )
+  vstr_legend_border_rna = c( rep("black", length( vstr_roc_colors )),"white")
+  vstr_legend_line_exome = c( rep(1,length(vstr_exome_cov)),1 )
+  legend( "bottomright", legend=vstr_legend_labels_rna, fill=vstr_legend_fill_rna, border=vstr_legend_border_rna, title="Vary RNA Cov", cex=.75 )
+  legend( "topleft", legend=vstr_legend_labels_exome, col=vstr_legend_col_exome, title=str_legend_vary_title, lty=vstr_legend_line_exome, lwd=2, cex=.75 )
+  vstr_roc_ticks = paste( vi_roc_ticks )
+  axis( 2, at=vi_roc_ticks, labels=vstr_roc_ticks )
+  mtext( side = 2, "True Positive Rate (TP/FP+FN)", line = 2 )
+  axis( 1, at=vi_roc_ticks, labels=vstr_roc_ticks ) 
+  mtext( side = 1, "False Discovery Rate (FP/FP+TP)", line = 2 )
+  dev.off()
 }
 
-# Calculate membership in different error classes
-# i_alpha_depth : the minimum depth that a feature must have to be looked at
-# vi_primary_calls : indices of features that are calls in the primary ( truth ) data set
-# vi_secondary_calls : indices of features that are calls in the secondary ( evaluate ) data set
-# vi_depth : The depths of the features
-func_calculate_categories = function( i_alpha_depth, vi_primary_calls, vi_secondary_calls, vi_depth_indicies, vi_depth, i_hold_primary_at = NA, vi_primary_calls_hold = NA )
+func_plot_seperate_metrics = function( df_measurements )
 {
-  # Locations of interest for this depth
-  # Matched at the depth given a min coverage in both evidence
-  vi_features = intersect( which( vi_depth[ vi_depth_indicies] >= i_alpha_depth ), which( !is.na( vi_depth[ vi_depth_indicies] ) ) )
-  vi_features = vi_depth_indicies[ vi_features ]
-  # The primary calls will either undr the same constraints as the secondary calls (requiring a certain depth) or
-  # Will just have a floor to be held at (must atleast be a minimal depth)
-  vi_primary_calls_at_depth = intersect( vi_features, vi_primary_calls )
-  if( !is.na( vi_primary_calls_hold ) && !is.na( vi_primary_calls_hold))
+  # Cut off at 10% features
+  i_number_features = df_measurements[[ "TP_min" ]][ 1 ] + df_measurements[[ "FP_min" ]][ 1 ] + df_measurements[[ "FN_min" ]][ 1 ]
+  i_cut_off = floor( i_number_features * .1 )
+  i_cut_off_index = nrow( df_measurements )
+  for( i in 1:nrow( df_measurements ))
   {
-    vi_primary_calls_at_depth = vi_primary_calls_hold
+    if( df_measurements[[ "TP_min" ]][ i ] + df_measurements[[ "FP_min" ]][ i ] + df_measurements[[ "FN_min" ]][ i ] < i_cut_off )
+    {
+      i_cut_off_index = i - 1
+      break
+    }
   }
-  vi_secondary_calls_at_depth = intersect( vi_features, vi_secondary_calls )
+  # Colors used in plotting
+  ## Fill
+  i_depth_used = length( df_measurements$Depth[ 1:i_cut_off_index ] )
+  i_depth_half = floor( i_depth_used /2 )
+  plt_blues = adjustcolor( colorRampPalette(brewer.pal( 9, "Blues" ))( i_depth_used ), alpha.f = 0.5 )
 
-  # Calculate error classes
-  # TP
-  vi_TP = intersect( vi_primary_calls_at_depth, vi_secondary_calls_at_depth )
-  # FP
-  vi_FP = setdiff( vi_secondary_calls_at_depth, vi_primary_calls_at_depth )
-  # FN
-  vi_FN = setdiff( vi_primary_calls_at_depth, vi_secondary_calls_at_depth )
-  if( !is.na( vi_primary_calls_hold ) && !is.na( i_hold_primary_at ) )
-  {
-    # FN accumulate TP that are less than i_alpha_depth
-    # FN stay FN
-    # FP are ignored once they are below i_alpha_depth
-    # FN that are being dropped are not na, are alteast the hold, less than the alpha, and otherwise a true positive
-    vi_FN_by_depth = intersect( vi_secondary_calls, which( !is.na( vi_depth )) )
-    vi_FN_by_depth = intersect( vi_FN_by_depth, which( vi_depth >= i_hold_primary_at ))
-    vi_FN_by_depth = intersect( vi_FN_by_depth, which( vi_depth < i_alpha_depth ) )
-    vi_global_TP = intersect( vi_primary_calls, vi_secondary_calls )
-    vi_FN_by_depth = intersect( vi_global_TP, vi_FN_by_depth )
-    vi_FN = union( setdiff( vi_primary_calls_at_depth, vi_secondary_calls_at_depth ), vi_FN_by_depth )
-  }
+  ## Borders
+  str_border_color = "#000000"
+  plt_border = sapply( c(round( ( i_depth_half:1 ) / i_depth_half, 2 ),rep(0, i_depth_used-i_depth_half)), function( x ) adjustcolor( str_border_color, alpha.f = x ) )
 
-  # Count class membership
-  # Calculate depth distributions per error class
-  # Add to return list
-  return( list( TP = length( vi_TP ), 
-                FP = length( vi_FP ),
-                FN = length( vi_FN ),
-                Truth_depths = vi_depth[ vi_primary_calls_at_depth ],
-                TP_depths = vi_depth[ vi_TP ],
-                FP_depths = vi_depth[ vi_FP ],
-                FN_depths = vi_depth[ vi_FN ],
-                Calls_primary_indices = vi_primary_calls_at_depth,
-                Calls_secondary_indices = vi_secondary_calls_at_depth,
-                Feature_count = length( vi_features ) ) )
+  # At a given minimum, x = depth, (y) sensitivity vs ( x ) minimum read threshold
+  plot( df_measurements$Depth[ 1:i_cut_off_index ], df_measurements[[ "TPR_min" ]][ 1:i_cut_off_index ], main = "TPR vs Min Read Coverage", xlab = paste("Min Coverage (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), ylab = "TPR", pch = 21, col = plt_border, bg = plt_blues ) 
+#  abline( v = i_center_raw, col = "darkgoldenrod1" )
+
+  # At a given minimum, x = depth, (y) postivive predictive value vs ( x ) minimum read threshold
+  plot( df_measurements$Depth[ 1:i_cut_off_index ], df_measurements[[ "FDR_min" ]][ 1:i_cut_off_index ], main = "FDR vs Min Read Coverage", xlab = paste("Min Read Coverage (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), ylab = "FDR", pch = 21, col = plt_border, bg = plt_blues ) 
+
+  # Optimization plot
+  plot( df_measurements[[ "FDR_min" ]][ 1:i_cut_off_index ], df_measurements[[ "TPR_min" ]][ 1:i_cut_off_index ], main = paste("TPR vs FDR (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), xlab = "False Discovery Rate (FP/FP+TP)", ylab = "Sensitivity (TP/TP+FN)", pch = 21, col = plt_border, bg = plt_blues )
+  plot( df_measurements[[ "FDR_min" ]][ 1:i_cut_off_index ], df_measurements[[ "TPR_min" ]][ 1:i_cut_off_index ], main = "TPR vs FDR", xlab = "False Discovery Rate (FP/TP+FP)", ylab = "TPR (TP/TP+FN)", pch = 21, col = plt_border, bg = plt_blues )
 }
 
 # Calculate rocs
 # vi_primary_calls: Indicies of the truth calls
 # vi_secondary_calls: Indicies of calls for the calls being investigated
-# vi_depth_indicies: Indicies of depth that will be used
-# vi_depth:  The original depth values.
-func_calculate_roc_values = function( vi_primary_calls, vi_secondary_calls, vi_depth_indicies, vi_depth )
+func_calculate_roc_values = function( vi_primary_calls, vi_secondary_calls )
 {
-  vi_depth_used = c()
-  vi_tp = c()
-  vi_fp = c()
-  vi_fn = c()
-  vi_cumulative_tp_r = c()
-  i_cumulative_tp = 0
-  vi_cumulative_ppv_r = c()
-  i_cumulative_ppv = 0
-
-  # Get the calls given the depth restrictions
-  vi_positives = intersect( vi_primary_calls, vi_depth_indicies )
   # Total positives and negative to use when calculating cumulative rates 
-  i_total_positive = length( vi_positives )
-  i_total_tp = length( intersect( intersect( vi_secondary_calls, vi_depth_indicies ), intersect( vi_primary_calls, vi_depth_indicies ) ))
-  i_total_fp = length( setdiff( intersect( vi_secondary_calls, vi_depth_indicies ), intersect( vi_primary_calls, vi_depth_indicies ) ))
-
-  # Calculate per depth
-  for( i_cur_depth in sort( unique( vi_depth[ vi_depth_indicies ] ), decreasing = FALSE ) )
-  {
-    # Select the indicies for the depth
-    vi_cur_features = intersect( which( vi_depth == i_cur_depth ), vi_depth_indicies )
-    vi_primary_features = intersect( vi_cur_features, vi_primary_calls )
-    vi_secondary_features = intersect( vi_cur_features, vi_secondary_calls )
-    # Of these indices which are called
-    # In both (TP)
-    vi_cur_tp = intersect( vi_primary_features, vi_secondary_features )
-    i_cur_tp = length( vi_cur_tp )
-
-    # In Primary only (FN)
-    vi_cur_fn = setdiff( vi_primary_features, vi_secondary_features )
-    i_cur_fn = length( vi_cur_fn )
-
-    # In Secondary only (FP)
-    vi_cur_fp = setdiff( vi_secondary_features, vi_primary_features )
-    i_cur_fp = length( vi_cur_fp )
-
-    # Accumulate
-    vi_depth_used = c( vi_depth_used, i_cur_depth )
-    vi_tp = c( vi_tp, i_cur_tp )
-    vi_fp = c( vi_fp, i_cur_fp )
-    vi_fn = c( vi_fn, i_cur_fn )
-    i_cumulative_tp = i_cumulative_tp + ( i_cur_tp / i_total_positive )
-    i_cumulative_ppv = i_cumulative_ppv + ( i_cur_tp / ( i_total_fp + i_total_tp ))
-    vi_cumulative_tp_r = c( vi_cumulative_tp_r, round( i_cumulative_tp, 3 ) )
-    vi_cumulative_ppv_r = c( vi_cumulative_ppv_r, round( i_cumulative_ppv, 3 ) )
-  }
-  # Return Depth, TP , FP, FN and cumulative sums
-  return( data.frame( Depth=vi_depth_used, TP=vi_tp, FP=vi_fp, FN=vi_fn, TPR=vi_cumulative_tp_r, PPV=vi_cumulative_ppv_r ) )
+  i_total_tp = length( intersect( vi_secondary_calls, vi_primary_calls ))
+  i_total_fp = length( setdiff( vi_secondary_calls, vi_primary_calls ))
+  i_total_fn = length( setdiff( vi_primary_calls, vi_secondary_calls ))
+  return( data.frame( TP=i_total_tp, FP=i_total_fp, FN=i_total_fn,
+                      TPR=i_total_tp / ( i_total_tp + i_total_fn ),
+                      FDR = i_total_fp / ( i_total_tp + i_total_fp ) ) )
 }
 
 # Handle arguments
@@ -181,261 +143,181 @@ for( str_file in v_str_files )
   # id \t chr_position \t Ref_bas \t call_genotype \t depth \t chr_position \t ref_bas \t call_genotype \t depth
   # 1-4 is for the reference sample
   # 5-8 is for the secondary assay sample
-  df_tab = read.table( str_file )
+  df_orig = read.table( str_file )
 
   # Make sure that the file does not include calls that do not get called in both primary and secondary sources
-  vi_empty_calls = intersect( which( is.na( df_tab[[ C_I_PRIMARY_GT ]]  ) ), which( is.na( df_tab[[ C_I_SECONDARY_GT ]] ) ) )
-  if( length( vi_empty_calls ) > 0 )
+  # Make sure the coverage is not 0 or NA
+  vi_remove_calls = intersect( which( is.na( df_orig[[ C_I_PRIMARY_GT ]]  ) ), which( is.na( df_orig[[ C_I_SECONDARY_GT ]] ) ) )
+  vi_remove_calls = union( vi_remove_calls, which( is.na( df_orig[[ C_I_PRIMARY_DEPTH ]] ) ) )
+  vi_remove_calls = union( vi_remove_calls, which( is.na( df_orig[[ C_I_SECONDARY_DEPTH ]] ) ) )
+  vi_remove_calls = union( vi_remove_calls, which( df_orig[[ C_I_SECONDARY_DEPTH ]] < 1 ) )
+  vi_remove_calls = union( vi_remove_calls, which( df_orig[[ C_I_PRIMARY_DEPTH ]] < 1 ) )
+  vi_remove_calls = unique( vi_remove_calls )
+  if( length( vi_remove_calls ) > 0 )
   {
-    df_tab = df_tab[-1*vi_empty_calls,]
+    df_orig = df_orig[-1*vi_remove_calls,]
   }
 
-  # Different measurements used later on
-  ## Primary
-  ### Locations with no depth
-  vi_primary_no_depth = union( which( is.na( df_tab[[ C_I_PRIMARY_DEPTH ]] )), which( df_tab[[ C_I_PRIMARY_DEPTH ]] < 1 ))
-  ### Primary calls
-  vi_primary_calls = which( !is.na(  df_tab[[ C_I_PRIMARY_GT ]] ) )
-  ## Secondary
-  ### Locations with no depth
-  vi_secondary_no_depth = union( which( is.na( df_tab[[ C_I_SECONDARY_DEPTH ]])), which( df_tab[[ C_I_SECONDARY_DEPTH ]] < 1 ))
-  ### Calls with or without depth
-  vi_secondary_calls = which( !is.na( df_tab[[ C_I_SECONDARY_GT ]] ) )
+  # Mean after minimal filtering
+  i_mean_depth=round( mean( df_orig[[ C_I_SECONDARY_DEPTH ]] ),2 )
 
-  ## Primary are MAF or DNA
-  ## Secondary are DNA or RNA
-  # How many primary calls are not supported by the secondary assay
-  # How many secondary calls are not supported by the primary assay
-  vi_primary_exclusive = intersect( vi_primary_calls, vi_secondary_no_depth )
-  vi_secondary_exclusive = intersect( vi_secondary_calls, vi_primary_no_depth )
-  print( "Percent of the primary calls with no evidence in the secondary calls" )
-  print( length( vi_primary_exclusive )/length( vi_primary_calls ) * 100 )
-  print( "Percent of the secondary calls with no evidence in the primary calls." )
-  print( length( vi_secondary_exclusive )/length( vi_secondary_calls ) * 100 )
-  print( "Remember this is a problematic view for maf files given they do not have thier own depth files or it is the same as the DNA files." )
-
-  # Which depths has the lowest max per feature
-  # This is the range that is used in the ROCs.
-  # This can have NAs or 0s in it if an evidence does not have a read depth
-  vi_min_depth = apply( df_tab[ c( C_I_PRIMARY_DEPTH, C_I_SECONDARY_DEPTH ) ], MARGIN = 1, min )
-  vi_roc_depth_used = c()
-  vi_roc_depth_used_at_2 = c()
-
-  # Plot the distribution of the data and get the central tendency
-  # Remove NAs and 0 entries from the list.
-  vi_min_depth_no_na_indicies = intersect( which( !is.na( vi_min_depth ) ), which( vi_min_depth != 0 ) )
-  vi_min_depth_no_na = vi_min_depth[ vi_min_depth_no_na_indicies ]
-  i_min_depth_no_na = length( vi_min_depth_no_na )
-
-  # Also select representative depths from the data
-  # Order the indices by the depth and then evenly subselect a group of indices
-  vi_selected_depths = func_select_even_roc_depths( vi_depths=vi_min_depth, vi_depths_indicies=vi_min_depth_no_na_indicies, i_number_of_selections=I_ROC_LINES )
-
-  # Get one individual distributions without NA and 0 depth features
-  vi_truth_depth_no_na = df_tab[[ C_I_PRIMARY_DEPTH ]][ intersect( which( !is.na( df_tab[[ C_I_PRIMARY_DEPTH ]] )), which( df_tab[[ C_I_PRIMARY_DEPTH ]] != 0 ) ) ]
-  vi_evaluated_depth_no_na = df_tab[[ C_I_SECONDARY_DEPTH ]][ intersect( which( !is.na( df_tab[[ C_I_SECONDARY_DEPTH ]] )), which( df_tab[[ C_I_SECONDARY_DEPTH ]] != 0 ) ) ]
-
-  # Plot distributions
-  pdf( file.path( str_output_dir, paste( basename( str_file ), "depth_distributions.pdf", sep = "_" ) ), useDingbats = FALSE )
-
-  # Get central value for min coverage
-  i_center = mean( log( vi_min_depth_no_na, 2 ) )
-  i_center_raw = round( 2^i_center )
-
-  # Plot depth distributions no matter the call state
-  hist( log( vi_min_depth_no_na, 2 ), main = "Distribution of Min Coverage (Log2)", xlab = "Min Coverage", breaks = round( length( vi_min_depth_no_na ) / C_I_INDIVIDUALS_PER_BIN ) )
-  abline( v = i_center, col = "RED", lwd = 2 )
-  hist( log( vi_truth_depth_no_na, 2 ), main = "Distribution of Depths for the Truth Data Set (Log2)", xlab = "Truth Depth", breaks = round( length( vi_min_depth_no_na ) / C_I_INDIVIDUALS_PER_BIN ) )
-  hist( log( vi_evaluated_depth_no_na, 2 ), main = "Distribution of Depths for the Evaluated Data Set (Log2)", xlab = "Evaluated Depth", breaks = round(length( vi_evaluated_depth_no_na ) / C_I_INDIVIDUALS_PER_BIN ))
-  dev.off()
-
-  # At any depth what are the TP / FP / FN
-  vstr_bar_names = c("Truth","TP","FP","FN")
-  vstr_bar_colors = c("Grey","aquamarine","darkorchid1","darkgoldenrod1")
-  list_categories_all = func_calculate_categories( i_alpha_depth = -1, vi_primary_calls = vi_primary_calls, 
-                                                   vi_secondary_calls = vi_secondary_calls, 
-                                                   vi_depth_indicies = vi_min_depth_no_na_indicies,
-                                                   vi_depth = vi_min_depth )
-  vi_bar_values = c( length( list_categories_all$Truth_depths ), list_categories_all$TP, list_categories_all$FP, list_categories_all$FN )
-  pdf( file.path( str_output_dir, paste( basename( str_file ), "raw_class_distributions", C_STR_DETAIL_FILE, sep = "_" )), useDingbats = FALSE )
-  barplot( vi_bar_values, names.arg = paste( vstr_bar_names," (", vi_bar_values ,")" ), main = "Proportions of Call Classes", xlab = "Classes",
-           col = vstr_bar_colors, border = "grey", legend = vstr_bar_names, beside = TRUE )
-
-  # How does read depth associate with secondary assays being called
-  # What are the distributions of read depth for good and bad calls
-  vioplot( list_categories_all$Truth_depths, list_categories_all$TP_depths, list_categories_all$FP_depths, list_categories_all$FN_depths,
-           names = paste( vstr_bar_names," (", vi_bar_values ,")" ), col = vstr_bar_colors)
-  title( "Min Coverage by Class" )
-  dev.off()
-
-  # Changing bounds
-  Sensitivity = c()
-  Specificity = c()
-  TP = c()
-  FP = c()
-  FN = c()
-  i_sensitivity_at_center = NA
-  i_specificity_at_center = NA
-
-  # Loop through each depths and calculate error rates
-  for( i_alpha_depth in 1:max( vi_min_depth_no_na, na.rm = TRUE ) )
+  # Go through Exome min coverage settings
+  # Hold the TPR and FDR lines for each setting in a list
+  list_TPR = list()
+  list_FDR = list()
+  for( i_cur_exome_min_coverage in VI_ROC_TRUTH_MIN_DEPTH )
   {
-    # For optimization plot
-    list_categories = func_calculate_categories( i_alpha_depth=i_alpha_depth, vi_primary_calls=vi_primary_calls,
-                                                 vi_secondary_calls=vi_secondary_calls, vi_depth_indicies=vi_min_depth_no_na_indicies,
-                                                 vi_depth=vi_min_depth )
-
-    # Check to make sure we have at least the min percent of features or break
-    if( ( list_categories$Feature_count / i_min_depth_no_na ) < C_I_MIN_PERCENT_FEATURES )
+    print("Exome min coverage")
+    print( i_cur_exome_min_coverage )
+    # Set the initial problem state.
+    # Min Exome coverage
+    df_tab = df_orig
+    vi_remove_calls = which( df_orig[[ C_I_PRIMARY_DEPTH ]] < i_cur_exome_min_coverage )
+    vi_remove_calls = which( df_orig[[ C_I_SECONDARY_DEPTH ]] < I_SELECTED_EVAL_MIN_COV )
+    if( length( vi_remove_calls ) > 0 )
     {
-      break
+      df_tab = df_orig[-1*vi_remove_calls,]
     }
-
-    # Get error rates 
-    i_TP = list_categories$TP
-    i_FP = list_categories$FP
-    i_FN = list_categories$FN
-
-    # Calculating Sensitivity / Specificity Measurements
-    if( ( i_TP + i_FN ) > 0 && ( i_TP + i_FP ) > 0 )
+    # Different measurements used later on
+    ### Primary calls
+    vi_primary_calls = which( !is.na(  df_tab[[ C_I_PRIMARY_GT ]] ) )
+    ## Secondary
+    ### Calls with or without depth
+    vi_secondary_calls = which( !is.na( df_tab[[ C_I_SECONDARY_GT ]] ) )
+    # Update the secondary calls, if the genotypes do no match the primary calls
+    # Remove from the secondary calls
+    vi_common_calls = intersect( vi_secondary_calls, vi_primary_calls )
+    vi_incorrect_common_calls = c()
+    for( i in vi_common_calls )
     {
-      # Sensitivity
-      # TP / ( TP + FN )
-      i_sensitivity = i_TP / ( i_TP + i_FN )
-      Sensitivity = c( Sensitivity, i_sensitivity )
-      # TP / ( TP + FP )
-      # FDR
-      i_specificity = i_TP / ( i_TP + i_FP )
-      Specificity = c( Specificity, i_specificity )
-      # Record the depth measurement
-      vi_roc_depth_used = c( vi_roc_depth_used, i_alpha_depth )
-      # Record error classes at each depth
-      TP = c( TP, i_TP )
-      FP = c( FP, i_FP )
-      FN = c( FN, i_FN )
-      if( i_alpha_depth == i_center_raw )
+      if( df_tab[[ C_I_PRIMARY_GT ]][ i ] != df_tab[[ C_I_SECONDARY_GT ]][ i ] )
       {
-        i_sensitivity_at_center = i_sensitivity
-        i_specificity_at_center = i_specificity
+        vi_incorrect_common_calls = c( vi_incorrect_common_calls, i )
       }
     }
-  }
-  df_cur = data.frame( sensitivity=Sensitivity, specificity=Specificity, depth=vi_roc_depth_used, tp=TP, fp=FP, fn=FN )
-
-  # Go through indices for each ROC line, filter at depth in RNASEQ
-  pdf( file.path( str_output_dir, paste( basename( str_file ), "roc_cut_at_depth.pdf", sep = "_" ) ), useDingbats = FALSE )
-  plot.new()
-
-  # This is the ROC that cutts off calls less than the depth
-  vi_roc_ticks = c(0.0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0)
-  lines( x = vi_roc_ticks, y = vi_roc_ticks, col = "grey" )
-  i_roc_index = 0
-  # Ignore NA depth and exome depth less than I_ROC_TRUTH_MIN_DEPTH
-  vi_ignore = union( which( is.na( df_tab[[ C_I_PRIMARY_DEPTH ]] ) ), which( is.na( df_tab[[ C_I_SECONDARY_DEPTH ]] ) ) )
-  vi_ignore = union( vi_ignore, which( df_tab[[ C_I_PRIMARY_DEPTH ]] < I_ROC_TRUTH_MIN_DEPTH ) )
-
-  # These ROCs select on the secondary data depth
-  vi_selected_depths = func_select_even_roc_depths( vi_depths=df_tab[[ C_I_SECONDARY_DEPTH ]],
-                                                    vi_depths_indicies=setdiff( 1:nrow( df_tab ), vi_ignore ),
-                                                    i_number_of_selections=I_ROC_LINES )
-  vstr_roc_colors = rainbow( length( vi_selected_depths ) )
-  i_vi_mean_secondary_depth_not_ignored = round( mean( df_tab[[ C_I_SECONDARY_DEPTH ]][ -1 * vi_ignore ] ),2 )
-  # How many calls are looked at
-  i_roc_total_features = length( setdiff( 1:nrow(df_tab),vi_ignore ) )
-  i_roc_min_features = max( 1, round( i_roc_total_features * C_I_MIN_PERCENT_FEATURES ) )
-  for( i_cur_roc_depth in vi_selected_depths )
-  {
-    # Ignore the case of the secondary not at the depth level
-    vi_ignore = union( vi_ignore, which( df_tab[[ C_I_SECONDARY_DEPTH ]] < i_cur_roc_depth ) )
-    if( ( i_roc_total_features - length( vi_ignore )) >= i_roc_min_features )
+    print( paste( "Percent of the commonly calls features which do NOT agree in genotype. ",length( vi_incorrect_common_calls )," / ",length( vi_common_calls )," = ", round( length( vi_incorrect_common_calls ) / length( vi_common_calls ), 4 ) * 100, sep="" ) )
+    vi_secondary_calls = setdiff( vi_secondary_calls, vi_incorrect_common_calls )
+    # Classify calls
+    vi_TPR = c()
+    vi_FDR = c()
+    vi_TP = c()
+    vi_FP = c()
+    vi_FN = c()
+    vi_roc_secondary_calls = vi_secondary_calls
+    vi_roc_depths = sort( VI_ROC_DEPTHS, decreasing=FALSE )
+    for( i_cur_roc_depth in vi_roc_depths )
     {
-      i_roc_index = i_roc_index + 1
-      df_roc_results = func_calculate_roc_values( vi_primary_calls = vi_primary_calls,
-                               vi_secondary_calls = vi_secondary_calls, 
-                               vi_depth_indicies = setdiff( 1:nrow( df_tab), vi_ignore ),
-                               vi_depth = df_tab[[ C_I_SECONDARY_DEPTH ]] )
-      lines( x = c(0,df_roc_results[[ "PPV" ]],1), y = c(0,df_roc_results[[ "TPR" ]],1), col = vstr_roc_colors[ i_roc_index ], type = "b" )
-      write.table( df_roc_results, file = file.path( str_output_dir, paste( basename( str_file ), "data_roc", paste(i_cur_roc_depth,"_cut_at_depth.txt",sep=""), sep = "_" ) ) )
+      # Secondary calls that d not meet the depth criteria change
+      # TP -> FN, FN -> FN, FP -> TN
+      # Easiest thing is to remove them from the secondary calls, then this happens automagically
+      vi_roc_secondary_calls = intersect( vi_roc_secondary_calls, which( df_tab[[ C_I_SECONDARY_DEPTH ]] >= i_cur_roc_depth ) )
+      # Ignore the case of the secondary not at the depth level
+      df_roc_results = func_calculate_roc_values( vi_primary_calls = vi_primary_calls, vi_secondary_calls = vi_roc_secondary_calls )
+      # Store infor to write.
+      vi_TPR = c( vi_TPR, df_roc_results[[ "TPR" ]] )
+      vi_FDR = c( vi_FDR, df_roc_results[[ "FDR" ]] )
+      vi_TP = c( vi_TP, df_roc_results[[ "TP" ]] )
+      vi_FP = c( vi_FP, df_roc_results[[ "FP" ]] )
+      vi_FN = c( vi_FN, df_roc_results[[ "FN" ]] )
     }
+    # Update list of TPR and FDR
+    list_TPR[[paste(i_cur_exome_min_coverage)]] = vi_TPR
+    list_FDR[[paste(i_cur_exome_min_coverage)]] = vi_FDR
+    # Write data per exome depth
+    df_roc = data.frame( TPR=vi_TPR, FDR=vi_FDR, TP=vi_TP, FP=vi_FP, FN=vi_FN )
+    rownames( df_roc ) = vi_roc_depths
+    write.table( df_roc, file = file.path( str_output_dir, paste( basename( str_file ), paste("data_roc_exome_",i_cur_exome_min_coverage,".txt",sep=""), sep = "_" ) ) )
   }
-  title( main="TPR vs PPV varying by depth (Min 10% data)" )
-  legend( "bottomright", legend= c( vi_selected_depths[ 1 : i_roc_index ], "Random", paste( "Mean (", i_vi_mean_secondary_depth_not_ignored , ")",sep="" )), fill = c( vstr_roc_colors[ 1 : i_roc_index ], "grey","white" ), border=c(rep("black",i_roc_index+1),"white"), title="Min Depth" )
-  vstr_roc_ticks = paste( vi_roc_ticks )
-  axis( 2, at=vi_roc_ticks, labels=vstr_roc_ticks )
-  mtext( side = 2, "True Positive Rate", line = 2 )
-  axis( 1, at=vi_roc_ticks, labels=vstr_roc_ticks ) 
-  mtext( side = 1, "Positive Predictive Value", line = 2 )
-  dev.off()
-
-  # This is the ROC that cutts off calls less than the depth
   # Go through indices for each ROC line, filter at depth in RNASEQ
-  pdf( file.path( str_output_dir, paste( basename( str_file ), "roc_changed_at_depth.pdf", sep = "_" ) ), useDingbats = FALSE )
-  plot.new()
-  vi_roc_ticks = c(0.0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0)
-  lines( x = vi_roc_ticks, y = vi_roc_ticks, col = "grey" )
-  i_roc_index = 0
-  vstr_roc_colors = rainbow( length( vi_selected_depths ) )
-  # Ignore NA depth and exome depth less than I_ROC_TRUTH_MIN_DEPTH
-  vi_ignore = union( which( is.na( df_tab[[ C_I_PRIMARY_DEPTH ]] ) ), which( is.na( df_tab[[ C_I_SECONDARY_DEPTH ]] ) ) )
-  vi_ignore = union( vi_ignore, which( df_tab[[ C_I_PRIMARY_DEPTH ]] < I_ROC_TRUTH_MIN_DEPTH ) )
-  vi_roc_secondary_calls = vi_secondary_calls
-  for( i_cur_roc_depth in vi_selected_depths )
+  str_file_roc_rnaseq = file.path( str_output_dir, paste( basename( str_file ), "roc_rnaseq_depth.pdf", sep = "_" ) )
+  func_plot_roc( list_TPR=list_TPR, list_FDR=list_FDR, vi_depths=vi_roc_depths,
+                 i_mean_depth=i_mean_depth,
+                 str_pdf_file_name=str_file_roc_rnaseq,
+                 str_title=paste("TPR vs FDR varying Exome Min Cov ( RNA Seq Min Cov ",I_SELECTED_EVAL_MIN_COV,")",sep=""),
+                 str_legend_vary_title = "Min Exome Cov" )
+
+  # Go through RNASEQ min coverage settings
+  # Hold the TPR and FDR lines for each setting in a list
+  list_TPR = list()
+  list_FDR = list()
+  for( i_cur_rnaseq_min_coverage in VI_ROC_RNA_DEPTHS )
   {
-    # Change any secondary call under the depth to not a secondary call.
-    vi_roc_secondary_calls = setdiff( vi_roc_secondary_calls, which( df_tab[[ C_I_SECONDARY_DEPTH ]] < i_cur_roc_depth ) )
-    # Ignore the case of the secondary not at the depth level
-    if( ( i_roc_total_features - length( setdiff( vi_roc_secondary_calls, vi_ignore ))) >= i_roc_min_features )
+    print("RNASEQ min coverage")
+    print( i_cur_rnaseq_min_coverage)
+    # Set the initial problem state.
+    # Min Exome coverage
+    df_tab = df_orig
+    vi_remove_calls = which( df_orig[[ C_I_PRIMARY_DEPTH ]] < I_SELECTED_TRUTH_MIN_COV )
+    vi_remove_calls = unique( union( vi_remove_calls, which( df_orig[[ C_I_SECONDARY_DEPTH ]] < i_cur_rnaseq_min_coverage ) ) )
+    if( length( vi_remove_calls ) > 0 )
     {
-      i_roc_index = i_roc_index + 1
-      df_roc_results = func_calculate_roc_values( vi_primary_calls = vi_primary_calls,
-                               vi_secondary_calls = vi_roc_secondary_calls, 
-                               vi_depth_indicies = setdiff( 1:nrow( df_tab), vi_ignore ),
-                               vi_depth = df_tab[[ C_I_SECONDARY_DEPTH ]] )
-      lines( x = c(0,df_roc_results[[ "PPV" ]],1), y = c(0,df_roc_results[[ "TPR" ]],1), col = vstr_roc_colors[ i_roc_index ], type = "b" )
-      write.table( df_roc_results, file = file.path( str_output_dir, paste( basename( str_file ), "data_roc", paste(i_cur_roc_depth,"_changed_at_depth.txt",sep=""), sep = "_" ) ) )
+      df_tab = df_orig[-1*vi_remove_calls,]
     }
+    # Different measurements used later on
+    ### Primary calls
+    vi_primary_calls = which( !is.na(  df_tab[[ C_I_PRIMARY_GT ]] ) )
+    ## Secondary
+    ### Calls with or without depth
+    vi_secondary_calls = which( !is.na( df_tab[[ C_I_SECONDARY_GT ]] ) )
+    # Update the secondary calls, if the genotypes do no match the primary calls
+    # Remove from the secondary calls
+    vi_common_calls = intersect( vi_secondary_calls, vi_primary_calls )
+    vi_incorrect_common_calls = c()
+    for( i in vi_common_calls )
+    {
+      if( df_tab[[ C_I_PRIMARY_GT ]][ i ] != df_tab[[ C_I_SECONDARY_GT ]][ i ] )
+      {
+        vi_incorrect_common_calls = c( vi_incorrect_common_calls, i )
+      }
+    }
+    print( paste( "Percent of the commonly calls features which do NOT agree in genotype. ",length( vi_incorrect_common_calls )," / ",length( vi_common_calls )," = ", round( length( vi_incorrect_common_calls ) / length( vi_common_calls ), 4 ) * 100, sep="" ) )
+    vi_secondary_calls = setdiff( vi_secondary_calls, vi_incorrect_common_calls )
+    # Store calls
+    vi_TPR = c()
+    vi_FDR = c()
+    vi_TP = c()
+    vi_FP = c()
+    vi_FN = c()
+    vi_roc_secondary_calls = vi_secondary_calls
+    vi_roc_depths = sort( VI_ROC_DEPTHS, decreasing=FALSE )
+    for( i_cur_roc_depth in vi_roc_depths )
+    {
+      if( i_cur_roc_depth < i_cur_rnaseq_min_coverage )
+      {
+        # Store infor to write.
+        vi_TPR = c( vi_TPR, NA )
+        vi_FDR = c( vi_FDR, NA )
+        vi_TP = c( vi_TP, NA )
+        vi_FP = c( vi_FP, NA )
+        vi_FN = c( vi_FN, NA )
+      } else {
+        # Secondary calls that d not meet the depth criteria change
+        # TP -> FN, FN -> FN, FP -> TN
+        # Easiest thing is to remove them from the secondary calls, then this happens automagically
+        vi_roc_secondary_calls = intersect( vi_roc_secondary_calls, which( df_tab[[ C_I_SECONDARY_DEPTH ]] >= i_cur_roc_depth ) )
+        # Ignore the case of the secondary not at the depth level
+        df_roc_results = func_calculate_roc_values( vi_primary_calls = vi_primary_calls, vi_secondary_calls = vi_roc_secondary_calls )
+        # Store infor to write.
+        vi_TPR = c( vi_TPR, df_roc_results[[ "TPR" ]] )
+        vi_FDR = c( vi_FDR, df_roc_results[[ "FDR" ]] )
+        vi_TP = c( vi_TP, df_roc_results[[ "TP" ]] )
+        vi_FP = c( vi_FP, df_roc_results[[ "FP" ]] )
+        vi_FN = c( vi_FN, df_roc_results[[ "FN" ]] )
+      }
+    }
+    # Update list of TPR and FDR
+    list_TPR[[paste(i_cur_rnaseq_min_coverage)]] = vi_TPR
+    list_FDR[[paste(i_cur_rnaseq_min_coverage)]] = vi_FDR
+    # Write data per exome depth
+    df_roc = data.frame( TPR=vi_TPR, FDR=vi_FDR, TP=vi_TP, FP=vi_FP, FN=vi_FN )
+    rownames( df_roc ) = vi_roc_depths
+    write.table( df_roc, file = file.path( str_output_dir, paste( basename( str_file ), paste("data_roc_rnaseq_",i_cur_exome_min_coverage,".txt",sep=""), sep = "_" ) ) )
   }
-  title( main="TPR vs PPV varying by depth (Min 10% RNASEQ)" )
-  legend( "bottomright", legend= c( vi_selected_depths[ 1 : i_roc_index ], "Random", paste( "Mean (", i_vi_mean_secondary_depth_not_ignored , ")",sep="" )), fill = c( vstr_roc_colors[ 1 : i_roc_index ], "grey","white" ), border=c(rep("black",i_roc_index+1),"white"), title="Min Depth" )
-  vstr_roc_ticks = paste( vi_roc_ticks )
-  axis( 2, at=vi_roc_ticks, labels=vstr_roc_ticks )
-  mtext( side = 2, "True Positive Rate", line = 2 )
-  axis( 1, at=vi_roc_ticks, labels=vstr_roc_ticks ) 
-  mtext( side = 1, "Positive Predictive Value", line = 2 )
-  dev.off()
-
-  # Colors used in plotting
-  ## Fill
-  i_depth_used = length( vi_roc_depth_used )
-  i_depth_half = floor( i_depth_used /2 )
-  plt_blues = adjustcolor( colorRampPalette(brewer.pal( 9, "Blues" ))( i_depth_used ), alpha.f = 0.5 )
-  ## Borders
-  str_border_color = "#000000"
-  plt_border = sapply( c(round( ( i_depth_half:1 ) / i_depth_half, 2 ),rep(0, i_depth_used-i_depth_half)), function( x ) adjustcolor( str_border_color, alpha.f = x ) )
-
-  # At a given minimum, x = depth, (y) sensitivity vs ( x ) minimum read threshold
-  pdf( file.path( str_output_dir, paste( basename( str_file ), "sensitivity_min_read_coverage_norm.pdf", sep = "_" ) ), useDingbats = FALSE )
-  plot( df_cur$depth, df_cur$sensitivity, main = "Sensitivity vs Min Read Coverage", xlab = paste("Minimum Read Coverage (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), ylab = "Sensitivity", pch = 21, col = plt_border, bg = plt_blues ) 
-  abline( v = i_center_raw, col = "darkgoldenrod1" )
-  dev.off()
-
-  # At a given minimum, x = depth, (y) postivive predictive value vs ( x ) minimum read threshold
-  pdf( file.path( str_output_dir, paste( basename( str_file ), "ppv_min_read_coverage_norm.pdf", sep = "_" ) ), useDingbats = FALSE )
-  plot( df_cur$depth, df_cur$specificity, main = "Positive Predictive Value vs Min Read Coverage", xlab = paste("Minimum Read Coverage (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), ylab = "Positive Predictive Value", pch = 21, col = plt_border, bg = plt_blues ) 
-  abline( v = i_center_raw, col = "darkgoldenrod1" )
-  dev.off()
-
-  # Optimization plot
-  pdf( file.path( str_output_dir, paste( basename( str_file ), "optimize", C_STR_DETAIL_FILE, sep = "_" )), useDingbats = FALSE )
-  plot( df_cur$specificity, df_cur$sensitivity, main = paste("Sensitivity vs Positive Predictive Value (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), xlab = "Positive Predictive Value ( TP/TP+FP )", ylab = "Sensitivity (TP/TP+FN)", pch = 21, col = plt_border, bg = plt_blues )
-  lines( x = c( i_specificity_at_center, 1 ), y = c( i_sensitivity_at_center, i_sensitivity_at_center ), col = "darkgoldenrod1" )
-  lines( x = c( i_specificity_at_center, i_specificity_at_center ), y = c( 0, i_sensitivity_at_center ), col = "darkgoldenrod1" )
-  plot( df_cur$specificity, df_cur$sensitivity, main = "Sensitivity vs Positive Predictive Value", xlab = "Positive Predictive Value ( TP/TP+FP )", ylab = "Sensitivity (TP/TP+FN)", pch = 21, 
-                                                xlim = c( 0, max( df_cur$specificity ) ), ylim = c( 0, max( df_cur$sensitivity ) ), col = plt_border, bg = plt_blues )
-  lines( x = c( i_specificity_at_center, 1 ), y = c( i_sensitivity_at_center, i_sensitivity_at_center ), col = "darkgoldenrod1" )
-  lines( x = c( i_specificity_at_center, i_specificity_at_center ), y = c( 0, i_sensitivity_at_center ), col = "darkgoldenrod1" )
-  dev.off()
-
-  # Write measurements to file for troubleshooting
-  write.table( df_cur, file = file.path( str_output_dir, paste( basename( str_file ), "data.txt", sep = "_" ) ) )
+  # Go through indices for each ROC line, filter at depth in RNASEQ
+  str_file_roc_rnaseq = file.path( str_output_dir, paste( basename( str_file ), "roc_rnaseq_depth_2_vary_rna.pdf", sep = "_" ) )
+  func_plot_roc( list_TPR=list_TPR, list_FDR=list_FDR, vi_depths=vi_roc_depths,
+                 i_mean_depth=i_mean_depth,
+                 str_pdf_file_name=str_file_roc_rnaseq,
+                 str_title = paste("TPR vs FDR (Exome Min Cov ",I_SELECTED_TRUTH_MIN_COV,"/ RNA Seq Varying Cov)",sep=" " ),
+                 str_legend_vary_title = "Min RNA Cov")
 }
