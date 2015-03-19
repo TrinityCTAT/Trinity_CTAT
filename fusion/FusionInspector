@@ -71,8 +71,13 @@ class FusionInspector( ParentScript.ParentScript ):
         To know the variables available from command line look in the ParentScript in func_create_arguments.
         """
 
+        args_parsed.out_dirname = ensure_full_path(args_parsed.out_dirname)
         
-        cur_pipeline.func_mkdirs( [ args_parsed.out_dirname ] )
+        workdir = args_parsed.out_dirname + "/fi_workdir";
+        
+        cur_pipeline.func_mkdirs( [ args_parsed.out_dirname, workdir ] )
+
+        
         
         cur_pipeline.func_check_files_exist( [ args_parsed.left_fq_filename, args_parsed.right_fq_filename,
                                                args_parsed.gtf_filename, args_parsed.genome_fasta_filename,
@@ -100,6 +105,20 @@ class FusionInspector( ParentScript.ParentScript ):
                                                lstr_cur_products = [ mergedContig_fasta_filename, mergedContig_gtf_filename ] ) )
 
 
+        # symlink them in the workdir
+        workdir_mergedContig_fasta_filename = os.sep.join([workdir, args_parsed.out_prefix + ".fa"])
+        lcmd_commands.append( Command.Command( str_cur_command = "ln -s " + mergedContig_fasta_filename +
+                                               " " + workdir_mergedContig_fasta_filename,
+                                               lstr_cur_dependencies = [ mergedContig_fasta_filename ],
+                                               lstr_cur_products = [ workdir_mergedContig_fasta_filename ] ) )
+        
+        workdir_mergedContig_gtf_filename = os.sep.join([workdir, args_parsed.out_prefix + ".gtf"])
+        lcmd_commands.append( Command.Command( str_cur_command = "ln -s " + mergedContig_gtf_filename +
+                                               " " + workdir_mergedContig_gtf_filename,
+                                               lstr_cur_dependencies = [ mergedContig_gtf_filename ],
+                                               lstr_cur_products = [ workdir_mergedContig_gtf_filename ] ) )
+
+        
         ## build a cytoband file
         cytoband_file = os.sep.join([args_parsed.out_dirname, "cytoBand.txt"])
         cmdstr = str( os.sep.join([UTILDIR, "fasta_and_gtf_to_cytoband.pl"]) +
@@ -136,22 +155,22 @@ class FusionInspector( ParentScript.ParentScript ):
         ## align the reads against the fusion contig using GSNAP
         ########################################################
 
-        gsnap_bam_file = os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".gsnap.cSorted.bam"])
+        gsnap_bam_file = os.sep.join([workdir, args_parsed.out_prefix + ".gsnap.cSorted.bam"])
 
         
-        cmdstr = str(TRINITY_HOME + "/util/misc/run_GSNAP.pl --genome " + mergedContig_fasta_filename +
+        cmdstr = str(TRINITY_HOME + "/util/misc/run_GSNAP.pl --genome " + workdir_mergedContig_fasta_filename +
                      " --reads \"" +  args_parsed.left_fq_filename + " " + args_parsed.right_fq_filename + "\"" +
-                     " -G " + mergedContig_gtf_filename  + " --CPU 4 -N 20 --proper_pairs_only " +
-                     " --out_prefix " + os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".gsnap"]) )
+                     " -G " + workdir_mergedContig_gtf_filename  + " --CPU 4 -N 20 --proper_pairs_only " +
+                     " --out_prefix " + os.sep.join([workdir, args_parsed.out_prefix + ".gsnap"]) )
 
         lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
                                                lstr_cur_dependencies = [ args_parsed.left_fq_filename, args_parsed.right_fq_filename,
-                                                                         mergedContig_fasta_filename, mergedContig_gtf_filename ],
+                                                                         workdir_mergedContig_fasta_filename, workdir_mergedContig_gtf_filename ],
                                                lstr_cur_products = [ gsnap_bam_file ] ) )
 
 
         ## remove duplicate reads
-        gsnap_rmdup_bam_file = os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".gsnap.cSorted.rmdup.bam"])
+        gsnap_rmdup_bam_file = os.sep.join([workdir, args_parsed.out_prefix + ".gsnap.cSorted.rmdup.bam"])
 
         cmdstr = str("samtools rmdup " + gsnap_bam_file + " " + gsnap_rmdup_bam_file)
 
@@ -168,20 +187,22 @@ class FusionInspector( ParentScript.ParentScript ):
         ## align the reads against the fusion contig using HISAT
         ########################################################
 
-        cmdstr = str(TRINITY_HOME + "/util/misc/run_HISAT.pl --genome " + mergedContig_fasta_filename +
+        cmdstr = str(TRINITY_HOME + "/util/misc/run_HISAT.pl --genome " + workdir_mergedContig_fasta_filename +
                      " --reads \"" +  args_parsed.left_fq_filename + " " + args_parsed.right_fq_filename + "\"" +
-                     " -G " + mergedContig_gtf_filename + " --CPU 4 " + " -N 20 --no-mixed --no-discordant " + 
-                     " --out_prefix " + os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".hisat"]) )  
+                     " -G " + workdir_mergedContig_gtf_filename + " --CPU 4 " + " -N 20 --no-mixed --no-discordant " + 
+                     " --out_prefix " + os.sep.join([workdir, args_parsed.out_prefix + ".hisat"]) )  
         
-        hisat_bam_file = os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".hisat.cSorted.bam"])
+        hisat_bam_file = os.sep.join([workdir, args_parsed.out_prefix + ".hisat.cSorted.bam"])
         
         lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
                                                lstr_cur_dependencies = [ args_parsed.left_fq_filename,
-                                                                         args_parsed.right_fq_filename, mergedContig_gtf_filename],
+                                                                         args_parsed.right_fq_filename,
+                                                                         workdir_mergedContig_gtf_filename,
+                                                                         workdir_mergedContig_fasta_filename],
                                                lstr_cur_products = [ hisat_bam_file ] ) )
 
         # remove duplicate reads
-        hisat_rmdup_bam_file = os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".hisat.cSorted.rmdup.bam"])
+        hisat_rmdup_bam_file = os.sep.join([workdir, args_parsed.out_prefix + ".hisat.cSorted.rmdup.bam"])
 
         cmdstr = str("samtools rmdup " + hisat_bam_file + " " + hisat_rmdup_bam_file)
 
@@ -191,13 +212,13 @@ class FusionInspector( ParentScript.ParentScript ):
 
         
         
-        self.get_fusion_and_spanning_reads(args_parsed, mergedContig_gtf_filename, mergedContig_fasta_filename, hisat_rmdup_bam_file, lcmd_commands)
+        self.get_fusion_and_spanning_reads(args_parsed, workdir_mergedContig_gtf_filename, workdir_mergedContig_fasta_filename, hisat_rmdup_bam_file, lcmd_commands)
         
 
 
 
         ## coalesce the fusion info
-        fusion_summary_file = os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".fusion_preds.coalesced.summary"]) 
+        fusion_summary_file = os.sep.join([workdir, args_parsed.out_prefix + ".fusion_preds.coalesced.summary"]) 
 
         coalesce_cmd = str( os.sep.join([UTILDIR, "coalesce_junction_and_spanning_info.pl"]) + " " +
                             ",".join([gsnap_rmdup_bam_file + ".fusion_junction_info", hisat_rmdup_bam_file + ".fusion_junction_info"]) + " " +
@@ -282,30 +303,39 @@ class FusionInspector( ParentScript.ParentScript ):
 
 
 
-        ############################
-        # run genome-guided Trinity
-        ############################
-
         # consolidate all fusion-contig aligned reads into a single bam file
-        consolidated_bam_file = fusion_summary_file + ".consolidated"
+        consolidated_bam_file =  os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix  + ".consolidated"])
+        
         cmdstr = str(UTILDIR + "/consolidate_bams_and_uniq_reads.pl " +
-                     mergedContig_fasta_filename + " " +
+                     workdir_mergedContig_fasta_filename + " " +
                      ",".join([gsnap_rmdup_bam_file, hisat_rmdup_bam_file]) + " " +
                       consolidated_bam_file)
 
         consolidated_bam_file += ".cSorted.bam"
 
         lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
-                                               lstr_cur_dependencies = [ mergedContig_fasta_filename,
+                                               lstr_cur_dependencies = [ workdir_mergedContig_fasta_filename,
                                                                          gsnap_rmdup_bam_file,
                                                                          hisat_rmdup_bam_file ],
                                                lstr_cur_products = [ consolidated_bam_file ] ) )
-        
+
+
+        ############################
         # run genome-guided Trinity
-        trinity_out_dir = os.sep.join([args_parsed.out_dirname, "trinity_GG"])
+        ############################
+
+        workdir_consolidated_bam_file = os.sep.join([workdir, args_parsed.out_prefix  + ".consolidated.bam"])
+        lcmd_commands.append( Command.Command( str_cur_command = "ln -s " + consolidated_bam_file +
+                                               " " + workdir_consolidated_bam_file,
+                                               lstr_cur_dependencies = [ consolidated_bam_file ],
+                                               lstr_cur_products = [ workdir_consolidated_bam_file ] ) )
+
+
+
+        trinity_out_dir = os.sep.join([workdir, "trinity_GG"])
         trinity_fasta_filename = trinity_out_dir + "/Trinity-GG.fasta"
         
-        cmdstr = str(TRINITY_HOME + "/Trinity --genome_guided_bam " + consolidated_bam_file +
+        cmdstr = str(TRINITY_HOME + "/Trinity --genome_guided_bam " + workdir_consolidated_bam_file +
                      " --max_memory 20G --genome_guided_max_intron 1000000 --CPU 4 --min_glue 1 --min_contig_length 100 " +
                      " --output " + trinity_out_dir)
         
@@ -314,7 +344,8 @@ class FusionInspector( ParentScript.ParentScript ):
                                                lstr_cur_products = [ trinity_fasta_filename ] ) )
 
         ## Run TrinityGG, reconstruct fusion transcripts locally via de novo assembly
-        trinGG_fusion_gff3 = self.add_trinfusion_gmap_subpipe(args_parsed, mergedContig_fasta_filename, mergedContig_gtf_filename, trinity_fasta_filename, lcmd_commands)
+        trinGG_fusion_gff3 = self.add_trinfusion_gmap_subpipe(args_parsed, workdir_mergedContig_fasta_filename,
+                                                              workdir_mergedContig_gtf_filename, trinity_fasta_filename, lcmd_commands, workdir)
 
         # merge de novo assembly fusion results w/ read-based fusion results:
         fusion_summary_w_trinity = fusion_summary_file + ".wTrinityGG"
@@ -355,7 +386,7 @@ class FusionInspector( ParentScript.ParentScript ):
         ## Prep IGV fusion junction view
 
         frag_coords_file = consolidated_bam_file + ".frag_coords"
-        igv_junc_view_file = fusion_summary_file + ".igv.FusionJuncSpan"
+        igv_junc_view_file = os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".igv.FusionJuncSpan"])
         
         cmdstr = str(UTILDIR + "/fusion_summary_to_igv_JuncSpan_fmt.pl " + fusion_summary_file + " " +
                     frag_coords_file + " > " + igv_junc_view_file)
@@ -549,9 +580,9 @@ class FusionInspector( ParentScript.ParentScript ):
     
     
 
-    def add_trinfusion_gmap_subpipe(self, args_parsed, mergedContig_fasta_filename, mergedContig_gtf_filename, trinity_fasta_filename, lcmd_commands):
+    def add_trinfusion_gmap_subpipe(self, args_parsed, mergedContig_fasta_filename, mergedContig_gtf_filename, trinity_fasta_filename, lcmd_commands, workdir):
 
-        gmap_gff3_output_filename = os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".gmap_trinity_GG.gff3"])
+        gmap_gff3_output_filename = os.sep.join([workdir, args_parsed.out_prefix + ".gmap_trinity_GG.gff3"])
 
         cmdstr = str(TRINITY_HOME + "/util/misc/process_GMAP_alignments_gff3_chimeras_ok.pl " +
                      "--genome " + mergedContig_fasta_filename + " --transcripts " + trinity_fasta_filename +
@@ -602,6 +633,13 @@ class FusionInspector( ParentScript.ParentScript ):
 
         return (trinity_fusion_trans_filename) # trinGG fusion gff3 file w/ breakpoints encoded
 
+
+def ensure_full_path(file_or_dir):
+
+    if file_or_dir[0] != '/' :
+        file_or_dir = os.getcwd() + "/" + file_or_dir
+
+    return(file_or_dir)
 
                           
     
