@@ -109,7 +109,7 @@ main: {
                     push (@span_coordsets, $coords);
                 }
                 else {
-                    print STDERR "ERROR - no coordinates for $fusion_contig frag $spanning_frag\n";
+                    print STDERR "ERROR - no coordinates for $fusion_contig frag [$spanning_frag]\n";
                 }
             }
             
