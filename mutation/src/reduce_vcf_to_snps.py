@@ -18,6 +18,7 @@ import csv
 
 prsr_arguments = argparse.ArgumentParser( prog = "reduce_vcf_to_snps.py", description = "Extracts only snp entries from a vcf file", formatter_class = argparse.ArgumentDefaultsHelpFormatter )
 prsr_arguments.add_argument( "--reference", action = "store_true", dest = "f_reference_mode", help = "Reference vcf file mode. Does not check to see if the vcf feature passes." )
+prsr_arguments.add_argument( "--no_prefilter", action="store_true", dest="f_no_prefilter_mode", help="When the VCF file has not been filtered (incidcated by using this flag), this script will not require the SNPs to pass a filter")
 prsr_arguments.add_argument( "str_input_file", help = "Input vcf file." )
 prsr_arguments.add_argument( "str_output_file", help = "Output SNP vcf file." )
 args = prsr_arguments.parse_args()
@@ -53,7 +54,7 @@ if args.str_input_file:
 
         # If is not a reference file, there should be a call for passing or not.
         # Make sure the variant passes.
-        else:
+        elif not args.f_no_prefilter_mode:
           if not lstr_line[ I_FILTER_INDEX ].lower() == STR_PASS.lower():
             continue
 
@@ -74,7 +75,7 @@ if args.str_input_file:
           continue
         if not min( [ len( str_ref_token ) for str_ref_token in str_ref.split( "," ) ] ) == 1:
           continue
-    
+   
         # Store SNP
         lstr_vcf.append( STR_VCF_DELIMITER.join( lstr_line ) )
 
