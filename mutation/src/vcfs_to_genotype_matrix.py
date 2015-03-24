@@ -25,6 +25,7 @@ prsr_arguments = argparse.ArgumentParser( prog = "vcfs_to_genotype_matrix", desc
 # prsr_arguments.add_argument( "-l", "--list", dest = "str_output_list_file", default = "", action = "store", help = "Absolute path of output list file." )
 prsr_arguments.add_argument( "-m", "--matrix", dest = "str_output_matrix_file", default = "", action = "store", help = "Absolute path of output matrix file." )
 prsr_arguments.add_argument( "dirs", nargs = '+', help = "One or more directories of vcf files." )
+prsr_arguments.add_argument( "--no_prefilter", action="store_true", dest="f_no_prefilter_mode", help="When the VCF file has not been filtered (indicated by using this flag), this script will not require the SNPs to pass a filter")
 args = prsr_arguments.parse_args()
 
 # Holds samples info { str_sample : {location:genotype} }
@@ -66,8 +67,9 @@ for str_dir in args.dirs:
           continue
 
         # Skip if they do not pass
-        if not lstr_line[ I_FILTER_INDEX ] == STR_PASS:
-          continue
+        if not args.f_no_prefilter_mode:
+          if not lstr_line[ I_FILTER_INDEX ] == STR_PASS:
+            continue
 
         # Get genotype
         li_genotype = [ int( x ) for x in lstr_line[ I_GENOTYPE_INDEX ].split( CHR_ANNOT_DELIM )[ 0 ].split( CHR_GENOTYPE_DELIMITER ) ]

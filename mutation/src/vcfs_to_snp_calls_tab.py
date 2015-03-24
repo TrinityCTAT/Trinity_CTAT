@@ -57,6 +57,7 @@ prsr_arguments.add_argument( "-m", "--maf_reference", default = None, dest = "st
 prsr_arguments.add_argument( "-t", "--tumor", default = None, dest = "str_maf_tumor_sample", action = "store", help = "The specific sample of interest to pull from the maf files, required when the reference file is a maf file.")
 prsr_arguments.add_argument( "-d", "--count_reference", required = True, dest = "str_depth_reference_file", action = "store", help = "Input file that has per base read counts for the bam the reference vcf or maf was derived from.")
 prsr_arguments.add_argument( "-c", "--count", required = True, dest = "str_vcf_depth_file", action = "store", help = "Input file that has per base read counts. For the bam used to drived the second vcf file which is being compared to the reference vcf / maf file.")
+prsr_arguments.add_argument( "--no_prefilter", action="store_true", dest="f_no_prefilter_mode", help="When the VCF file has not been filtered (indicated by using this flag), this script will not require the SNPs to pass a filter")
 prsr_arguments.add_argument( dest = "str_output_file", action = "store", help = "Output tab file of snp calls." )
 args = prsr_arguments.parse_args()
 
@@ -114,7 +115,7 @@ def func_update_with_depth( str_depth_file, dict_to_update, i_column_to_update )
   return dict_to_update
 
 
-def func_read_VCF_file( str_file_name, dict_reference = None ):
+def func_read_VCF_file( str_file_name, dict_reference = None, f_no_prefilter_mode = False ):
 
   dict_return = {}
   f_reference = not dict_reference == None
@@ -135,8 +136,9 @@ def func_read_VCF_file( str_file_name, dict_reference = None ):
         continue
 
       # Make sure the line passes
-      if not lstr_line[I_FILTER_INDEX] == STR_PASS:
-        continue
+      if not f_no_prefilter_mode:
+        if not lstr_line[I_FILTER_INDEX] == STR_PASS:
+          continue
 
       # Skip monomorphic sites
       if lstr_line[ I_ALT_INDEX ] == CHR_MONOMORPHIC_REFERENCE:
@@ -172,7 +174,7 @@ dict_output = None
 if args.str_vcf_reference_file:
   
   # Read in the non-reference vcf file
-  dict_output = func_read_VCF_file( str_file_name = args.str_vcf_reference_file )
+  dict_output = func_read_VCF_file( str_file_name = args.str_vcf_reference_file, f_no_prefilter_mode=args.f_no_prefilter_mode )
 
 elif args.str_maf_file:
 
@@ -217,7 +219,7 @@ else:
   exit( 13 )
 
 # Read the not reference vcf
-dict_output = func_read_VCF_file( str_file_name = args.str_vcf_file, dict_reference = dict_output )
+dict_output = func_read_VCF_file( str_file_name = args.str_vcf_file, dict_reference = dict_output, f_no_prefilter_mode=args.f_no_prefilter_mode )
 
 # Dict to hold the read depth
 dict_output = func_update_with_depth( str_depth_file = args.str_depth_reference_file, dict_to_update = dict_output, i_column_to_update = 3 )
