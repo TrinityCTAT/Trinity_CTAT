@@ -256,7 +256,7 @@ class FusionInspector( ParentScript.ParentScript ):
         cmdstr = str("set -o pipefail && " + UTILDIR + "/retrieve_fusion_junction_reads_by_accession.pl " + summary_junction_reads_list
                      + " " + ",".join([gsnap_rmdup_bam_file + ".fusion_junc_reads.sam",
                                        hisat_rmdup_bam_file + ".fusion_junc_reads.sam"]) +
-                     " | samtools view -bT " + mergedContig_fasta_filename + " - | samtools sort -o - " + consolidated_junction_reads_bam)
+                     " | samtools view -bT " + mergedContig_fasta_filename + " - | samtools sort - " + consolidated_junction_reads_bam)
 
         consolidated_junction_reads_bam += ".bam"
         
@@ -286,7 +286,7 @@ class FusionInspector( ParentScript.ParentScript ):
         cmdstr = str("set -o pipefail && " + UTILDIR + "/retrieve_fusion_spanning_reads_by_accession.pl " + summary_spanning_reads_list
                      + " " + ",".join([gsnap_rmdup_bam_file + ".fusion_span_reads.sam",
                                        hisat_rmdup_bam_file + ".fusion_span_reads.sam"]) +
-                     " | samtools view -bT " + mergedContig_fasta_filename + " - | samtools sort -o - " + consolidated_spanning_reads_bam)
+                     " | samtools view -bT " + mergedContig_fasta_filename + " - | samtools sort - " + consolidated_spanning_reads_bam)
 
         consolidated_spanning_reads_bam += ".bam"
         
