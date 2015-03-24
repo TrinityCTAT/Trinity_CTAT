@@ -77,8 +77,8 @@ main: {
 
     
     ## Filter using homology data
-    print STDERR "-parsing blast homology info: $FUSION_ANNOTATOR_LIB/blast_matches.dat\n";
-    my %blast_pairs = &get_blast_pairs("$FUSION_ANNOTATOR_LIB/blast_matches.dat");
+    print STDERR "-parsing blast homology info: $FUSION_ANNOTATOR_LIB/blastn.gene_pairs.gz\n";
+    my %blast_pairs = &get_blast_pairs("$FUSION_ANNOTATOR_LIB/blastn.gene_pairs.gz");
     
     print STDERR "-labeling fusions, generating final report.\n";
 
@@ -184,7 +184,7 @@ sub get_blast_pairs {
 
     my %blast_pairs;
 
-    open (my $fh, $blast_pairs_file) or die "Error, cannot open file $blast_pairs_file";
+    open (my $fh, "gunzip -c $blast_pairs_file | ") or die "Error, cannot open file $blast_pairs_file";
     while (<$fh>) {
         chomp;
         my ($geneA, $geneB, @rest) = split(/\t/);
