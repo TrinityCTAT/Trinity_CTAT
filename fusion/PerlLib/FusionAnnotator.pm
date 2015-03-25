@@ -60,17 +60,26 @@ sub get_annotations {
 sub __get_distance_annotation {
     my ($geneA, $geneB) = @_;
 
-    my $chr_info_A = $IDX->get_value($geneA) or confess "Error, no value stored for gene: $geneA";
-    my $chr_info_B = $IDX->get_value($geneB) or confess "Error, no value stored for gene: $geneB";
+    my $chr_info_A = $IDX->get_value($geneA);
+    my $chr_info_B = $IDX->get_value($geneB);
     
     unless ($chr_info_A && $chr_info_B) {
         # cant compare them
         return(undef);
     }
 
-    my ($chrA, $lendA, $rendA) = split(/[:-]/, $chr_info_A);
-    my ($chrB, $lendB, $rendB) = split(/[:-]/, $chr_info_B);
 
+    #print STDERR "A: $chr_info_A\tB: $chr_info_B\n";
+    
+
+    my ($chrA, $coords_A) = split(/:/, $chr_info_A);
+    $coords_A =~ s/\,.*$//;
+    my ($lendA, $rendA) = split(/-/, $coords_A);
+    
+    my ($chrB, $coords_B) = split(/:/, $chr_info_B);
+    $coords_B =~ s/\,.*$//;
+    my ($lendB, $rendB) = split(/-/, $coords_B);
+    
     if ($chrA ne $chrB) {
         return(undef);
     }
