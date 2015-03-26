@@ -118,17 +118,62 @@ func_plot_roc = function( list_TPR, list_FDR, vi_depths, i_mean_depth, str_pdf_f
   axis( 1, at=VI_ROC_TICKS, labels=vstr_roc_ticks ) 
   mtext( side=1, "False Discovery Rate (FP/FP+TP)", line = 2 )
   dev.off()
+
+  # Plot the measurements over depth
+  # TPR over Depth
+  # FDR over Depth
+  vi_serial_ticks=vi_depths
+  vstr_serial_ticks=paste( vi_serial_ticks )
+  for( i_name_single_plots in 1:length( vstr_line_names ) )
+  {
+    str_file_path=dirname( str_pdf_file_name )
+    str_file_base=basename( str_pdf_file_name )
+    pdf( file.path( str_file_path, paste( "FDR", str_file_base,sep="_")), useDingbats=FALSE)
+    # Plot comparison line if given (FDR)
+    str_cur_depth=vstr_line_names[ i_name_single_plots ]
+    # Plot predictor line (FDR)
+    plot(x=vi_depths, y=list_FDR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_compare ], ylim=c(0,1) )
+    lines(x=vi_depths, y=list_FDR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_compare ], ylim=c(i_min_y,i_max_y ) )
+    points(x=vi_depths, y=list_FDR[[ vstr_line_names[ i_name_single_plots ]]], pch=24, col=vstr_exome_colors[ i_name_single_plots ], bg=vstr_roc_colors )
+    if( ! is.null( vi_depths_compare ) )
+    {
+      lines(x=vi_depths_compare, y=list_FDR_compare[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_compare ], lty=3 )
+      points(x=vi_depths_compare, y=list_FDR_compare[[ vstr_line_names[ i_name_single_plots ]]], pch=24, col=vstr_exome_colors[ i_name_single_plots ], bg=vstr_roc_colors )
+    }
+    title( "FDR vs Min RNA-Seq Coverage" )
+    # Legend
+    legend( "topright", legend=vstr_legend_labels_rna, fill=vstr_legend_fill_rna, border=vstr_legend_border_rna, title="Min RNA-Seq Cov", cex=.75 )
+    legend( "bottomleft", legend=vstr_legend_labels_exome, col=vstr_legend_col_exome, title=str_legend_vary_title, lty=vstr_legend_line_exome, lwd=2, cex=.75, pch=vstr_legend_shape_exome )
+    axis( 2, at=vi_serial_ticks, labels=vstr_serial_ticks )
+    mtext( side=1, "Min RNA-Seq Coverage", line = 2 )
+    axis( 1, at=vi_serial_ticks, labels=vstr_serial_ticks ) 
+    mtext( side=2, "False Discovery Rate (FP/FP+TP)", line = 2 )
+    dev.off()
+
+    pdf( file.path( str_file_path, paste( "TPR", str_file_base,sep="_")), useDingbats=FALSE)
+    # Plot comparison line if given (TPR)
+    str_cur_depth=vstr_line_names[ i_name_single_plots ]
+    # Plot predictor line (TPR)
+    plot(x=vi_depths, y=list_TPR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_compare ], ylim=c(0,1) )
+    lines(x=vi_depths, y=list_TPR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_compare ] )
+    points(x=vi_depths, y=list_TPR[[ vstr_line_names[ i_name_single_plots ]]], pch=24, col=vstr_exome_colors[ i_name_single_plots ], bg=vstr_roc_colors )
+    if( ! is.null( vi_depths_compare ) )
+    {
+      lines(x=vi_depths_compare, y=list_TPR_compare[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_compare ], lty=3 )
+      points(x=vi_depths_compare, y=list_TPR_compare[[ vstr_line_names[ i_name_single_plots ]]], pch=24, col=vstr_exome_colors[ i_name_single_plots ], bg=vstr_roc_colors )
+    }
+    title( "TPR vs Min RNA-Seq Coverage" )
+    # Legend
+    legend( "bottomleft", legend=vstr_legend_labels_rna, fill=vstr_legend_fill_rna, border=vstr_legend_border_rna, title="Vary RNA Cov", cex=.75 )
+    legend( "topright", legend=vstr_legend_labels_exome, col=vstr_legend_col_exome, title=str_legend_vary_title, lty=vstr_legend_line_exome, lwd=2, cex=.75, pch=vstr_legend_shape_exome )
+    vstr_roc_ticks=paste( VI_ROC_TICKS )
+    axis( 2, at=vi_serial_ticks, labels=vstr_serial_ticks )
+    mtext( side=1, "Min RNA-Seq Coverage", line = 2 )
+    axis( 1, at=vi_serial_ticks, labels=vstr_serial_ticks ) 
+    mtext( side=2, "True Positive Rate (TP/FP+FN)", line = 2 )
+    dev.off()
+  }
 }
-
-
-
-#  func_plot_seperate_metrics( list_TPR=ls_classes[[ "TPR" ]], list_FDR=ls_classes[[ "FDR" ]], vi_depths=ls_classes[[ "DEPTHS" ]],
-#                              list_TPR_compare=ls_classes_compare_vary_min_truth[["TPR"]], list_FDR_compare=ls_classes_compare_vary_min_truth[["FDR"]],
-#                              vi_depths_compare=ls_classes_compare_vary_min_truth[["DEPTH"]],
-#                              str_pdf_file_name=,
-#                              str_method_name=lsArgs$options$str_method_name, str_method_name_compare=lsArgs$options$str_method_name_compare,
-#                              str_title_fragement=paste( "( RNA Seq Min Cov ", I_SELECTED_PRED_MIN_COV, " )", sep="" ) )
-
 
 func_plot_seperate_metrics = function( list_TPR, list_FDR, vi_depths, str_pdf_file_name, str_title_fragement,
                                        str_method_name=NULL, str_method_name_compare=NULL, list_TPR_compare=NULL, list_FDR_compare=NULL, vi_depths_compare=NULL )
@@ -356,6 +401,9 @@ func_vary_coverage_and_measure_classes = function( df_data, vi_vary_truth, vi_va
 
 func_read_and_filter = function( str_input_file )
 {
+  print( "Reading file:" )
+  print( str_input_file )
+
   # id \t chr_position \t Ref_bas \t call_genotype \t depth \t chr_position \t ref_bas \t call_genotype \t depth
   # 1-4 is for the reference sample
   # 5-8 is for the secondary assay sample
@@ -419,9 +467,6 @@ if( ! is.null( lsArgs$options$str_compare_file ) )
 # Process each file
 for( str_file in v_str_files )
 {
-  print( "Processing file:" )
-  print( str_file )
-
   # Read in and filter perform initial filtering
   df_orig = func_read_and_filter( str_input_file=str_file )
 
