@@ -35,20 +35,9 @@ main: {
     
     
     $pipeliner->add_commands(
-        new Command("$INSTALL_DIR/trinity-fusion -T trinity_out_dir.Trinity.fasta --output Trinity_Fusion", 
+        new Command("$INSTALL_DIR/GMAP-Fusion -T trinity_out_dir.Trinity.fasta --output Trinity_Fusion", 
                     "Trinity_Fusion.ok") 
         ); 
-    
-    
-    ###############
-    ## GSNAP-Fusion 
-    ###############
-
-    $pipeliner->add_commands(
-        new Command("$INSTALL_DIR/gsnap-fusion reads.left.simPE.fq.gz reads.right.simPE.fq.gz Gsnap_Fusion",
-                    "Gsnap_Fusion.ok")
-        );
-    
     
     
     ##############
