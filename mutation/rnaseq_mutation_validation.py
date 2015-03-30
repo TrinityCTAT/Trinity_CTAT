@@ -157,6 +157,7 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                lstr_cur_dependencies = [ args_parsed.str_reduced_dbsnp_vcf ],
                                                lstr_cur_products = [ str_filtered_dbsnp_vcf ] ) )
 
+        # Create secondary files associate with each sample (vcf) including depth files and tab files.
         for str_sample_vcf in dict_sample_study:
 
             dict_sample_pairing = dict_sample_study[ str_sample_vcf ]
@@ -208,12 +209,6 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
 
             # Store filtered RNA vcf
             dict_sample_pairing[ STR_RNA_VCF_SNP ] = str_filtered_rna_vcf
-
-            # Annotate DNA VCF with a reference vcf ( in this case we will use DBSNP )
-#            str_annotated_vcf = os.path.splitext( str_filtered_vcf )[0] + "_annotated.vcf"
-#            str_annotated_vcf_command = os.path.join( self.str_src_dir, "annotate_vcf.py --dbsnp " + args_parsed.str_reduced_dbsnp_vcf + " " + str_annotated_vcf
-
-            # Annotate RNA VCF with reference vcf (in this case we use DBSNP )
 
             # Create tab files
             # Tab files for vcf files that include if common or somatic
@@ -286,87 +281,82 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                                          str_maf_not_rna_out, str_dna_rna_not_maf_out, str_maf_rna_not_dna_out,
                                                                          str_maf_dna_rna_out, str_dna_not_rna_out ] ) )
 
-        if( len( lstr_dna_vcfs_snps + lstr_rna_vcfs_snps ) > 2 ):
+        if( len( lstr_dna_vcfs_snps ) > 1 and len( lstr_rna_vcfs_snps ) > 1 ):
             # Create genotype matrix and list
             ## DNA and RNA
             str_genotype_matrix = os.path.join( args_parsed.str_file_base, "sample_dna_rna_genotype_matrix.txt" )
-            str_genotype_list = os.path.join( args_parsed.str_file_base, "sample_dna_rna_genotype_list.txt" )
-            str_cmd_create_genotype_matrix = os.path.join( self.str_src_dir, "vcfs_to_genotype_matrix.py" ) + " --list " + str_genotype_list + " --matrix " + str_genotype_matrix + " " + " ".join( lstr_rna_vcfs_snps + lstr_dna_vcfs_snps )
+            str_cmd_create_genotype_matrix = os.path.join( self.str_src_dir, "vcfs_to_genotype_matrix.py" ) + " --matrix " + str_genotype_matrix + " " + " ".join( lstr_rna_vcfs_snps + lstr_dna_vcfs_snps )
             lcmd_commands.append( Command.Command( str_cur_command = str_cmd_create_genotype_matrix,
                                                lstr_cur_dependencies = lstr_rna_vcfs_snps + lstr_dna_vcfs_snps,
-                                               lstr_cur_products = [ str_genotype_matrix, str_genotype_list ] ) )
+                                               lstr_cur_products = [ str_genotype_matrix ] ) )
             # Visualize genotype matrices
             ## DNA and RNA, restricted by type
-            str_genotype_matrix_restricted_png = os.path.join( self.str_figure_dir, "sample_dna_rna_genotype_matrix_restricted.png" )
+            str_genotype_matrix_restricted_pdf = os.path.join( STR_FIGURE_DIR, "sample_dna_rna_genotype_matrix_restricted.pdf" )
             str_genotype_distance_restricted_matrix = os.path.join( args_parsed.str_file_base, "sample_dna_rna_genotype_restricted.dist" )
             str_cmd_genotype_matrix_dna_rna_restricted = " ".join( [ os.path.join( self.str_src_dir, "make_dendrogram_generic.R" ), "--input_matrix", str_genotype_matrix, 
                                                       "--distance_function", str_jaccard_distance_restricted,
-                                                      "--output_png", str_genotype_matrix_restricted_png,
+                                                      "--output_pdf", str_genotype_matrix_restricted_pdf,
                                                       "--output_distance_matrix", str_genotype_distance_restricted_matrix ] ) 
             lcmd_commands.append( Command.Command( str_cur_command = str_cmd_genotype_matrix_dna_rna_restricted,
                                                lstr_cur_dependencies = [ str_genotype_matrix, str_jaccard_distance_restricted ],
-                                               lstr_cur_products = [ str_genotype_matrix_restricted_png, str_genotype_distance_restricted_matrix ] ) )
+                                               lstr_cur_products = [ str_genotype_matrix_restricted_pdf, str_genotype_distance_restricted_matrix ] ) )
             ## DNA and RNA not restricted by type
-            str_genotype_matrix_png = os.path.join( self.str_figure_dir, "sample_dna_rna_genotype_matrix.png" )
+            str_genotype_matrix_pdf = os.path.join( STR_FIGURE_DIR, "sample_dna_rna_genotype_matrix.pdf" )
             str_genotype_distance_matrix = os.path.join( args_parsed.str_file_base, "sample_dna_rna_genotype.dist" )
             str_cmd_genotype_matrix_dna_rna = " ".join( [ os.path.join( self.str_src_dir, "make_dendrogram_generic.R" ), "--input_matrix", str_genotype_matrix, 
                                                       "--distance_function", str_jaccard_distance,
-                                                      "--output_png", str_genotype_matrix_png,
+                                                      "--output_pdf", str_genotype_matrix_pdf,
                                                       "--output_distance_matrix", str_genotype_distance_matrix ] ) 
             lcmd_commands.append( Command.Command( str_cur_command = str_cmd_genotype_matrix_dna_rna,
                                                lstr_cur_dependencies = [ str_genotype_matrix, str_jaccard_distance ],
-                                               lstr_cur_products = [ str_genotype_matrix_png, str_genotype_distance_matrix ] ) )
+                                               lstr_cur_products = [ str_genotype_matrix_pdf, str_genotype_distance_matrix ] ) )
 
         if( len( lstr_rna_vcfs_snps ) > 1 ):
             ## RNA
-            str_genotype_rna_list = os.path.join( args_parsed.str_file_base, "sample_rna_genotype_lists.txt" )
             str_genotype_rna_matrix = os.path.join( args_parsed.str_file_base, "sample_rna_genotype_matrix.txt" )
-            str_cmd_create_genotype_rna_matrix = os.path.join( self.str_src_dir, "vcfs_to_genotype_matrix.py" ) + " --list " + str_genotype_rna_list + " --matrix " + str_genotype_rna_matrix + " " + " ".join( lstr_rna_vcfs_snps )
+            str_cmd_create_genotype_rna_matrix = os.path.join( self.str_src_dir, "vcfs_to_genotype_matrix.py" ) + " --matrix " + str_genotype_rna_matrix + " " + " ".join( lstr_rna_vcfs_snps )
             lcmd_commands.append( Command.Command( str_cur_command = str_cmd_create_genotype_rna_matrix,
                                                lstr_cur_dependencies = lstr_rna_vcfs_snps,
-                                               lstr_cur_products = [ str_genotype_rna_list, str_genotype_rna_matrix ] ) )
+                                               lstr_cur_products = [ str_genotype_rna_matrix ] ) )
         
             # Visualize genotype matrices
             ## RNA
-            str_genotype_rna_matrix_png = os.path.join( self.str_figure_dir, "sample_rna_genotype_matrix.png" )
+            str_genotype_rna_matrix_pdf = os.path.join( STR_FIGURE_DIR, "sample_rna_genotype_matrix.pdf" )
             str_genotype_rna_distance_matrix = os.path.join( args_parsed.str_file_base, "sample_rna_genotype.dist" )
             str_cmd_genotype_matrix_rna = " ".join( [ os.path.join( self.str_src_dir, "make_dendrogram_generic.R" ), "--input_matrix", str_genotype_rna_matrix, 
                                                       "--distance_function", str_jaccard_distance,
-                                                      "--output_png", str_genotype_rna_matrix_png,
+                                                      "--output_pdf", str_genotype_rna_matrix_pdf,
                                                       "--output_distance_matrix", str_genotype_rna_distance_matrix ] ) 
             lcmd_commands.append( Command.Command( str_cur_command = str_cmd_genotype_matrix_rna,
                                                lstr_cur_dependencies = [ str_genotype_rna_matrix, str_jaccard_distance ],
-                                               lstr_cur_products = [ str_genotype_rna_matrix_png, str_genotype_rna_distance_matrix ] ) )
+                                               lstr_cur_products = [ str_genotype_rna_matrix_pdf, str_genotype_rna_distance_matrix ] ) )
 
         # Explore false positive and negative rates
         # DNA_RNA
         str_DNA_RNA_figures = os.path.join( STR_FIGURE_DIR, "dna_rna" )
-        str_DNA_RNA_roc_group = os.path.join( str_DNA_RNA_figures, "DNA_RNA_group.pdf" )
-        lstr_DNA_RNA_roc = [ os.path.join( str_DNA_RNA_figures, "_".join( [ os.path.basename( str_file ), "ROC2_detail_validation.pdf" ] ) ) for str_file in lstr_dna_rna_tab ]
-        lstr_DNA_RNA_hist = [ os.path.join( str_DNA_RNA_figures, "_".join( [ os.path.basename( str_file ), "rates_hist_detail_validation.pdf" ] ) ) for str_file in lstr_dna_rna_tab ]
-        str_compare_DNA_RNA_cmd = os.path.join( self.str_src_dir, "visualize_mutation_depth_tab_files.R" ) + " -o " + str_DNA_RNA_figures + " -k DNA_RNA " + " ".join( lstr_dna_rna_tab )
+        lstr_DNA_RNA_roc_1 = [ os.path.join( str_DNA_RNA_figures, "_".join( [ os.path.basename( str_file ), "roc_truth_10_pred_vary.pdf" ] ) ) for str_file in lstr_dna_rna_tab ]
+        lstr_DNA_RNA_roc_2 = [ os.path.join( str_DNA_RNA_figures, "_".join( [ os.path.basename( str_file ), "roc_truth_vary_pred_1.pdf" ] ) ) for str_file in lstr_dna_rna_tab ]
+        str_compare_DNA_RNA_cmd = os.path.join( self.str_src_dir, "visualize_mutation_depth_tab_files.R" ) + " -o " + str_DNA_RNA_figures + " -k DNA_RNA --serial_plots " + " ".join( lstr_dna_rna_tab )
         lcmd_commands.append( Command.Command( str_cur_command = str_compare_DNA_RNA_cmd,
                                                lstr_cur_dependencies = lstr_dna_rna_tab,
-                                               lstr_cur_products = lstr_DNA_RNA_roc + [ str_DNA_RNA_roc_group ] ) )
+                                               lstr_cur_products = lstr_DNA_RNA_roc_1 + lstr_DNA_RNA_roc_2 ) )
         # MAF_DNA
         str_MAF_DNA_figures = os.path.join( STR_FIGURE_DIR, "maf_dna" )
-        str_MAF_DNA_roc_group = os.path.join( str_MAF_DNA_figures, "MAF_DNA_group.pdf" )
-        lstr_MAF_DNA_roc = [ os.path.join( str_MAF_DNA_figures, "_".join( [ os.path.basename( str_file ), "ROC2_detail_validation.pdf" ] ) ) for str_file in lstr_maf_dna_tab ]
-        lstr_MAF_DNA_hist = [ os.path.join( str_MAF_DNA_figures, "_".join( [ os.path.basename( str_file ), "rates_hist_detail_validation.pdf" ] ) ) for str_file in lstr_maf_dna_tab ]
-        str_compare_MAF_DNA_cmd = os.path.join( self.str_src_dir, "visualize_mutation_depth_tab_files.R" ) + " -o " + str_MAF_DNA_figures + " -k MAF_DNA " + " ".join( lstr_maf_dna_tab )
+        lstr_MAF_DNA_roc_1 = [ os.path.join( str_MAF_DNA_figures, "_".join( [ os.path.basename( str_file ), "roc_truth_10_pred_vary.pdf" ] ) ) for str_file in lstr_maf_dna_tab ]
+        lstr_MAF_DNA_roc_2 = [ os.path.join( str_MAF_DNA_figures, "_".join( [ os.path.basename( str_file ), "roc_truth_vary_pred_1.pdf" ] ) ) for str_file in lstr_maf_dna_tab ]
+        str_compare_MAF_DNA_cmd = os.path.join( self.str_src_dir, "visualize_mutation_depth_tab_files.R" ) + " -o " + str_MAF_DNA_figures + " -k MAF_DNA --serial_plots " + " ".join( lstr_maf_dna_tab )
         lcmd_commands.append( Command.Command( str_cur_command = str_compare_MAF_DNA_cmd,
                                                lstr_cur_dependencies = lstr_maf_dna_tab,
-                                               lstr_cur_products = lstr_MAF_DNA_roc + [ str_MAF_DNA_roc_group ] ) )
+                                               lstr_cur_products = lstr_MAF_DNA_roc_1 + lstr_MAF_DNA_roc_2 ) )
 
         # MAF_RNA
         str_MAF_RNA_figures = os.path.join( STR_FIGURE_DIR, "maf_rna" )
-        str_MAF_RNA_roc_group = os.path.join( str_MAF_RNA_figures, "MAF_RNA_group.pdf" )
-        lstr_MAF_RNA_roc = [ os.path.join( str_MAF_RNA_figures, "_".join( [ os.path.basename( str_file ), "ROC2_detail_validation.pdf" ] ) ) for str_file in lstr_maf_rna_tab ]
-        lstr_MAF_RNA_hist = [ os.path.join( str_MAF_RNA_figures, "_".join( [ os.path.basename( str_file ), "rates_hist_detail_validation.pdf" ] ) ) for str_file in lstr_maf_rna_tab ]
-        str_compare_MAF_RNA_cmd = os.path.join( self.str_src_dir, "visualize_mutation_depth_tab_files.R" ) + " -o " + str_MAF_RNA_figures + " -k MAF_RNA " + " ".join( lstr_maf_rna_tab )
+        lstr_MAF_RNA_roc_1 = [ os.path.join( str_MAF_RNA_figures, "_".join( [ os.path.basename( str_file ), "roc_truth_10_pred_vary.pdf" ] ) ) for str_file in lstr_maf_rna_tab ]
+        lstr_MAF_RNA_roc_2 = [ os.path.join( str_MAF_RNA_figures, "_".join( [ os.path.basename( str_file ), "roc_truth_vary_pred_1.pdf" ] ) ) for str_file in lstr_maf_rna_tab ]
+        str_compare_MAF_RNA_cmd = os.path.join( self.str_src_dir, "visualize_mutation_depth_tab_files.R" ) + " -o " + str_MAF_RNA_figures + " -k MAF_RNA --serial_plots " + " ".join( lstr_maf_rna_tab )
         lcmd_commands.append( Command.Command( str_cur_command = str_compare_MAF_RNA_cmd,
                                                lstr_cur_dependencies = lstr_maf_rna_tab,
-                                               lstr_cur_products = lstr_MAF_RNA_roc + [ str_MAF_RNA_roc_group ] ) )
+                                               lstr_cur_products = lstr_MAF_RNA_roc_1 + lstr_MAF_RNA_roc_2 ) )
 
         # Count mutations and plot
         # DNA
@@ -392,19 +382,7 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
         lcmd_commands.append( Command.Command( str_cur_command = str_key_mutations_cmd,
                                                lstr_cur_dependencies = lstr_maf_rna_tab + [ args_parsed.str_annotation_gtf ],
                                                lstr_cur_products = [ str_key_mutation_MAF_RNA_output_pdf ] ) )
-        # Make R report
-        # TODO
-        # Reduce dbSNP to genotype matrix
-        # TODO is this the right matrix ??????
-        #str_reduced_by_genotype_dbsnp_vcf = os.path.join( args_parsed.str_file_base, os.path.splitext( os.path.basename( args_parsed.str_reduced_dbsnp_vcf ) )[ 0 ] + "_genotype.vcf" )
-        #str_cmd_reduce_dbsnp = os.path.join( self.str_src_dir, "reduct_vcf_to_genotype_matrix_entries.py" ) + " -o " + str_reduced_by_genotype_dbsnp_vcf + " -m " + str_genotype_matrix + " " + args_parsed.str_reduced_dbsnp_vcf
-        # Make a list out of the vcf file
-        #  str_reduced_dbsnp_list_file = os.path.splitext( str_reduced_by_genotype_dbsnp_vcf )[ 0 ] + "_list.txt"
-        # str_cmd_make_dbsnp_list = os.path.join( STR_DIR, "dbsnp_vcf_to_list.py" ) + " -o " + str_reduced_dbsnp_list_file + " " + str_reduced_by_genotype_dbsnp_vcf
-        # Update the list with expression information
-        # TODO is this the right matrix ???????
-        # str_annotated_expression_file = os.path.join( args_parsed.str_file_base, "annotated_expression.txt" )
-        # str_cmd_add_expression = os.path.join( STR_DIR, "combine_annotations_expression_mutations.py" ) + " ".join( [ str_genotype_matrix, args_parsed.str_expression_matrix, str_reduced_by_genotype_dbsnp_vcf, args_parsed.str_annotation_gtf, str_annotated_expression_file ] )
+
         return lcmd_commands
 
 if __name__ == "__main__":

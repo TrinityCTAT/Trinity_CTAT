@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-library(colorRamps )
+library( colorRamps )
 library( RColorBrewer )
 library( ggplot2 )
 library( optparse )
@@ -28,13 +28,13 @@ I_SELECTED_TRUTH_MIN_COV = 10
 
 # Argument parsing
 pArgs = OptionParser( usage ="%prog -o output_dir file1.tab file2.tab" )
-pArgs = add_option( pArgs, c("-c","--compare"), type="character", action="store", dest="str_compare_file", default=NULL, help="Compares each of the given output files with the tab field given here as a reference.")
-pArgs = add_option( pArgs, c("-k","--title_key"), type="character", action="store", dest="str_title_key", default="Primary vs Secondary", help="Key identifying the contrast being visualized (eg \"DNA vs RNA\")")
-pArgs = add_option( pArgs, c("-o","--group_output_dir"), type="character", action="store", dest="str_output_dir", default=NULL, help="Output directory (required).")
-pArgs = add_option( pArgs, c("-t","--measure_transitions" ), type="logical", action="store_true", dest="f_calculate_transitions", default=FALSE, help="Turns on calculating nucleotide transitions, can take time to calculate.")
-pArgs = add_option( pArgs, c("--method" ), type="character", action="store", dest="str_method_name", default=NULL, help="The name of the method being evaluated (Should match the input file.")
+pArgs = add_option( pArgs, c( "-c","--compare" ), type="character", action="store", dest="str_compare_file", default=NULL, help="Compares each of the given output files with the tab field given here as a reference.")
+pArgs = add_option( pArgs, c( "-k","--title_key" ), type="character", action="store", dest="str_title_key", default="Primary vs Secondary", help="Key identifying the contrast being visualized (eg \"DNA vs RNA\")")
+pArgs = add_option( pArgs, c( "-o","--group_output_dir" ), type="character", action="store", dest="str_output_dir", default=NULL, help="Output directory (required).")
+pArgs = add_option( pArgs, c( "-t","--measure_transitions" ), type="logical", action="store_true", dest="f_calculate_transitions", default=FALSE, help="Turns on calculating nucleotide transitions, can take time to calculate.")
+pArgs = add_option( pArgs, c( "--method" ), type="character", action="store", dest="str_method_name", default=NULL, help="The name of the method being evaluated (Should match the input file.")
 pArgs = add_option( pArgs, c( "--method_compare" ), type="character", action="store", dest="str_method_name_compare", default=NULL, help="The name of the method that is used for comparison (should match the --compare file).")
-pArgs = add_option( pArgs, c("--serial_plots"), type="logical", action="store_true", dest="f_make_serial_plots", default=FALSE, help="After the sample space is defined, additionally plots each depth as a seperate plot.")
+pArgs = add_option( pArgs, c( "--serial_plots" ), type="logical", action="store_true", dest="f_make_serial_plots", default=FALSE, help="After the sample space is defined, additionally plots each depth as a seperate plot.")
 lsArgs = parse_args( pArgs, positional_arguments=TRUE )
 
 func_plot_roc = function( list_TPR, list_FDR, vi_depths, i_mean_depth, str_pdf_file_name, str_title, str_legend_vary_title,
@@ -52,7 +52,7 @@ func_plot_roc = function( list_TPR, list_FDR, vi_depths, i_mean_depth, str_pdf_f
       return( FALSE )
     }
   }
-  if( ! is.null( list_TPR_compare ) || ! is.null( list_FDR_compare ) )
+  if( length( list_TPR_compare ) > 0 || length( list_FDR_compare ) > 0 )
   {
     if( is.null( str_method_name ) || is.null( str_method_name_compare ) )
     {
@@ -132,12 +132,12 @@ func_plot_roc = function( list_TPR, list_FDR, vi_depths, i_mean_depth, str_pdf_f
     # Plot comparison line if given (FDR)
     str_cur_depth=vstr_line_names[ i_name_single_plots ]
     # Plot predictor line (FDR)
-    plot(x=vi_depths, y=list_FDR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_compare ], ylim=c(0,1) )
-    lines(x=vi_depths, y=list_FDR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_compare ], ylim=c(i_min_y,i_max_y ) )
+    plot(x=vi_depths, y=list_FDR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_single_plots ], ylim=c(0,1) )
+    lines(x=vi_depths, y=list_FDR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_single_plots ], ylim=c(0,1) )
     points(x=vi_depths, y=list_FDR[[ vstr_line_names[ i_name_single_plots ]]], pch=24, col=vstr_exome_colors[ i_name_single_plots ], bg=vstr_roc_colors )
     if( ! is.null( vi_depths_compare ) )
     {
-      lines(x=vi_depths_compare, y=list_FDR_compare[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_compare ], lty=3 )
+      lines(x=vi_depths_compare, y=list_FDR_compare[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_single_plots ], lty=3 )
       points(x=vi_depths_compare, y=list_FDR_compare[[ vstr_line_names[ i_name_single_plots ]]], pch=24, col=vstr_exome_colors[ i_name_single_plots ], bg=vstr_roc_colors )
     }
     title( "FDR vs Min RNA-Seq Coverage" )
@@ -154,12 +154,12 @@ func_plot_roc = function( list_TPR, list_FDR, vi_depths, i_mean_depth, str_pdf_f
     # Plot comparison line if given (TPR)
     str_cur_depth=vstr_line_names[ i_name_single_plots ]
     # Plot predictor line (TPR)
-    plot(x=vi_depths, y=list_TPR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_compare ], ylim=c(0,1) )
-    lines(x=vi_depths, y=list_TPR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_compare ] )
+    plot(x=vi_depths, y=list_TPR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_single_plots ], ylim=c(0,1) )
+    lines(x=vi_depths, y=list_TPR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_single_plots ] )
     points(x=vi_depths, y=list_TPR[[ vstr_line_names[ i_name_single_plots ]]], pch=24, col=vstr_exome_colors[ i_name_single_plots ], bg=vstr_roc_colors )
     if( ! is.null( vi_depths_compare ) )
     {
-      lines(x=vi_depths_compare, y=list_TPR_compare[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_compare ], lty=3 )
+      lines(x=vi_depths_compare, y=list_TPR_compare[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_single_plots ], lty=3 )
       points(x=vi_depths_compare, y=list_TPR_compare[[ vstr_line_names[ i_name_single_plots ]]], pch=24, col=vstr_exome_colors[ i_name_single_plots ], bg=vstr_roc_colors )
     }
     title( "TPR vs Min RNA-Seq Coverage" )
@@ -239,6 +239,9 @@ func_calculate_roc_values = function( vi_primary_calls, vi_secondary_calls )
   return( list_return )
 }
 
+# Remove features that did not call the same genotype
+# df_data: data frame with 8 entries
+# vi_indices, indices that are looked at
 func_filter_unequal_genotypes = function( df_data, vi_indicies )
 {
   vi_incorrect_calls = c()
@@ -300,7 +303,6 @@ func_vary_coverage_and_measure_classes = function( df_data, vi_vary_truth, vi_va
     f_measure_transitions = f_calculate_transitions
     for( i_cur_roc_depth in vi_roc_depths )
     {
-      print( paste( "Depth ",i_cur_roc_depth, sep = " " ) )
       if( i_cur_roc_depth < i_cur_pred_coverage )
       {
         # Store infor to write.
@@ -420,6 +422,16 @@ func_read_and_filter = function( str_input_file )
   {
     df_orig = df_orig[-1*vi_remove_calls,]
   }
+
+  # Set type
+  df_orig[[ C_I_PRIMARY_POS ]] = as.character( df_orig[[ C_I_PRIMARY_POS ]] )
+  df_orig[[ C_I_PRIMARY_REF ]] = as.character( df_orig[[ C_I_PRIMARY_REF ]] )
+  df_orig[[ C_I_PRIMARY_GT ]] = as.character( df_orig[[ C_I_PRIMARY_GT ]] )
+  df_orig[[ C_I_PRIMARY_DEPTH ]] = as.numeric( df_orig[[ C_I_PRIMARY_DEPTH ]] )
+  df_orig[[ C_I_SECONDARY_POS ]] = as.character( df_orig[[ C_I_SECONDARY_POS ]] )
+  df_orig[[ C_I_SECONDARY_REF ]] = as.character( df_orig[[ C_I_SECONDARY_REF ]] )
+  df_orig[[ C_I_SECONDARY_GT ]] = as.character( df_orig[[ C_I_SECONDARY_GT ]] )
+  df_orig[[ C_I_SECONDARY_DEPTH ]] = as.numeric( df_orig[[ C_I_SECONDARY_DEPTH ]] )
   return( df_orig )
 }
 
@@ -443,11 +455,7 @@ ls_classes_compare_vary_min_pred = list( "TPR"=NULL, "FDR"=NULL, "DEPTHS"=NULL )
 if( ! is.null( lsArgs$options$str_compare_file ) )
 {
   # Read in a reference file to compare against if given
-  df_compare = NA
-  if( ! is.null( lsArgs$options$str_compare_file ))
-  {
-    df_compare = func_read_and_filter( str_input_file=lsArgs$options$str_compare_file )
-  }
+  df_compare = func_read_and_filter( str_input_file=lsArgs$options$str_compare_file )
 
   # Vary the problem space holding the pred min coverage at 1 and then varying the truth sample space
   # Then look at min coverage for the pred in the resulting sample space
