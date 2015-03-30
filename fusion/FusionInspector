@@ -93,7 +93,7 @@ class FusionInspector( ParentScript.ParentScript ):
                       " --fusions " + args_parsed.chim_summary_file +
                       " --gtf " + args_parsed.gtf_filename +
                       " --genome_fa " + args_parsed.genome_fasta_filename +
-                      " --shrink_introns --max_intron_length 1000 --exclude_paralogs " +
+                      " --shrink_introns --max_intron_length 1000 " +
                       " --out_prefix " + os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix] ) )
         
         mergedContig_fasta_filename = os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".fa"])

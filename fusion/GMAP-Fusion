@@ -21,7 +21,7 @@ my $REF_GTF = "${FUSION_ANNOTATOR_LIB}/gencode.v19.rna_seq_pipeline.gtf";
 
 my $CPU = 4;
 my $MIN_TRANS_LEN_TRY_CHIM = 30;
-my $output_directory = "Trinity_Fusion";
+my $output_directory = "GMAP_Fusion";
 
 my $usage = <<__EOUSAGE__;
 
@@ -29,7 +29,7 @@ my $usage = <<__EOUSAGE__;
 #
 #  Required:
 #
-#  --transcripts|T <string>        :Trinity transcript fasta file
+#  --transcripts|T <string>        :transcript fasta file
 #
 #  Optional:
 #
@@ -88,7 +88,7 @@ if ($output_directory) {
 }
 
 
-my $UTILDIR = "$FindBin::Bin/util/trinity-fusion-util";
+my $UTILDIR = "$FindBin::Bin/util/gmap-fusion-util";
 
 main: {
 
@@ -126,9 +126,9 @@ main: {
     ## annotate the fusions, make a prettier report
     ###############################################
     
-    my $annotation_report_file = "Trinity-Fusion.report.xls";
-    $cmd = "$UTILDIR/write_TrinityFusion_annot_report.pl $chims_D0_outfile > $annotation_report_file";
-
+    my $annotation_report_file = "GMAP-Fusion.report.xls";
+    $cmd = "$UTILDIR/write_GMAP_Fusion_annot_report.pl $chims_D0_outfile > $annotation_report_file";
+    
     $pipeliner->add_commands(new Command($cmd, ".${annotation_report_file}.ok"));
     
 
