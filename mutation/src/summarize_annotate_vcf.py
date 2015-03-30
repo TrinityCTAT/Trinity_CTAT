@@ -29,6 +29,7 @@ class SummarizeAnnotateVCF( ParentScript ):
     # Parse command line arguments
     args_raw.prog = "Summarize_annotate_vcf.py"
     args_raw.add_argument( "--dbsnp", metavar = "dbsnp_reference_vcf", dest = "str_dbsnp_vcf", default = None, required = True, action="store", help = "Reference dbsnp file to use for annotation." )
+    args_raw.add_argument( "--reference_headers", metavar = "add_headers_file", dest = "str_add_headers_file", required = True, action="store", help = "A test file of headers to add (info being added in annotations needs a header." )
     args_raw.add_argument( metavar = "sample_vcfs", dest = "lstr_sample_files", default = None, required = True, action="store", nargs="+",  help = "Sample files to combine vcfs." )
     return( args_raw )
 
@@ -54,14 +55,16 @@ class SummarizeAnnotateVCF( ParentScript ):
 
     # Combine sample vcf files
     # bcftools merge --merge all --output_type z --output str_output_file.vcf.gz lstr_vcf_files
-    str_merge_command = ""
+    str_merge_command = " ".join( [ "bcftools", "merge", "--merge", "all", "--output_type", "z", "--output" + str_output_file.vcf.gz ] + lstr_vcf_files )
     lcmd_commands.append( Command.Command( str_cur_command = str_merge_command,
                      lstr_cur_dependencies = lstr_vcf_files,
                      lstr_cur_products = [ str_combined_vcf ] ) )
 
     # Annotate combined sample vcf files
     # bcftools annotate --annotations str_dbsnp_vcf -c
-    str_annotate_command = ""
+    # PM variant is clinicall precious (clinical and pubmed cited)
+    # NSF, NSM, NSN, COMMON, SAO, KGPROD, KGVALIDATED, MUT, WTD, VLD, RS, PMC
+    str_annotate_command = " ".join( [ "bcftools", "annotate", "--annotations", str_dbsnp_vcf, "--columns", "INFO/COMMON,INFO/NSF,INFO/NSM,INFO/NSN,INFO/SAO,INFO/KGPROD,INFO/KGVALIDATED,INFO/MUT,INFO/WTD.INFO/VLD,INFO/RS,INFO/PMC", "--header_lines", args_call.str_add_headers_file, args_call.str_output_file ] )
     lcmd_commands.append( Command.Command( str_cur_command = str_annotate_command,
                      lstr_cur_dependencies = [ str_dbsnp_vcf, str_combined_vcf ],
                      lstr_cur_products = [ args_call.str_output_file ] ) )
