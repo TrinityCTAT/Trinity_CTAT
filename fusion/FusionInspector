@@ -10,7 +10,7 @@ __email__ = "bhaas@broadinstitute.org"
 __status__ = "Development"
 
 
-__example__ = "FusionInspector --left_fq ../BT474--ACACA--STAC2.left.fq --right_fq ../BT474--ACACA--STAC2.right.fq --chim_summary_file fusion_pipe_compare.min2.dat --gtf /seq/regev_genome_portal/RESOURCES/human/Hg19/gencode.v19/gencode.v19.rna_seq_pipeline.gtf --genome_fa /seq/regev_genome_portal/RESOURCES/human/Hg19/Hg19.fa --out_dir myoutdir --out_prefix ladeda"
+__example__ = "FusionInspector --left_fq ../BT474--ACACA--STAC2.left.fq --right_fq ../BT474--ACACA--STAC2.right.fq --fusions fusion_gene_candidates.dat --out_dir myoutdir --out_prefix ladeda"
 
 
 import sciedpiper.Command as Command
@@ -88,7 +88,7 @@ class FusionInspector( ParentScript.ParentScript ):
                       " --fusions " + args_parsed.chim_summary_file +
                       " --gtf " + args_parsed.gtf_filename +
                       " --genome_fa " + args_parsed.genome_fasta_filename +
-                      " --shrink_introns --max_intron_length 1000 " +
+                      " --shrink_introns --max_intron_length 1000 --exclude_paralogs " +
                       " --out_prefix " + os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix] ) )
         
         mergedContig_fasta_filename = os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".fa"])
