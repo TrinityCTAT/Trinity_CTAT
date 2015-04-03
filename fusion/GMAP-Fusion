@@ -15,7 +15,7 @@ my $GENOME = "${FUSION_ANNOTATOR_LIB}/Hg19.fa";
 my $GMAP_DB_DIR = "${FUSION_ANNOTATOR_LIB}";
 my $GMAP_DB_NAME = "Hg19.fa.gmap";
 
-my $REF_GTF = "${FUSION_ANNOTATOR_LIB}/gencode.v19.rna_seq_pipeline.gtf";
+my $REF_GTF = "${FUSION_ANNOTATOR_LIB}/gencode.v19.annotation.gtf.exons";
 
 ## end of configuration
 
