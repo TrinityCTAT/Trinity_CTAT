@@ -887,10 +887,10 @@ def run( args_call, f_do_index = False ):
 
     # Add commands to annotate and summarize files
     str_annotated_vcf_file = os.path.splitext( dict_ret_variant_calling[ INDEX_FILE ] )[ 0 ] + "_annotated.vcf"
-    str_annotate_cmd = " ".join( [ "src" + os.sep + summarize_annotate_vcf.py, "--dbsnp", args_call.str_vcf_file,
+    str_annotate_cmd = " ".join( [ "src" + os.sep + "summarize_annotate_vcf.py", "--dbsnp", args_call.str_vcf_file,
                        "--output_file", str_annotated_vcf_file, dict_ret_variant_calling[ INDEX_FILE ] ] )
-    lcmd_command.append( Command.Command( str_cur_command = str_annotate_cmd,
-                                          lstr_cur_dependencies = [ args_call.str_vcf_file, args_call.str_annotation_headers ],
+    lcmd_commands.append( Command.Command( str_cur_command = str_annotate_cmd,
+                                          lstr_cur_dependencies = [ args_call.str_vcf_file ],
                                           lstr_cur_products = [ str_annotated_vcf_file ] ) )
 
     # Run commands including variant calling

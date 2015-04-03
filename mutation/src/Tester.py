@@ -8,13 +8,15 @@ __email__ = "ttickle@broadinstitute.org"
 __status__ = "Development"
 
 
+import FunctionalTester
 import ScriptTester
 import unittest
 
 
 # Calls all unit tests as a regression suite.
 suite = unittest.TestSuite()
-suite.addTest( ScriptTester.suite() )
+suite.addTest( FunctionalTester.suite() )
+#suite.addTest( ScriptTester.suite() )
 
 runner = unittest.TextTestRunner()
 runner.run( suite )
