@@ -210,7 +210,7 @@ main: {
                         
                         
                         
-                        print $outline_text . "\t" . join(";", @chim_align_descrs) . join(";", @at_exon_junctions) . "\n";
+                        print $outline_text . "\t" . join(";", @chim_align_descrs) . "\t" . join(";", @at_exon_junctions) . "\n";
                     
                     }
                 }
