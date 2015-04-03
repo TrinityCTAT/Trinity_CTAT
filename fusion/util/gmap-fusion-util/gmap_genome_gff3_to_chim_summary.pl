@@ -5,7 +5,7 @@ use warnings;
 
 use Data::Dumper;
 use Getopt::Long qw(:config no_ignore_case bundling pass_through);
-
+use List::Util qw (min max);
 
 
 my $usage = <<__EOUSAGE__;
@@ -15,10 +15,6 @@ my $usage = <<__EOUSAGE__;
 # Required:
 #
 #  --gmap_gff3 <string>        gmap gff3 alignment output
-#
-####################
-#
-# Optional:
 #
 #  --annot_gtf <string>        transcript structures in gtf file format.
 #
@@ -45,7 +41,7 @@ if ($help_flag) {
     die $usage;
 }
 
-unless ($gmap_gff3_file) {
+unless ($gmap_gff3_file && $annot_gtf_file) {
     die $usage;
 }
 
@@ -54,65 +50,62 @@ my %genes;
 
 main: {
 
-    if ($annot_gtf_file) {
-        open (my $fh, $annot_gtf_file) or die "Error, cannot open file $annot_gtf_file";
-        while (<$fh>) {
-            chomp;
-            unless (/\w/) { next; }
-            if (/^\#/) { next; }
-            s/^>//;
-            my @x = split(/\t/);
-            
-            unless ($x[2] eq "exon") { next; }
-            
-            my $info = $x[8];
-            $info =~ /gene_id \"([^\"]+)/ or die "Error, cannot extract gene_id from $_ [specifically from: $info]";
-            my $gene_id = $1 or die "Error, no gene_id from $_";
-
-            if ($info =~ /gene_name \"([^\"]+)/) {
-                # use gene name instead
-                $gene_id = $1;
-            }
-            
-            $info =~ /transcript_id \"([^\"]+)/ or die "Error, cannot extract transcript_id from $_";
-            my $transcript_id = $1 or die "Error, no trans id from $_";
-            
-            my ($lend, $rend) = ($x[3], $x[4]);
-            my $chr = $x[0];
-            my $orient = $x[6];
-            
-            
-            push (@{$genes{$chr}->{$gene_id}->{$transcript_id}}, { 
-                gene => $gene_id,
-                transcript => $transcript_id,
-                chr => $chr,
-                lend => $lend,
-                rend => $rend,
-                orient => $orient,
-            }
-                  );
-            
-
-
+    print STDERR "-parsing $annot_gtf_file\n";
+    open (my $fh, $annot_gtf_file) or die "Error, cannot open file $annot_gtf_file";
+    while (<$fh>) {
+        chomp;
+        unless (/\w/) { next; }
+        if (/^\#/) { next; }
+        s/^>//;
+        my @x = split(/\t/);
+        
+        unless ($x[2] eq "exon") { next; }
+        
+        my $info = $x[8];
+        $info =~ /gene_id \"([^\"]+)/ or die "Error, cannot extract gene_id from $_ [specifically from: $info]";
+        my $gene_id = $1 or die "Error, no gene_id from $_";
+        
+        if ($info =~ /gene_name \"([^\"]+)/) {
+            # use gene name instead
+            $gene_id = $1;
         }
-        close $fh;
+        
+        $info =~ /transcript_id \"([^\"]+)/ or die "Error, cannot extract transcript_id from $_";
+        my $transcript_id = $1 or die "Error, no trans id from $_";
+        
+        my ($lend, $rend) = ($x[3], $x[4]);
+        my $chr = $x[0];
+        my $orient = $x[6];
+        
+        
+        push (@{$genes{$chr}->{$gene_id}->{$transcript_id}}, { 
+            
+            gene => $gene_id,
+            transcript => $transcript_id,
+            chr => $chr,
+            lend => $lend,
+            rend => $rend,
+            orient => $orient,
+              }
+            );
+        
+        
+        
+    }
+    close $fh;
     
         
-        
-
-    }
-
     
     my %target_to_aligns;
-
-    open (my $fh, $gmap_gff3_file) or die $!;
+    print STDERR "-loading alignment data\n";
+    open ($fh, $gmap_gff3_file) or die $!;
     while (<$fh>) {
         if (/^\#/) { next; }
         unless (/\w/) { next; }
 
         chomp;
-        my ($hit_acc, $filename, $type, $lend, $rend, $per_id, $orient, $dot, $info) = split(/\t/);
-
+        my ($chr, $filename, $type, $lend, $rend, $per_id, $orient, $dot, $info) = split(/\t/);
+        
         my %info_hash;
         foreach my $keyval (split(/;/, $info)) {
             my ($key, $val) = split(/=/, $keyval);
@@ -123,7 +116,7 @@ main: {
         
         my ($target, $range_lend, $range_rend) = split(/\s+/, $info_hash{Target});
 
-        push (@{$target_to_aligns{$target}->{$alignment_ID}}, { hit => $hit_acc,
+        push (@{$target_to_aligns{$target}->{$alignment_ID}}, { chr => $chr,
                                                                 lend => $lend,
                                                                 rend => $rend,
                                                                 orient => $orient,
@@ -136,7 +129,10 @@ main: {
     }
     close $fh;
 
+
     
+
+    print STDERR "-mapping candidate fusion transcripts to gene annotations.\n";
     ## header
     print join("\t", "#transcript", "num_alignments", "align_descr(s)", "[chim_annot_mapping]") . "\n";
     
@@ -154,24 +150,22 @@ main: {
         }
         
 
-        my $align_text = "$target";
+        my $outline_text = "$target";
 
-        @spans = sort {$a->{range_lend}<=>$b->{range_lend}} @spans;
-        
         my $num_aligns = scalar @spans;
-        $align_text .= "\t$num_aligns";
+        $outline_text .= "\t$num_aligns";
 
         my $prev_align;
-        my $prev_align_text = "";
 
         my @chim_align_descrs;
         my @at_exon_junctions;
         
+        
+        @spans = sort {$a->{range_lend}<=>$b->{range_lend}} @spans; # order spans according to transcript coordinates
+            
         foreach my $align (@spans) {
-            my $hit = $align->{chr};
-            
-            
-                    
+            my $chr = $align->{chr};
+                                
             my $lend = $align->{lend};
             my $rend = $align->{rend};
 
@@ -181,96 +175,86 @@ main: {
             my $per_id = $align->{per_id};
             
 
-            my $align_text = "[$hit:($range_lend-$range_rend)$lend-$rend ($orient) $per_id\%]";
+            my $align_text = "[$chr:($range_lend-$range_rend)$lend-$rend ($orient) $per_id\%]";
+            $align->{align_text} = $align_text;
             
             if ($prev_align) {
                 
-                @chim_align_descrs = ($prev_align_text, $align_text);
+                my ($left_align, $right_align) = ($prev_align, $align);
                 
-                if (%genes) {
-                    my ($left_exon, $left_delta, $left_breakpoint) = &examine_exon_junction("left", $prev_align);
-                    my ($right_exon, $right_delta, $right_breakpoint) = &examine_exon_junction("right", $align);
-                    
+                my @left_possibilities = &map_to_annotated_exon_junctions($left_align, 'left');
 
-                    if ($left_exon && $right_exon) {
+                my @right_possibilities = &map_to_annotated_exon_junctions($right_align, 'right');
+                
+                foreach my $left_possibility (@left_possibilities) {
+
+                    foreach my $right_possibility (@right_possibilities) {
                         
-                        my $left_exon_orient = $left_exon->{orient};
-                        my $right_exon_orient = $right_exon->{orient};
+                        my ($left_entry, $right_entry) = ($left_possibility, $right_possibility);
                         
-                        my $prev_align_orient = $prev_align->{orient};
-                        my $curr_align_orient = $align->{orient};
-                        
-                        ## both orient conflict, swap them (transcript is in antisense orientation)
-                        if ($left_exon_orient ne $prev_align_orient && $right_exon_orient ne $curr_align_orient) {
-                            
-                            push (@at_exon_junctions, 
-                                  $right_exon->{gene}, $right_delta, $right_breakpoint,                                   
-                                  $left_exon->{gene}, $left_delta, $left_breakpoint,
-                                  join("--", $right_exon->{gene}, $left_exon->{gene}));
-                            
-                            @chim_align_descrs = reverse @chim_align_descrs;
+                        unless ($left_entry->{sense_or_antisense} eq $right_entry->{sense_or_antisense}) {
+                            next;
                         }
-                        else {
-                            
-                            push (@at_exon_junctions, 
-                                  $left_exon->{gene}, $left_delta, $left_breakpoint,
-                                  $right_exon->{gene}, $right_delta, $right_breakpoint,
-                                  join("--", $left_exon->{gene}, $right_exon->{gene}));
+
+                        if ($left_entry->{sense_or_antisense} eq 'antisense') {
+                            # swap em
+                            ($left_entry, $right_entry) = ($right_entry, $left_entry);
                         }
-                                                
+                    
+                        
+                        my @at_exon_junctions = ($left_entry->{gene_id}, $left_entry->{delta}, $left_entry->{pt_align}, 
+                                                 $right_entry->{gene_id}, $right_entry->{delta}, $right_entry->{pt_align},
+                                                 join("--", $left_entry->{gene_id}, $right_entry->{gene_id}));
+                        
+                        my @chim_align_descrs = ($left_entry->{alignment}->{align_text}, $right_entry->{alignment}->{align_text});
+                        
+                        
+                        
+                        print $outline_text . "\t" . join(";", @chim_align_descrs) . join(";", @at_exon_junctions) . "\n";
+                    
                     }
                 }
             }
             
-
             $prev_align = $align;
-            $prev_align_text = $align_text;
             
         }
-        
-        $align_text .= "\t" . join(";", @chim_align_descrs);
-        
-        unless (@at_exon_junctions) {
-            @at_exon_junctions = ('.'); # placeholder
-        }
-        
-        $align_text .= "\t" . join(";", @at_exon_junctions);
-        
-        
-        print $align_text . "\n";
     }
-        
-
+    
+    
     exit(0);
 }
 
 ####
-sub examine_exon_junction {
-    my ($side_of_junction, $align_struct) = @_;
-
-    my $chr = $align_struct->{chr};
-    my $lend = $align_struct->{lend};
-    my $rend = $align_struct->{rend};
-    my $orient = $align_struct->{orient};
+sub map_to_annotated_exon_junctions {
+    my ($align_struct, $left_or_right) = @_;
     
-    my $coord_to_examine; # lend or rend, depends on side_of_junction and orient
-    if ($side_of_junction eq 'left') {
-        if ($orient eq '+') {
-            $coord_to_examine = "rend";
-        }
-        else {
-            $coord_to_examine = "lend";
-        }
-    }
-    elsif ($side_of_junction eq 'right') {
-        if ($orient eq '+') {
-            $coord_to_examine = 'lend';
-        }
-        else {
-            $coord_to_examine = 'rend';
-        }
-    }
-
+    my $chr = $align_struct->{chr};
+    my $align_lend = $align_struct->{lend};
+    my $align_rend = $align_struct->{rend};
+    my $align_orient = $align_struct->{orient};
+    
+    my ($align_end5, $align_end3) = ($align_orient eq '+') ? ($align_lend, $align_rend) : ($align_rend, $align_lend);
+    
+    # two options, depending on sense or antisense alignment (antisense orientation just an artifiact of DS trans assembly)
+    
+    #          L                               R
+    #        ------> gt...................ag -------->              
+    #
+    #   |=================>              |==================>
+    #         gene A                            gene B
+    #
+    #        <------ ......................<---------
+    #           R                               L
+    # 
+    #  if left:
+    #      can be donor matching sense of geneA
+    #      can be acceptor matching antisense of geneB
+    #  if right:
+    #      can be acceptor for sense geneB
+    #      can be donor matching antisesnse of geneA
+    #
+    
     my @hits;
 
     foreach my $gene_id (keys %{$genes{$chr}}) {
@@ -280,6 +264,14 @@ sub examine_exon_junction {
             my @exons = @{$genes{$chr}->{$gene_id}->{$transcript_id}};
             
             @exons = sort {$a->{lend}<=>$b->{lend}} @exons;
+
+            my $trans_lend = $exons[0]->{lend};
+            my $trans_rend = $exons[$#exons]->{rend};
+            
+            unless ($align_lend < $trans_rend && $trans_rend > $align_lend) { 
+                # no overlap
+                next;
+            }
             
             ## exclude first and last exons, only looking at internal boundaries
             $exons[0]->{terminal} = 1;
@@ -294,22 +286,68 @@ sub examine_exon_junction {
             
                         
             foreach my $exon (@exons) {
-                if ($exon->{lend} < $rend && $exon->{rend} > $lend ) {
+                
+                my $exon_lend = $exon->{lend};
+                my $exon_rend = $exon->{rend};
+                my $exon_orient = $exon->{orient};
+                
+                my ($exon_end5, $exon_end3) = ($exon_orient eq '+') ? ($exon_lend, $exon_rend) : ($exon_rend, $exon_lend);
+                
 
-                    #push (@hits, "$gene_id:" . $exon->{lend} . "-" . $exon->{rend});
+                if ($exon_lend < $align_rend && $exon_rend > $align_lend ) {
+                    # annotated exon overlaps transcript
                     
-                    my $delta = abs($align_struct->{$coord_to_examine} - $exon->{$coord_to_examine});
+                    my $sense_or_antisense;
+                    my $exon_coord;
+                    my $align_coord;
+                    
+                    # sense alignment matching
+                    if ($exon_orient eq $align_orient) {
+                        
+                        $sense_or_antisense = 'sense';
+                        
+                        if ($left_or_right eq 'left') {
+                            # examine donor sites
+                            $exon_coord = $exon_end3;
+                            $align_coord = $align_end3;
+                        }
+                        elsif ($left_or_right eq 'right') {
+                            # examine acceptor sites
+                            $exon_coord = $exon_end5;
+                            $align_coord = $align_end5;
+                        }
+                    }
+                    else {
+                        # antisense orientation to gene
+                        
+                        $sense_or_antisense = 'antisense';
+                        
+                        if ($left_or_right eq 'left') {
+                            # examine donor sites
+                            $align_coord = $align_end3;
+                            $exon_coord = $exon_end5;
+                        }
+                        elsif ($left_or_right eq 'right') {
+                            $align_coord = $align_end5;
+                            $exon_coord = $exon_end3;
+                        }    
+                    }
+                    
+                    my $delta = abs($align_coord - $exon_coord);
                     
                     
                     push (@hits, { delta => $delta,
                                    exon => $exon,
-
+                                   
+                                   gene_id => $exon->{gene},
+                                   
                                    # below for debugging
-                                   pt_align => $align_struct->{$coord_to_examine},
-                                   pt_exon => $exon->{$coord_to_examine},
-                                   side_of_junction => $side_of_junction,
-                                   orient => $orient,
-                                   coord_to_examine => $coord_to_examine,
+                                   pt_align => $align_coord,
+                                   pt_exon => $exon_coord,
+                                   sense_or_antisense => $sense_or_antisense,
+                                   
+                                   # align struct
+                                   alignment => $align_struct,
                                    
                                });
                     
@@ -320,38 +358,33 @@ sub examine_exon_junction {
     }
 
     
+    my @hits_ret;
+    
     if (@hits) {
 
         #use Data::Dumper;  print Dumper(\@hits); print Dumper($align_struct);
-
+        
         @hits = sort {$a->{delta}<=>$b->{delta}} @hits;
-        my $top_hit = shift @hits;
-        my $exon = $top_hit->{exon};
-        my $delta = $top_hit->{delta};
-        my $breakpoint = $top_hit->{pt_align};
-
-        return($exon, $delta, "$chr:$breakpoint");
+        
+        #use Data::Dumper;
+        #print STDERR Dumper(\@hits);
+        
+        # only best per gene
+        my %seen;
+        
+        foreach my $hit (@hits) {
+            my $gene_id = $hit->{gene_id};
+            if (! $seen{$gene_id}) {
+                push (@hits_ret, $hit);
+                $seen{$gene_id} = 1;
+            }
+        }
         
     }
-    else {
-        return();
-    }
     
+    return(@hits_ret);
     
-        
 }
-
-####
-sub min {
-    my @vals = @_;
-
-    @vals = sort {$a<=>$b} @vals;
-    
-    my $min_val = shift @vals;
-
-    return($min_val);
-}
-
 
 
 ####
@@ -378,7 +411,7 @@ sub convert_to_span {
         $sum_per_id += $len * $exon->{per_id};
         
 
-        my $exon_chr = $exon->{hit};
+        my $exon_chr = $exon->{chr};
         if ($chr && $exon_chr ne $chr) {
             die "inconsistent chr assignments";
         }
