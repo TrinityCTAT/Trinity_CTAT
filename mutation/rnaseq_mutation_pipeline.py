@@ -514,7 +514,7 @@ def func_do_rnaseq_caller_gatk( args_call, str_input_bam, str_unique_id, str_pro
                                             lstr_cur_dependencies = [ args_call.str_genome_fa, str_variants_file ],
                                             lstr_cur_products = [ str_filtered_variants_file ] ).func_set_dependency_clean_level( [ str_variants_file ], Command.CLEAN_NEVER )
 
-    return { INDEX_CMD = [ cmd_haplotype_caller, cmd_variant_filteration ], INDEX_FILE = str_filtered_variants_file }
+    return { INDEX_CMD : [ cmd_haplotype_caller, cmd_variant_filteration ], INDEX_FILE : str_filtered_variants_file }
 
 
 def func_do_variant_calling_gatk( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur ):
@@ -550,7 +550,7 @@ def func_do_variant_calling_gatk( args_call, str_align_file, str_unique_id, str_
     dict_rnaseq_gatk = func_do_rnaseq_caller_gatk( args_call, dict_recalibration[ INDEX_FILE ], str_unique_id, str_project_dir, str_tmp_dir )    
     lcmd_gatk_variants_commands.extend( dict_rnaseq_gatk[ INDEX_CMD ]  )
 
-    return { INDEX_CMD = lcmd_gatk_variants_commands, INDEX_FILE = dict_rnaseq_gatk[ INDEX_FILE ] }
+    return { INDEX_CMD : lcmd_gatk_variants_commands, INDEX_FILE : dict_rnaseq_gatk[ INDEX_FILE ] }
 
 
 def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur ):
@@ -676,7 +676,7 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
                                             lstr_cur_products = [ str_filtered_variants_file ] ).func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER  )
 
     ls_cmds.extend( [ cmd_haplotype_caller, cmd_variant_filteration ] )
-    return { INDEX_CMD = ls_cmds, INDEX_FILE = str_filtered_variants_file }
+    return { INDEX_CMD : ls_cmds, INDEX_FILE : str_filtered_variants_file }
 
 
 def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur ):
@@ -742,7 +742,7 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
     lcmd_samtools_variants_commands.extend( [ Command.Command( str_cur_command = " ".join( [ "samtools mpileup -ugf", args_call.str_genome_fa, str_bam_sorted, "| bcftools call -mv -Ov >", str_variants_vcf ] ),
                                             lstr_cur_dependencies = [ str_bam_sorted ],
                                             lstr_cur_products = [ str_variants_vcf ] )  ] )
-    return { INDEX_CMD = lcmd_samtools_variants_commands, INDEX_FILE = str_variants_vcf }
+    return { INDEX_CMD : lcmd_samtools_variants_commands, INDEX_FILE : str_variants_vcf }
 
 def run( args_call, f_do_index = False ):
     """
