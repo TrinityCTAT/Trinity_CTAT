@@ -6,7 +6,7 @@ use warnings;
 use Data::Dumper;
 use Getopt::Long qw(:config no_ignore_case bundling pass_through);
 use List::Util qw (min max);
-
+use Set::IntervalTree;
 
 my $usage = <<__EOUSAGE__;
 
@@ -47,9 +47,12 @@ unless ($gmap_gff3_file && $annot_gtf_file) {
 
 
 my %genes;
+my %interval_trees;
+
 
 main: {
 
+    my %chr_to_gene_coords;
     print STDERR "-parsing $annot_gtf_file\n";
     open (my $fh, $annot_gtf_file) or die "Error, cannot open file $annot_gtf_file";
     while (<$fh>) {
@@ -89,12 +92,27 @@ main: {
               }
             );
         
-        
+        push (@{$chr_to_gene_coords{$chr}->{$gene_id}}, $lend, $rend);
         
     }
     close $fh;
     
+    print STDERR "-building interval tree for fast searching of gene overlaps\n";
+    ## Build interval trees
+    foreach my $chr (keys %chr_to_gene_coords) {
+
+        my $i_tree = $interval_trees{$chr} = Set::IntervalTree->new;
         
+        foreach my $gene_id (keys %{$chr_to_gene_coords{$chr}}) {
+            
+            my @coords = sort {$a<=>$b} @{$chr_to_gene_coords{$chr}->{$gene_id}};
+            my $lend = shift @coords;
+            my $rend = pop @coords;
+
+            $i_tree->insert($gene_id, $lend, $rend);
+        }
+    }
+    
     
     my %target_to_aligns;
     print STDERR "-loading alignment data\n";
@@ -202,8 +220,8 @@ main: {
                         }
                     
                         
-                        my @at_exon_junctions = ($left_entry->{gene_id}, $left_entry->{delta}, $left_entry->{pt_align}, 
-                                                 $right_entry->{gene_id}, $right_entry->{delta}, $right_entry->{pt_align},
+                        my @at_exon_junctions = ($left_entry->{gene_id}, $left_entry->{delta}, $left_entry->{chr} . ":" . $left_entry->{pt_align}, 
+                                                 $right_entry->{gene_id}, $right_entry->{delta}, $right_entry->{chr} . ":" . $right_entry->{pt_align},
                                                  join("--", $left_entry->{gene_id}, $right_entry->{gene_id}));
                         
                         my @chim_align_descrs = ($left_entry->{alignment}->{align_text}, $right_entry->{alignment}->{align_text});
@@ -257,7 +275,7 @@ sub map_to_annotated_exon_junctions {
     
     my @hits;
 
-    foreach my $gene_id (keys %{$genes{$chr}}) {
+    foreach my $gene_id (&get_overlapping_genes($chr, $align_lend, $align_rend)) {
         
         foreach my $transcript_id (keys %{$genes{$chr}->{$gene_id}}) {
             
@@ -348,6 +366,7 @@ sub map_to_annotated_exon_junctions {
                                    
                                    # align struct
                                    alignment => $align_struct,
+                                   chr => $chr,
                                    
                                });
                     
@@ -457,5 +476,22 @@ sub convert_to_span {
     return($span_struct);
 }
 
+####
+sub get_overlapping_genes {
+    my ($chr, $lend, $rend) = @_;
 
+    my $interval_tree = $interval_trees{$chr};
+
+    unless (ref $interval_tree) {
+        # no genes on that chr?
+        return();
+    }
+
+    my $overlaps = $interval_tree->fetch($lend, $rend);
+
+    return(@$overlaps);
+}
+
+
+        
     
