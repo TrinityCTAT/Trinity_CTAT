@@ -56,6 +56,7 @@ if args.str_input_file:
         # Make sure the variant passes.
         elif not args.f_no_prefilter_mode:
           if not lstr_line[ I_FILTER_INDEX ].lower() == STR_PASS.lower():
+            print "Did not pass filter."
             continue
 
         # Get ALT / REF
@@ -64,6 +65,7 @@ if args.str_input_file:
 
         # Skip monomorphic sites
         if str_alt == CHR_MONOMORPHIC_REFERENCE or str_ref == CHR_MONOMORPHIC_REFERENCE:
+          print "Skip monomorph"
           continue
 
         # Skip if not SNPs
@@ -72,8 +74,10 @@ if args.str_input_file:
         # Not removing the none snp information currently because the DBSNP info would have to be updated to reflect any indexing
         # referring to the REF or ALT
         if not min( [ len( str_alt_token ) for str_alt_token in str_alt.split( "," ) ] ) == 1:
+          print "skip not snp 1"
           continue
         if not min( [ len( str_ref_token ) for str_ref_token in str_ref.split( "," ) ] ) == 1:
+          print "skip not snp 2"
           continue
    
         # Store SNP
