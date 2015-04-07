@@ -87,7 +87,7 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
 
         # MAF file
         # dest = str_maf_file
-        arg_raw.add_argument( "-m", "--maf", dest = "str_maf_file", required = True, help = "The maf file used to compare DNA dn RNA vcfs." )
+        arg_raw.add_argument( "-m", "--maf", dest = "str_maf_file", default=None, help = "The maf file used to compare DNA dn RNA vcfs." )
 
         # Reduced dbSNP vcf file
         # dest = str_reduced_dbsnp_vcf
@@ -131,7 +131,7 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
         STR_IGV_MAF_RNA_NOT_DNA = os.path.join( str_IGV_dir, "MAF_RNA_NOT_DNA" )
         STR_IGV_MAF_DNA_RNA = os.path.join( str_IGV_dir, "MAF_DNA_RNA" )
         STR_IGV_ERROR = os.path.join( str_IGV_dir, "ERROR" )
-        for str_dir_path in [ STR_FIGURE_DIR, STR_LOG_DIR, STR_TAB_DIR, STR_DNA_FIGURE, STR_RNA_FIGURE, STR_MAF_FIGURE, 
+        for str_dir_path in [ STR_FIGURE_DIR, STR_LOG_DIR, STR_TAB_DIR, STR_DNA_FIGURE, STR_RNA_FIGURE, STR_MAF_FIGURE, STR_DEPTH_DIR,
                               STR_FILTERED_VCFS, str_IGV_dir, STR_IGV_MAF_DNA, STR_IGV_MAF_NOT_DNA, STR_IGV_MAF_RNA, STR_IGV_MAF_NOT_RNA,
                               STR_IGV_DNA_RNA_NOT_MAF, STR_IGV_MAF_RNA_NOT_DNA, STR_IGV_MAF_DNA_RNA, STR_IGV_ERROR, STR_IGV_DNA_NOT_RNA ]:
           if not os.path.exists( str_dir_path ):
@@ -171,7 +171,7 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                    lstr_cur_products = [ str_RNA_depth_file ] ) )
 
             # Compress depth file RNA
-            str_RNA_depth_compressed_file = os.path.splitext( str_RNA_depth_file )[ 0 ] + "_depth.gz"
+            str_RNA_depth_compressed_file = os.path.splitext( str_RNA_depth_file )[ 0 ] + ".depth.gz"
             lcmd_commands.append( Command.Command( str_cur_command = "gzip " + str_RNA_depth_file,
                                                    lstr_cur_dependencies = [ str_RNA_depth_file ],
                                                    lstr_cur_products = [ str_RNA_depth_compressed_file ] ) )
@@ -184,7 +184,7 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                    lstr_cur_products = [ str_DNA_depth_file ] ) )
 
             # Compress depth file DNA
-            str_DNA_depth_compressed_file = os.path.splitext( str_DNA_depth_file )[ 0 ] + "_depth.gz"
+            str_DNA_depth_compressed_file = os.path.splitext( str_DNA_depth_file )[ 0 ] + ".depth.gz"
             lcmd_commands.append( Command.Command( str_cur_command = "gzip " + str_DNA_depth_file,
                                                    lstr_cur_dependencies = [ str_DNA_depth_file ],
                                                    lstr_cur_products = [ str_DNA_depth_compressed_file ] ) )
@@ -214,17 +214,22 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
             # Tab files for vcf files that include if common or somatic
             str_file_maf_dna_tab = os.path.join( STR_TAB_DIR, str_sample_key + "_maf_dna.tab" )
             str_log_maf_dna = os.path.join( STR_LOG_DIR, str_sample_key + "_maf_dna.log" )
-            str_cmd_tab_MAF_DNA = os.path.join( self.str_src_dir, "vcfs_to_snp_calls_tab.py" ) + " --maf_reference " + args_parsed.str_maf_file + " --tumor " + dict_sample_pairing[ STR_MAF_SAMPLE_NAME ] + " --count_reference " + str_DNA_depth_compressed_file + " --vcf " + dict_sample_pairing[ STR_DNA_VCF_SNP ] + " --count " + str_DNA_depth_compressed_file + " " + str_file_maf_dna_tab + " > " + str_log_maf_dna
-            lcmd_commands.append( Command.Command( str_cur_command = str_cmd_tab_MAF_DNA,
+            if not args_parsed.str_maf_file is None:
+                str_cmd_tab_MAF_DNA = os.path.join( self.str_src_dir, "vcfs_to_snp_calls_tab.py" ) + " --maf_reference " + args_parsed.str_maf_file + " --tumor " + dict_sample_pairing[ STR_MAF_SAMPLE_NAME ] + " --count_reference " + str_DNA_depth_compressed_file + " --vcf " + dict_sample_pairing[ STR_DNA_VCF_SNP ] + " --count " + str_DNA_depth_compressed_file + " " + str_file_maf_dna_tab + " > " + str_log_maf_dna
+                lcmd_commands.append( Command.Command( str_cur_command = str_cmd_tab_MAF_DNA,
                                                    lstr_cur_dependencies = [ args_parsed.str_maf_file, str_DNA_depth_compressed_file, dict_sample_pairing[ STR_DNA_VCF_SNP ] ],
                                                    lstr_cur_products = [ str_file_maf_dna_tab, str_log_maf_dna ] ) )
 
-            str_file_maf_rna_tab = os.path.join( STR_TAB_DIR, str_sample_key + "_maf_rna.tab" )
-            str_log_maf_rna = os.path.join( STR_LOG_DIR, str_sample_key + "_maf_rna.log" )
-            str_cmd_tab_MAF_RNA = os.path.join( self.str_src_dir, "vcfs_to_snp_calls_tab.py" ) + " --maf_reference " + args_parsed.str_maf_file + " --tumor " + dict_sample_pairing[ STR_MAF_SAMPLE_NAME ] + " --count_reference " + str_DNA_depth_compressed_file + " --vcf " + dict_sample_pairing[ STR_RNA_VCF_SNP ] + " --count " + str_RNA_depth_compressed_file + " " + str_file_maf_rna_tab + " > " + str_log_maf_rna
-            lcmd_commands.append( Command.Command( str_cur_command = str_cmd_tab_MAF_RNA,
+                str_file_maf_rna_tab = os.path.join( STR_TAB_DIR, str_sample_key + "_maf_rna.tab" )
+                str_log_maf_rna = os.path.join( STR_LOG_DIR, str_sample_key + "_maf_rna.log" )
+                str_cmd_tab_MAF_RNA = os.path.join( self.str_src_dir, "vcfs_to_snp_calls_tab.py" ) + " --maf_reference " + args_parsed.str_maf_file + " --tumor " + dict_sample_pairing[ STR_MAF_SAMPLE_NAME ] + " --count_reference " + str_DNA_depth_compressed_file + " --vcf " + dict_sample_pairing[ STR_RNA_VCF_SNP ] + " --count " + str_RNA_depth_compressed_file + " " + str_file_maf_rna_tab + " > " + str_log_maf_rna
+                lcmd_commands.append( Command.Command( str_cur_command = str_cmd_tab_MAF_RNA,
                                                    lstr_cur_dependencies = [ args_parsed.str_maf_file, str_DNA_depth_compressed_file, str_RNA_depth_compressed_file, dict_sample_pairing[ STR_RNA_VCF_SNP ] ],
                                                    lstr_cur_products = [ str_file_maf_rna_tab, str_log_maf_rna ] ) )
+
+                # Store tab file for later
+                lstr_maf_dna_tab.append( str_file_maf_dna_tab )
+                lstr_maf_rna_tab.append( str_file_maf_rna_tab )
 
             str_file_dna_rna_tab = os.path.join( STR_TAB_DIR, str_sample_key + "_dna_rna.tab" )
             str_log_dna_rna = os.path.join( STR_LOG_DIR, str_sample_key + "_dna_rna.log" )
@@ -234,8 +239,6 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                    lstr_cur_products = [ str_file_dna_rna_tab, str_log_dna_rna ] ) )
 
             # Store tab file for later
-            lstr_maf_dna_tab.append( str_file_maf_dna_tab )
-            lstr_maf_rna_tab.append( str_file_maf_rna_tab )
             lstr_dna_rna_tab.append( str_file_dna_rna_tab )
 
             # Store vcf files
@@ -247,39 +250,39 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
             # Would be interesting to filter on # of mutations in a gene given the mutation rates locally.
 
             # Make IGV figures for interesting features
-            str_maf_dna_out = os.path.join( STR_IGV_MAF_DNA, "igv_maf_dna.txt" )
-            str_dna_not_rna_out = os.path.join( STR_IGV_DNA_NOT_RNA, "igv_dna_not_rna.txt" )
-            str_maf_not_dna_out = os.path.join( STR_IGV_MAF_NOT_DNA, "igv_maf_not_dna.txt" )
-            str_maf_rna_out = os.path.join( STR_IGV_MAF_RNA, "igv_maf_rna.txt" )
-            str_maf_not_rna_out = os.path.join( STR_IGV_MAF_NOT_RNA, "igv_maf_not_rna.txt" )
-            str_dna_rna_not_maf_out = os.path.join( STR_IGV_DNA_RNA_NOT_MAF, "igv_dna_rna_not_maf.txt" )
-            str_maf_rna_not_dna_out = os.path.join( STR_IGV_MAF_RNA_NOT_DNA, "igv_maf_rna_not_dna.txt" )
-            str_maf_dna_rna_out = os.path.join( STR_IGV_MAF_DNA_RNA, "igv_maf_dna_rna.txt" )
-            str_error_depth_out = os.path.join( STR_IGV_ERROR, "igv_depth_error.txt" )
-            str_error_out = os.path.join( STR_IGV_ERROR, "igv_error.txt" )
-            str_cmd_IGV = " ".join( [ os.path.join( self.str_src_dir, "tabs_comparisons_to_igv_batch.py" ),
-                                      "--maf_dna " + str_file_maf_dna_tab,
-                                      "--maf_rna " + str_file_maf_rna_tab,
-                                      "--dna_rna " + str_file_dna_rna_tab,
-                                      "--maf_bam " + dict_sample_pairing[ STR_DNA_BAM ],
-                                      "--dna_bam " + dict_sample_pairing[ STR_DNA_BAM ],
-                                      "--rna_bam " + dict_sample_pairing[ STR_RNA_BAM ],
-                                      "--maf_dna_out " + str_maf_dna_out,
-                                      "--dna_not_rna_out " + str_dna_not_rna_out,
-                                      "--maf_not_dna_out " + str_maf_not_dna_out,
-                                      "--maf_rna_out " + str_maf_rna_out,
-                                      "--maf_not_rna_out " + str_maf_not_rna_out,
-                                      "--dna_rna_not_maf_out " + str_dna_rna_not_maf_out,
-                                      "--maf_rna_not_dna_out " + str_maf_rna_not_dna_out,
-                                      "--maf_dna_rna_out " + str_maf_dna_rna_out,
-                                      "--error_depth_out " + str_error_depth_out,
-                                      "--error_out " + str_error_out ] )
-            lcmd_commands.append( Command.Command( str_cur_command = str_cmd_IGV,
-                                                   lstr_cur_dependencies = [ str_file_maf_dna_tab, str_file_maf_rna_tab, str_file_dna_rna_tab,
-                                                   dict_sample_pairing[ STR_DNA_BAM ], dict_sample_pairing[ STR_DNA_BAM ], dict_sample_pairing[ STR_RNA_BAM ] ],
-                                                   lstr_cur_products = [ str_maf_dna_out, str_maf_not_dna_out, str_maf_rna_out,
-                                                                         str_maf_not_rna_out, str_dna_rna_not_maf_out, str_maf_rna_not_dna_out,
-                                                                         str_maf_dna_rna_out, str_dna_not_rna_out ] ) )
+#            str_maf_dna_out = os.path.join( STR_IGV_MAF_DNA, "igv_maf_dna.txt" )
+#            str_dna_not_rna_out = os.path.join( STR_IGV_DNA_NOT_RNA, "igv_dna_not_rna.txt" )
+#            str_maf_not_dna_out = os.path.join( STR_IGV_MAF_NOT_DNA, "igv_maf_not_dna.txt" )
+#            str_maf_rna_out = os.path.join( STR_IGV_MAF_RNA, "igv_maf_rna.txt" )
+#            str_maf_not_rna_out = os.path.join( STR_IGV_MAF_NOT_RNA, "igv_maf_not_rna.txt" )
+#            str_dna_rna_not_maf_out = os.path.join( STR_IGV_DNA_RNA_NOT_MAF, "igv_dna_rna_not_maf.txt" )
+#            str_maf_rna_not_dna_out = os.path.join( STR_IGV_MAF_RNA_NOT_DNA, "igv_maf_rna_not_dna.txt" )
+#            str_maf_dna_rna_out = os.path.join( STR_IGV_MAF_DNA_RNA, "igv_maf_dna_rna.txt" )
+#            str_error_depth_out = os.path.join( STR_IGV_ERROR, "igv_depth_error.txt" )
+#            str_error_out = os.path.join( STR_IGV_ERROR, "igv_error.txt" )
+#            str_cmd_IGV = " ".join( [ os.path.join( self.str_src_dir, "tabs_comparisons_to_igv_batch.py" ),
+#                                      "--maf_dna " + str_file_maf_dna_tab,
+#                                      "--maf_rna " + str_file_maf_rna_tab,
+#                                      "--dna_rna " + str_file_dna_rna_tab,
+#                                      "--maf_bam " + dict_sample_pairing[ STR_DNA_BAM ],
+#                                      "--dna_bam " + dict_sample_pairing[ STR_DNA_BAM ],
+#                                      "--rna_bam " + dict_sample_pairing[ STR_RNA_BAM ],
+#                                      "--maf_dna_out " + str_maf_dna_out,
+#                                      "--dna_not_rna_out " + str_dna_not_rna_out,
+#                                      "--maf_not_dna_out " + str_maf_not_dna_out,
+#                                      "--maf_rna_out " + str_maf_rna_out,
+#                                      "--maf_not_rna_out " + str_maf_not_rna_out,
+#                                      "--dna_rna_not_maf_out " + str_dna_rna_not_maf_out,
+#                                      "--maf_rna_not_dna_out " + str_maf_rna_not_dna_out,
+#                                      "--maf_dna_rna_out " + str_maf_dna_rna_out,
+#                                      "--error_depth_out " + str_error_depth_out,
+#                                      "--error_out " + str_error_out ] )
+#            lcmd_commands.append( Command.Command( str_cur_command = str_cmd_IGV,
+#                                                   lstr_cur_dependencies = [ str_file_maf_dna_tab, str_file_maf_rna_tab, str_file_dna_rna_tab,
+#                                                   dict_sample_pairing[ STR_DNA_BAM ], dict_sample_pairing[ STR_DNA_BAM ], dict_sample_pairing[ STR_RNA_BAM ] ],
+#                                                   lstr_cur_products = [ str_maf_dna_out, str_maf_not_dna_out, str_maf_rna_out,
+#                                                                         str_maf_not_rna_out, str_dna_rna_not_maf_out, str_maf_rna_not_dna_out,
+#                                                                         str_maf_dna_rna_out, str_dna_not_rna_out ] ) )
 
         if( len( lstr_dna_vcfs_snps ) > 1 and len( lstr_rna_vcfs_snps ) > 1 ):
             # Create genotype matrix and list
@@ -340,23 +343,40 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
         lcmd_commands.append( Command.Command( str_cur_command = str_compare_DNA_RNA_cmd,
                                                lstr_cur_dependencies = lstr_dna_rna_tab,
                                                lstr_cur_products = lstr_DNA_RNA_roc_1 + lstr_DNA_RNA_roc_2 ) )
-        # MAF_DNA
-        str_MAF_DNA_figures = os.path.join( STR_FIGURE_DIR, "maf_dna" )
-        lstr_MAF_DNA_roc_1 = [ os.path.join( str_MAF_DNA_figures, "_".join( [ os.path.basename( str_file ), "roc_truth_10_pred_vary.pdf" ] ) ) for str_file in lstr_maf_dna_tab ]
-        lstr_MAF_DNA_roc_2 = [ os.path.join( str_MAF_DNA_figures, "_".join( [ os.path.basename( str_file ), "roc_truth_vary_pred_1.pdf" ] ) ) for str_file in lstr_maf_dna_tab ]
-        str_compare_MAF_DNA_cmd = os.path.join( self.str_src_dir, "visualize_mutation_depth_tab_files.R" ) + " -o " + str_MAF_DNA_figures + " -k MAF_DNA --serial_plots " + " ".join( lstr_maf_dna_tab )
-        lcmd_commands.append( Command.Command( str_cur_command = str_compare_MAF_DNA_cmd,
-                                               lstr_cur_dependencies = lstr_maf_dna_tab,
-                                               lstr_cur_products = lstr_MAF_DNA_roc_1 + lstr_MAF_DNA_roc_2 ) )
 
-        # MAF_RNA
-        str_MAF_RNA_figures = os.path.join( STR_FIGURE_DIR, "maf_rna" )
-        lstr_MAF_RNA_roc_1 = [ os.path.join( str_MAF_RNA_figures, "_".join( [ os.path.basename( str_file ), "roc_truth_10_pred_vary.pdf" ] ) ) for str_file in lstr_maf_rna_tab ]
-        lstr_MAF_RNA_roc_2 = [ os.path.join( str_MAF_RNA_figures, "_".join( [ os.path.basename( str_file ), "roc_truth_vary_pred_1.pdf" ] ) ) for str_file in lstr_maf_rna_tab ]
-        str_compare_MAF_RNA_cmd = os.path.join( self.str_src_dir, "visualize_mutation_depth_tab_files.R" ) + " -o " + str_MAF_RNA_figures + " -k MAF_RNA --serial_plots " + " ".join( lstr_maf_rna_tab )
-        lcmd_commands.append( Command.Command( str_cur_command = str_compare_MAF_RNA_cmd,
-                                               lstr_cur_dependencies = lstr_maf_rna_tab,
-                                               lstr_cur_products = lstr_MAF_RNA_roc_1 + lstr_MAF_RNA_roc_2 ) )
+        if not args_parsed.str_maf_file is None:
+            # MAF_DNA
+            str_MAF_DNA_figures = os.path.join( STR_FIGURE_DIR, "maf_dna" )
+            lstr_MAF_DNA_roc_1 = [ os.path.join( str_MAF_DNA_figures, "_".join( [ os.path.basename( str_file ), "roc_truth_10_pred_vary.pdf" ] ) ) for str_file in lstr_maf_dna_tab ]
+            lstr_MAF_DNA_roc_2 = [ os.path.join( str_MAF_DNA_figures, "_".join( [ os.path.basename( str_file ), "roc_truth_vary_pred_1.pdf" ] ) ) for str_file in lstr_maf_dna_tab ]
+            str_compare_MAF_DNA_cmd = os.path.join( self.str_src_dir, "visualize_mutation_depth_tab_files.R" ) + " -o " + str_MAF_DNA_figures + " -k MAF_DNA --serial_plots " + " ".join( lstr_maf_dna_tab )
+            lcmd_commands.append( Command.Command( str_cur_command = str_compare_MAF_DNA_cmd,
+                                                   lstr_cur_dependencies = lstr_maf_dna_tab,
+                                                   lstr_cur_products = lstr_MAF_DNA_roc_1 + lstr_MAF_DNA_roc_2 ) )
+
+            # MAF_RNA
+            str_MAF_RNA_figures = os.path.join( STR_FIGURE_DIR, "maf_rna" )
+            lstr_MAF_RNA_roc_1 = [ os.path.join( str_MAF_RNA_figures, "_".join( [ os.path.basename( str_file ), "roc_truth_10_pred_vary.pdf" ] ) ) for str_file in lstr_maf_rna_tab ]
+            lstr_MAF_RNA_roc_2 = [ os.path.join( str_MAF_RNA_figures, "_".join( [ os.path.basename( str_file ), "roc_truth_vary_pred_1.pdf" ] ) ) for str_file in lstr_maf_rna_tab ]
+            str_compare_MAF_RNA_cmd = os.path.join( self.str_src_dir, "visualize_mutation_depth_tab_files.R" ) + " -o " + str_MAF_RNA_figures + " -k MAF_RNA --serial_plots " + " ".join( lstr_maf_rna_tab )
+            lcmd_commands.append( Command.Command( str_cur_command = str_compare_MAF_RNA_cmd,
+                                                   lstr_cur_dependencies = lstr_maf_rna_tab,
+                                                   lstr_cur_products = lstr_MAF_RNA_roc_1 + lstr_MAF_RNA_roc_2 ) )
+
+            # MAF
+            str_key_mutations_tab = "".join( [ " -t " + str_tab for str_tab in lstr_maf_dna_tab ] )
+            str_key_mutation_MAF_DNA_output_pdf = os.path.join( STR_MAF_FIGURE, "key_mutation_counts.pdf" )
+            str_key_mutations_cmd = os.path.join( self.str_src_dir, "tabs_to_percent_mutations.py" ) + " --gtf " + args_parsed.str_annotation_gtf + " --key " + args_parsed.str_key_mutations + " -o " + str_key_mutation_MAF_DNA_output_pdf + str_key_mutations_tab
+            lcmd_commands.append( Command.Command( str_cur_command = str_key_mutations_cmd,
+                                               lstr_cur_dependencies = lstr_maf_dna_tab + [ args_parsed.str_annotation_gtf ],
+                                               lstr_cur_products = [ str_key_mutation_MAF_DNA_output_pdf ] ) )
+            # RNA
+            str_key_mutations_tab = "".join( [ " -t " + str_tab for str_tab in lstr_maf_rna_tab ] )
+            str_key_mutation_MAF_RNA_output_pdf = os.path.join( STR_RNA_FIGURE, "key_mutation_counts.pdf" )
+            str_key_mutations_cmd = os.path.join( self.str_src_dir, "tabs_to_percent_mutations.py" ) + " --second --gtf " + args_parsed.str_annotation_gtf + " --key " + args_parsed.str_key_mutations + " -o " + str_key_mutation_MAF_RNA_output_pdf + str_key_mutations_tab
+            lcmd_commands.append( Command.Command( str_cur_command = str_key_mutations_cmd,
+                                                   lstr_cur_dependencies = lstr_maf_rna_tab + [ args_parsed.str_annotation_gtf ],
+                                                   lstr_cur_products = [ str_key_mutation_MAF_RNA_output_pdf ] ) )
 
         # Count mutations and plot
         # DNA
@@ -366,22 +386,6 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
         lcmd_commands.append( Command.Command( str_cur_command = str_key_mutations_cmd,
                                                lstr_cur_dependencies = lstr_dna_rna_tab + [ args_parsed.str_annotation_gtf ],
                                                lstr_cur_products = [ str_key_mutation_DNA_RNA_output_pdf ] ) )
-
-        # MAF
-        str_key_mutations_tab = "".join( [ " -t " + str_tab for str_tab in lstr_maf_dna_tab ] )
-        str_key_mutation_MAF_DNA_output_pdf = os.path.join( STR_MAF_FIGURE, "key_mutation_counts.pdf" )
-        str_key_mutations_cmd = os.path.join( self.str_src_dir, "tabs_to_percent_mutations.py" ) + " --gtf " + args_parsed.str_annotation_gtf + " --key " + args_parsed.str_key_mutations + " -o " + str_key_mutation_MAF_DNA_output_pdf + str_key_mutations_tab
-        lcmd_commands.append( Command.Command( str_cur_command = str_key_mutations_cmd,
-                                               lstr_cur_dependencies = lstr_maf_dna_tab + [ args_parsed.str_annotation_gtf ],
-                                               lstr_cur_products = [ str_key_mutation_MAF_DNA_output_pdf ] ) )
-
-        # RNA
-        str_key_mutations_tab = "".join( [ " -t " + str_tab for str_tab in lstr_maf_rna_tab ] )
-        str_key_mutation_MAF_RNA_output_pdf = os.path.join( STR_RNA_FIGURE, "key_mutation_counts.pdf" )
-        str_key_mutations_cmd = os.path.join( self.str_src_dir, "tabs_to_percent_mutations.py" ) + " --second --gtf " + args_parsed.str_annotation_gtf + " --key " + args_parsed.str_key_mutations + " -o " + str_key_mutation_MAF_RNA_output_pdf + str_key_mutations_tab
-        lcmd_commands.append( Command.Command( str_cur_command = str_key_mutations_cmd,
-                                               lstr_cur_dependencies = lstr_maf_rna_tab + [ args_parsed.str_annotation_gtf ],
-                                               lstr_cur_products = [ str_key_mutation_MAF_RNA_output_pdf ] ) )
 
         return lcmd_commands
 

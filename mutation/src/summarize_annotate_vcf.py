@@ -52,7 +52,7 @@ class SummarizeAnnotateVCF( ParentScript.ParentScript ):
 
     # Manage Files
     # Make sure the output file is named gz, if not, add it
-    if not os.path.splitext( args_parsed.str_output_file )[ 1 ] == "gz":
+    if not os.path.splitext( args_parsed.str_output_file )[ 1 ] == ".gz":
       args_parsed.str_output_file = args_parsed.str_output_file + ".gz"
 
     # If not compressed this will be updated

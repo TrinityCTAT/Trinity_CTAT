@@ -884,10 +884,9 @@ def run( args_call, f_do_index = False ):
                                                                                         logr_cur = pline_cur.logr_logger )
     lcmd_commands.extend( dict_ret_variant_calling[ INDEX_CMD ] )
  
-
     # Add commands to annotate and summarize files
-    str_annotated_vcf_file = os.path.splitext( dict_ret_variant_calling[ INDEX_FILE ] )[ 0 ] + "_annotated.vcf"
-    str_annotate_cmd = " ".join( [ "src" + os.sep + "summarize_annotate_vcf.py", "--dbsnp", args_call.str_vcf_file,
+    str_annotated_vcf_file = os.path.splitext( dict_ret_variant_calling[ INDEX_FILE ] )[ 0 ] + "_annotated.vcf.gz"
+    str_annotate_cmd = " ".join( [ "python src" + os.sep + "summarize_annotate_vcf.py", "--dbsnp", args_call.str_vcf_file,
                        "--output_file", str_annotated_vcf_file, dict_ret_variant_calling[ INDEX_FILE ] ] )
     lcmd_commands.append( Command.Command( str_cur_command = str_annotate_cmd,
                                           lstr_cur_dependencies = [ args_call.str_vcf_file ],
