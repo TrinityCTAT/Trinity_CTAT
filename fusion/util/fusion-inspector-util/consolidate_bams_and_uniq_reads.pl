@@ -44,14 +44,14 @@ main: {
     push (@tmp_files, "$tmp_sam.nameSorted.uniq");
 
     ## convert to coordinate sorted bam
-    $cmd = "set -o pipefail && cat $tmp_sam.nameSorted.uniq | samtools view -Sb -T $target_fa - | samtools sort -o - - > $out_prefix.cSorted.bam";
+    $cmd = "bash -c \"set -o pipefail && cat $tmp_sam.nameSorted.uniq | samtools view -Sb -T $target_fa - | samtools sort - $out_prefix.cSorted \"";
     &process_cmd($cmd);
     
     $cmd = "samtools index $out_prefix.cSorted.bam";
     &process_cmd($cmd);
 
     unlink(@tmp_files);
-
+    
 
     exit(0);
 }
