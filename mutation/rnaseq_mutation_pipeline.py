@@ -741,21 +741,21 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
                             Command.Command( str_cur_command = " ".join( [ "samtools index", str_bam_sorted ] ),
                                             lstr_cur_dependencies = [ str_bam_sorted ],
                                             lstr_cur_products = [ str_bam_sorted_index ] ) ] )
-    str_variants_vcf = str_filtered_variants_file
+#    str_variants_vcf = str_filtered_variants_file
     # Identify variants
     lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools mpileup -ugf", args_call.str_genome_fa, str_bam_sorted, "| bcftools call -mv -Ov >", str_variants_vcf ] ),
                                             lstr_cur_dependencies = [ str_bam_sorted ],
                                             lstr_cur_products = [ str_variants_vcf ] ) )
+#    return { INDEX_CMD : lcmd_samtools_variants_commands, INDEX_FILE : str_variants_vcf }
 
     # Filter variants #TODO change from GATK
-#    lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T VariantFiltration -R", 
-#                                                                     args_call.str_genome_fa, "-V", str_variants_vcf, "-window 35",
-#                                                                     "-cluster 3 --out", str_filtered_variants_file ] ),
-#                                            lstr_cur_dependencies = [ args_call.str_genome_fa, str_variants_vcf ],
-#                                            lstr_cur_products = [ str_filtered_variants_file ] ).func_set_dependency_clean_level( [ str_variants_vcf ], Command.CLEAN_NEVER ) )
-#    return { INDEX_CMD : lcmd_samtools_variants_commands, INDEX_FILE : str_filtered_variants_file }
+    lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T VariantFiltration -R", 
+                                                                     args_call.str_genome_fa, "-V", str_variants_vcf, "-window 35",
+                                                                     "-cluster 3 --out", str_filtered_variants_file ] ),
+                                            lstr_cur_dependencies = [ args_call.str_genome_fa, str_variants_vcf ],
+                                            lstr_cur_products = [ str_filtered_variants_file ] ).func_set_dependency_clean_level( [ str_variants_vcf ], Command.CLEAN_NEVER ) )
+    return { INDEX_CMD : lcmd_samtools_variants_commands, INDEX_FILE : str_filtered_variants_file }
 
-    return { INDEX_CMD : lcmd_samtools_variants_commands, INDEX_FILE : str_variants_vcf }
 
 def run( args_call, f_do_index = False ):
     """
