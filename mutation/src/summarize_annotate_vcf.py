@@ -31,7 +31,6 @@ class SummarizeAnnotateVCF( ParentScript.ParentScript ):
     args_raw.add_argument( "--dbsnp", metavar = "dbsnp_reference_vcf", dest = "str_dbsnp_vcf", default = None, required = True, action="store", help = "Reference dbsnp file to use for annotation." )
     args_raw.add_argument( "--output_file", metavar="output_file", dest="str_output_file", required=True, action="store", help="Final output vcf file (please include vcf as the extension." )
     args_raw.add_argument( metavar = "sample_vcfs", dest = "lstr_sample_files", default = None, action="store", nargs="+",  help = "Sample files to combine vcfs." )
-    print( vars(args_raw.parse_args()) )
 
   def func_make_commands( self, args_parsed, cur_pipeline ):
     """
