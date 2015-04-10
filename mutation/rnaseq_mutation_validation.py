@@ -158,7 +158,7 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                lstr_cur_products = [ str_filtered_dbsnp_vcf ] ) )
 
         # Create secondary files associate with each sample (vcf) including depth files and tab files.
-        for str_sample_vcf in dict_sample_study:
+        for str_sample_vcf in set( dict_sample_study.keys() ):
 
             dict_sample_pairing = dict_sample_study[ str_sample_vcf ]
             str_sample_key = os.path.splitext( os.path.basename( str_sample_vcf ) )[ 0 ]
@@ -172,22 +172,23 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
 
             # Compress depth file RNA
             str_RNA_depth_compressed_file = os.path.splitext( str_RNA_depth_file )[ 0 ] + ".depth.gz"
-            lcmd_commands.append( Command.Command( str_cur_command = "gzip " + str_RNA_depth_file,
+            lcmd_commands.append( Command.Command( str_cur_command = "gzip -c " + str_RNA_depth_file + " > " + str_RNA_depth_compressed_file,
                                                    lstr_cur_dependencies = [ str_RNA_depth_file ],
                                                    lstr_cur_products = [ str_RNA_depth_compressed_file ] ) )
 
             # Create depth file DNA
+            # Compress depth file DNA
+            # Do not perform command if the file is the same as the RNA
             str_DNA_depth_file = os.path.splitext( os.path.basename( dict_sample_pairing[ STR_DNA_BAM ] ) )[ 0 ] + "_bam.depth"
             str_DNA_depth_file = os.path.join( STR_DEPTH_DIR, str_DNA_depth_file )
-            lcmd_commands.append( Command.Command( str_cur_command = "samtools depth " + dict_sample_pairing[ STR_DNA_BAM ]+ " > " + str_DNA_depth_file,
-                                                   lstr_cur_dependencies = [ dict_sample_pairing[ STR_DNA_BAM ] ],
-                                                   lstr_cur_products = [ str_DNA_depth_file ] ) )
-
-            # Compress depth file DNA
             str_DNA_depth_compressed_file = os.path.splitext( str_DNA_depth_file )[ 0 ] + ".depth.gz"
-            lcmd_commands.append( Command.Command( str_cur_command = "gzip " + str_DNA_depth_file,
-                                                   lstr_cur_dependencies = [ str_DNA_depth_file ],
-                                                   lstr_cur_products = [ str_DNA_depth_compressed_file ] ) )
+            if not dict_sample_pairing[ STR_DNA_BAM ] == dict_sample_pairing[ STR_RNA_BAM ]:
+                lcmd_commands.append( Command.Command( str_cur_command = "samtools depth " + dict_sample_pairing[ STR_DNA_BAM ]+ " > " + str_DNA_depth_file,
+                                                       lstr_cur_dependencies = [ dict_sample_pairing[ STR_DNA_BAM ] ],
+                                                       lstr_cur_products = [ str_DNA_depth_file ] ) )
+                lcmd_commands.append( Command.Command( str_cur_command = "gzip -c " + str_DNA_depth_file + " > " + str_DNA_depth_compressed_file,
+                                                       lstr_cur_dependencies = [ str_DNA_depth_file ],
+                                                       lstr_cur_products = [ str_DNA_depth_compressed_file ] ) )
 
             # Filter RNA and DNA VCF files to SNPS
             # SOFT Filter DNA VCF down to snps
