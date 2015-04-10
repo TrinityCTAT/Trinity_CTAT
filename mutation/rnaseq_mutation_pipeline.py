@@ -507,6 +507,7 @@ def func_do_rnaseq_caller_gatk( args_call, str_input_bam, str_unique_id, str_pro
                                                            "-stand_call_conf 20.0 -stand_emit_conf 20.0 --out", str_variants_file] ),
                                             lstr_cur_dependencies = [ args_call.str_genome_fa, str_input_bam, str_input_bai ],
                                             lstr_cur_products = [ str_variants_file ] ).func_set_dependency_clean_level( [ str_input_bam, str_input_bai ], Command.CLEAN_NEVER )
+
     cmd_variant_filteration = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T VariantFiltration -R", 
                                                                      args_call.str_genome_fa, "-V", str_variants_file, "-window 35",
                                                                      "-cluster 3 -filterName FS -filter \"FS > 30.0\" -filterName QD",
@@ -710,9 +711,11 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
     str_bam_sorted_index = ".".join( [ str_bam_sorted, "bai" ] )
     # Binary variant calling file
     str_bam_sorted_file = os.path.split( str_bam_sorted )[1]
-    str_variants_bcf = os.path.join( str_project_dir, ".".join( [ os.path.splitext( str_bam_sorted_file )[0],"bcf" ] ) )
+    str_variants_bcf = os.path.join( str_project_dir, ".".join( [ str_unique_id, "bcf" ] ) )
     # Uncompressed variant calling file
     str_variants_vcf = ".".join( [ os.path.splitext( str_variants_bcf )[0],"vcf" ] )
+    # Filtered variants file
+    str_filtered_variants_file = ".".join( [ os.path.splitext( str_variants_vcf )[0],"_filtered_variants.vcf" ] )
 
     # Optional SAM to BAM
     if os.path.splitext( str_align_file )[1].lower() == ".sam":
@@ -737,11 +740,21 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
                                             lstr_cur_products = [ str_bam_sorted ] ),
                             Command.Command( str_cur_command = " ".join( [ "samtools index", str_bam_sorted ] ),
                                             lstr_cur_dependencies = [ str_bam_sorted ],
-                                            lstr_cur_products = [ str_bam_sorted_index ] ) ] )   
+                                            lstr_cur_products = [ str_bam_sorted_index ] ) ] )
+    str_variants_vcf = str_filtered_variants_file
     # Identify variants
-    lcmd_samtools_variants_commands.extend( [ Command.Command( str_cur_command = " ".join( [ "samtools mpileup -ugf", args_call.str_genome_fa, str_bam_sorted, "| bcftools call -mv -Ov >", str_variants_vcf ] ),
+    lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools mpileup -ugf", args_call.str_genome_fa, str_bam_sorted, "| bcftools call -mv -Ov >", str_variants_vcf ] ),
                                             lstr_cur_dependencies = [ str_bam_sorted ],
-                                            lstr_cur_products = [ str_variants_vcf ] )  ] )
+                                            lstr_cur_products = [ str_variants_vcf ] ) )
+
+    # Filter variants #TODO change from GATK
+#    lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T VariantFiltration -R", 
+#                                                                     args_call.str_genome_fa, "-V", str_variants_vcf, "-window 35",
+#                                                                     "-cluster 3 --out", str_filtered_variants_file ] ),
+#                                            lstr_cur_dependencies = [ args_call.str_genome_fa, str_variants_vcf ],
+#                                            lstr_cur_products = [ str_filtered_variants_file ] ).func_set_dependency_clean_level( [ str_variants_vcf ], Command.CLEAN_NEVER ) )
+#    return { INDEX_CMD : lcmd_samtools_variants_commands, INDEX_FILE : str_filtered_variants_file }
+
     return { INDEX_CMD : lcmd_samtools_variants_commands, INDEX_FILE : str_variants_vcf }
 
 def run( args_call, f_do_index = False ):
