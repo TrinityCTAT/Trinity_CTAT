@@ -18,11 +18,14 @@ main: {
 
     my %fusion_to_coords_counts;
 
+    my %fusion_read_names;
+
     {
         open (my $fh, $junction_genes) or die "Error, cannot open file $junction_genes";
         while (<$fh>) {
             chomp;
             my @x = split(/\t/);
+            my $frag_name = $x[9];
             my $fusion = $x[14];
             my $fusion_coords_text = join("\t", @x[15..$#x]);
             
@@ -31,6 +34,9 @@ main: {
             $fusion_to_counts{$fusion}->{junction}++;
             
             $fusion_to_coords_counts{$fusion}->{$fusion_coords_text}++;
+        
+            $fusion_read_names{$frag_name}++;
+            
         }
         close $fh;
     }
@@ -39,23 +45,36 @@ main: {
         open (my $fh, $spanning_genes) or die "Error, cannot open file $spanning_genes";
         while (<$fh>) {
             chomp;
-            my ($read_name, $fusion_A) = split(/\t/);
-            my ($geneA, $geneB) = split(/--/, $fusion_A);
+            my ($frag_name, $fusion) = split(/\t/);
+
+            if ($fusion_read_names{$frag_name}) { next; } # no over-counting
+
+            my ($genesA, $genesB) = split(/--/, $fusion);
             
-            my $fusion_B = "$geneB--$geneA";
-            
-            if (exists $fusion_to_counts{$fusion_A}) {
-                $fusion_to_counts{$fusion_A}->{spanning}++;
-            }
-            if (exists $fusion_to_counts{$fusion_B}) {
-                $fusion_to_counts{$fusion_B}->{spanning}++;
+            my %seen;
+            foreach my $geneA (split(/,/, $genesA)) {
+                foreach my $geneB (split(/,/, $genesB)) {
+                    
+                    my $fusion_A = "$geneA--$geneB";
+                    my $fusion_B = "$geneB--$geneA";
+                    
+                    if ($seen{$fusion_A}) { next; } # no over-counting
+                    $seen{$fusion_A} = 1;
+
+                    if (exists $fusion_to_counts{$fusion_A}) {
+                        $fusion_to_counts{$fusion_A}->{spanning}++;
+                    }
+                    if (exists $fusion_to_counts{$fusion_B}) {
+                        $fusion_to_counts{$fusion_B}->{spanning}++;
+                    }
+                }
             }
         }
+        
         close $fh;
-
-
+        
     }
-
+    
     
 
     foreach my $fusion (keys %fusion_to_counts) {
