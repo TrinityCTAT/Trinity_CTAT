@@ -20,7 +20,8 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
     # Testing environment
     str_script_dir = "/ahg/regev/users/ttickle/dev/KCO/SOFTWARE/Trinity_CTAT/mutation/src"
     str_test_data = "/ahg/regev/users/ttickle/dev/KCO/SOFTWARE/Trinity_CTAT/mutation/demo_data"
-    str_testing_area = "/ahg/regev/users/ttickle/dev/KCO/SOFTWARE/Trinity_CTAT/mutation/active_testing_script_tester"
+#    str_testing_area = "/ahg/regev/users/ttickle/dev/KCO/SOFTWARE/Trinity_CTAT/mutation/active_testing_script_tester"
+    str_testing_area = "/broad/hptmp/ttickle/active_testing_script_tester"
 
     str_input_index = os.path.join( str_test_data, "star_index_test" )
     str_input_test_bam = os.path.join( str_test_data, "star_aligned_test.bam" )
@@ -28,7 +29,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
     str_right_file = os.path.join( str_test_data, "Right_10000.fq" )
     str_reference_vcf = os.path.join( str_test_data, "dbsnp_138.b37_Hg19_head_1000.vcf" )
     str_reference_genome = os.path.join( str_test_data, "Hg19_21_demo.fasta" )
-    str_update_command = "--update AddOrReplaceReadGroups.jar:/seq/regev_genome_portal/SOFTWARE/Picard/current,MarkDuplicates.jar:/seq/regev_genome_portal/SOFTWARE/Picard/current,SortSam.jar:/seq/regev_genome_portal/SOFTWARE/Picard/current,GenomeAnalysisTK.jar:/humgen/gsa-hpprojects/GATK/bin/GenomeAnalysisTK-3.1-1-g07a4bf8"
+    str_update_command = "--update AddOrReplaceReadGroups.jar:/seq/regev_genome_portal/SOFTWARE/Picard/current,MarkDuplicates.jar:/seq/regev_genome_portal/SOFTWARE/Picard/current,SortSam.jar:/seq/regev_genome_portal/SOFTWARE/Picard/current,GenomeAnalysisTK.jar:/humgen/gsa-hpprojects/GATK/bin/GenomeAnalysisTK-3.1-1-g07a4bf8,summarize_annotate_vcf.py:/ahg/regev/users/ttickle/dev/KCO/SOFTWARE/Trinity_CTAT/mutation/src"
 
     def test_rnaseq_mutation_pipeline_for_no_args( self ):
         """
@@ -95,7 +96,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         """
         # Create test environment
         str_command = " ".join( [ "python rnaseq_mutation_pipeline.py --alignment_mode STAR --variant_call_mode GATK --threads 8 --plot --reference",
-                                   self.str_reference_genome,"--left",self.str_left_file,"--right",self.str_right_file,
+                                   self.str_reference_genome,"--left",self.str_left_file,"--right",self.str_right_file, "--variant_filtering_mode GATK",
                                    "--out_dir","_".join([self.str_testing_area,"vanilla_gatk"]),"--vcf",self.str_reference_vcf, self.str_update_command ] )
         # Run command
         f_success = Commandline.Commandline().func_CMD( str_command )
@@ -248,7 +249,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         """
         # Create test environment
         str_command = " ".join( [ "python rnaseq_mutation_pipeline.py --alignment_mode STAR --variant_call_mode GATK --threads 8 --plot --reference",
-                                   self.str_reference_genome,"--left",self.str_left_file,"--right",self.str_right_file,
+                                   self.str_reference_genome,"--left",self.str_left_file,"--right",self.str_right_file, "--variant_filtering_mode GATK",
                                    "--out_dir","_".join([self.str_testing_area,"vanilla_dnaseq"]),"--vcf",self.str_reference_vcf, self.str_update_command,
                                    "--validate_dnaseq" ] )
         # Run command

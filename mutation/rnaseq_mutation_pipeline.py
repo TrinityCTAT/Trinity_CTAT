@@ -504,8 +504,7 @@ def func_do_rnaseq_caller_gatk( args_call, str_input_bam, str_unique_id, str_pro
     """
 
     # Files 
-    str_filtered_variants_file = os.path.join( str_project_dir, "_".join( [ str_unique_id, "filtered_variants.vcf" ] ) )
-    str_variants_file = os.path.join( str_tmp_dir, "variants.vcf" )
+    str_variants_file = os.path.join( str_project_dir, "variants.vcf" )
     str_input_bai = ".".join( [ os.path.splitext( str_input_bam )[ 0 ], "bai" ] )
     
     # Variant calling
@@ -515,14 +514,7 @@ def func_do_rnaseq_caller_gatk( args_call, str_input_bam, str_unique_id, str_pro
                                             lstr_cur_dependencies = [ args_call.str_genome_fa, str_input_bam, str_input_bai ],
                                             lstr_cur_products = [ str_variants_file ] ).func_set_dependency_clean_level( [ str_input_bam, str_input_bai ], Command.CLEAN_NEVER )
 
-    cmd_variant_filteration = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T VariantFiltration -R", 
-                                                                     args_call.str_genome_fa, "-V", str_variants_file, "-window 35",
-                                                                     "-cluster 3 -filterName FS -filter \"FS > 30.0\" -filterName QD",
-                                                                     "-filter \"QD < 2.0\" --out", str_filtered_variants_file ] ),
-                                            lstr_cur_dependencies = [ args_call.str_genome_fa, str_variants_file ],
-                                            lstr_cur_products = [ str_filtered_variants_file ] ).func_set_dependency_clean_level( [ str_variants_file ], Command.CLEAN_NEVER )
-
-    return { INDEX_CMD : [ cmd_haplotype_caller, cmd_variant_filteration ], INDEX_FILE : str_filtered_variants_file }
+    return { INDEX_CMD : [ cmd_haplotype_caller ], INDEX_FILE : str_variants_file }
 
 
 def func_do_variant_calling_gatk( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur ):
@@ -792,7 +784,7 @@ def func_do_variant_filtering_gatk( args_call, str_variants_file, lstr_dependenc
                : Logger
     """
     # Filtered variants file
-    str_filtered_variants_file = os.path.join( os.path.basename( str_variants_file ) + "_filtered_variants.vcf" )
+    str_filtered_variants_file = os.path.join( os.path.splitext( str_variants_file )[0] + "_filtered_variants.vcf" )
     # Filter variants
     str_filter_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T VariantFiltration -R", args_call.str_genome_fa, "-V", str_variants_file, "-window 35",
                          "-cluster 3 -filterName FS -filter \"FS > 30.0\" -filterName QD","-filter \"QD < 2.0\" --out", str_filtered_variants_file ] )
@@ -971,7 +963,7 @@ def run( args_call, f_do_index = False ):
 
     # Add commands to annotate and summarize files
     str_annotated_vcf_file = os.path.splitext( dict_ret_variant_calling[ INDEX_FILE ] )[ 0 ] + "_annotated.vcf.gz"
-    str_annotate_cmd = " ".join( [ "python src" + os.sep + "summarize_annotate_vcf.py", "--dbsnp", args_call.str_vcf_file,
+    str_annotate_cmd = " ".join( [ "python " + "summarize_annotate_vcf.py", "--dbsnp", args_call.str_vcf_file,
                        "--output_file", str_annotated_vcf_file, dict_ret_variant_calling[ INDEX_FILE ] ] )
     lcmd_commands.append( Command.Command( str_cur_command = str_annotate_cmd,
                                           lstr_cur_dependencies = [ args_call.str_vcf_file ],
