@@ -15,7 +15,7 @@ import sciedpiper.Command as Command
 import sciedpiper.Pipeline as Pipeline
 import sciedpiper.ParentScript as ParentScript
 
-class RNASEQ_mutation_validation( ParentScript.ParentScript ):
+class RNASEQ_mutation_make_tabs( ParentScript.ParentScript ):
 
     def __init__( self ):
 
@@ -134,9 +134,9 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                lstr_cur_dependencies = [ str_filtered_dna_vcf, str_DNA_depth_compressed_file, str_RNA_depth_compressed_file, str_filtered_rna_vcf ],
                                                lstr_cur_products = [ str_file_dna_rna_tab, str_log_dna_rna ] ) )
 
-    return lcmd_commands
+        return lcmd_commands
 
 if __name__ == "__main__":
 
     # Run pipeline
-    RNASEQ_mutation_validation().func_run_pipeline()
+    RNASEQ_mutation_make_tabs().func_run_pipeline()

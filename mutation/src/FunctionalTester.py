@@ -31,7 +31,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
     str_reference_genome = os.path.join( str_test_data, "Hg19_21_demo.fasta" )
     str_update_command = "--update AddOrReplaceReadGroups.jar:/seq/regev_genome_portal/SOFTWARE/Picard/current,MarkDuplicates.jar:/seq/regev_genome_portal/SOFTWARE/Picard/current,SortSam.jar:/seq/regev_genome_portal/SOFTWARE/Picard/current,GenomeAnalysisTK.jar:/humgen/gsa-hpprojects/GATK/bin/GenomeAnalysisTK-3.1-1-g07a4bf8,summarize_annotate_vcf.py:/ahg/regev/users/ttickle/dev/KCO/SOFTWARE/Trinity_CTAT/mutation/src"
 
-    def not_test_rnaseq_mutation_pipeline_for_no_args( self ):
+    def test_rnaseq_mutation_pipeline_for_no_args( self ):
         """
         Tests rnaseq_mutation_pipeline.py for no args call.
         """
@@ -42,7 +42,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         # Test error
         self.assertFalse( f_success, str_command )
 
-    def not_test_rnaseq_mutation_pipeline_for_args_short( self ):
+    def test_rnaseq_mutation_pipeline_for_args_short( self ):
         """
         Tests rnaseq_mutation_pipeline.py for help args call short.
         """
@@ -53,7 +53,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         # Test error
         self.assertTrue( f_success, str_command )
 
-    def not_test_rnaseq_mutation_pipeline_for_args_long( self ):
+    def test_rnaseq_mutation_pipeline_for_args_long( self ):
         """
         Tests rnaseq_mutation_pipeline.py for help args call short.
         """
@@ -64,7 +64,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         # Test error
         self.assertTrue( f_success, str_command )
 
-    def not_test_rnaseq_mutation_pipeline_for_samtools_call( self ):
+    def test_rnaseq_mutation_pipeline_for_samtools_call( self ):
         """
         Tests rnaseq_mutation_pipeline.py for samtools call.
         """
@@ -77,7 +77,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         # Test error
         self.assertTrue( f_success, str_command )
 
-    def not_test_rnaseq_mutation_pipeline_for_test( self ):
+    def test_rnaseq_mutation_pipeline_for_test( self ):
         """
         Tests rnaseq_mutation_pipeline.py for test mode.
         """
@@ -90,7 +90,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         # Test error
         self.assertTrue( f_success, str_command )
 
-    def not_test_rnaseq_mutation_pipeline_for_gatk_call( self ):
+    def test_rnaseq_mutation_pipeline_for_gatk_call( self ):
         """
         Tests rnaseq_mutation_pipeline.py for gatk call.
         """
@@ -103,7 +103,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         # Test error
         self.assertTrue( f_success, str_command )
 
-    def not_test_rnaseq_mutation_pipeline_for_compression( self ):
+    def test_rnaseq_mutation_pipeline_for_compression( self ):
         """
         Tests rnaseq_mutation_pipeline.py for compression.
         """
@@ -117,7 +117,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         # Test error
         self.assertTrue( f_success, str_command )
 
-    def not_test_rnaseq_mutation_pipeline_for_clean( self ):
+    def test_rnaseq_mutation_pipeline_for_clean( self ):
         """
         Tests rnaseq_mutation_pipeline.py for clean.
         """
@@ -131,7 +131,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         # Test error
         self.assertTrue( f_success, str_command )
 
-    def not_test_rnaseq_mutation_pipeline_for_archive( self ):
+    def test_rnaseq_mutation_pipeline_for_archive( self ):
         """
         Tests rnaseq_mutation_pipeline.py for archive.
         """
@@ -145,7 +145,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         # Test error
         self.assertTrue( f_success, str_command )
 
-    def not_test_rnaseq_mutation_pipeline_for_realign( self ):
+    def test_rnaseq_mutation_pipeline_for_realign( self ):
         """
         Tests rnaseq_mutation_pipeline.py for realignment.
         """
@@ -159,7 +159,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         # Test error
         self.assertTrue( f_success, str_command )
 
-    def not_test_rnaseq_mutation_pipeline_for_starting_with_bam( self ):
+    def test_rnaseq_mutation_pipeline_for_starting_with_bam( self ):
         """
         Tests rnaseq_mutation_pipeline.py for starting with a bam.
         """
@@ -173,7 +173,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         # Test error
         self.assertTrue( f_success, str_command )
 
-    def not_test_rnaseq_mutation_pipeline_for_star_limited( self ):
+    def test_rnaseq_mutation_pipeline_for_star_limited( self ):
         """
         Tests rnaseq_mutation_pipeline.py for starting with start limited mode
         """
@@ -187,7 +187,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         # Test error
         self.assertTrue( f_success, str_command )
 
-    def not_test_rnaseq_mutation_pipeline_for_named_log_file( self ):
+    def test_rnaseq_mutation_pipeline_for_named_log_file( self ):
         """
         Tests rnaseq_mutation_pipeline.py for starting with a named log file.
         """
@@ -201,7 +201,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         # Test error
         self.assertTrue( f_success, str_command )
 
-    def not_test_rnaseq_mutation_pipeline_for_starting_with_premade_index( self ):
+    def test_rnaseq_mutation_pipeline_for_starting_with_premade_index( self ):
         """
         Tests rnaseq_mutation_pipeline.py for starting with a premade index
         """
@@ -215,7 +215,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         # Test error
         self.assertTrue( f_success, str_command )
 
-    def not_test_rnaseq_mutation_pipeline_for_no_recalibration( self ):
+    def test_rnaseq_mutation_pipeline_for_no_recalibration( self ):
         """
         Tests rnaseq_mutation_pipeline.py for no recalibration
         """
@@ -229,7 +229,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         # Test error
         self.assertTrue( f_success, str_command )
 
-    def not_test_rnaseq_mutation_pipeline_for_no_move( self ):
+    def test_rnaseq_mutation_pipeline_for_no_move( self ):
         """
         Tests rnaseq_mutation_pipeline.py for moving files
         """
@@ -243,7 +243,7 @@ class FunctionalTester( ParentPipelineTester.ParentPipelineTester ):
         # Test error
         self.assertTrue( f_success, str_command )
 
-    def not_test_rnaseq_mutation_pipeline_for_dnaseq( self ):
+    def test_rnaseq_mutation_pipeline_for_dnaseq( self ):
         """
         Tests rnaseq_mutation_pipeline.py for dnaseq mode
         """
