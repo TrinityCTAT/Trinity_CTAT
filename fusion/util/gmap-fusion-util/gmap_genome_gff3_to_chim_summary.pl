@@ -479,6 +479,12 @@ sub convert_to_span {
 ####
 sub get_overlapping_genes {
     my ($chr, $lend, $rend) = @_;
+    
+    if ($lend == $rend) {
+        ## let's not trust this single point.
+        return();
+    }
+    
 
     my $interval_tree = $interval_trees{$chr};
 
