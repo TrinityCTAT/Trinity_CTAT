@@ -70,6 +70,7 @@ class RNASEQ_mutation_make_tabs( ParentScript.ParentScript ):
         lcmd_commands = []
 
         # Files for pipeline
+        str_sample_key = os.path.splitext( os.path.basename( args_parsed.str_rna_bam ) )[ 0 ]
         str_RNA_depth_file = os.path.splitext( os.path.basename( args_parsed.str_rna_bam ) )[ 0 ] + "_bam.depth"
         str_RNA_depth_file = os.path.join( STR_DEPTH_DIR, str_RNA_depth_file )
         str_RNA_depth_compressed_file = os.path.splitext( str_RNA_depth_file )[ 0 ] + "_depth.gz"

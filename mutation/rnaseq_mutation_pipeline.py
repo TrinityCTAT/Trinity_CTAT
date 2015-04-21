@@ -35,7 +35,8 @@ LSTR_ALIGN_CHOICES = [ STR_ALIGN_STAR, STR_ALIGN_STAR_LIMITED ]
 # Choices for variant calling
 STR_VARIANT_GATK = "GATK"
 STR_VARIANT_SAMTOOLS = "SAM"
-LSTR_VARIANT_CALLING_CHOICES = [ STR_VARIANT_GATK, STR_VARIANT_SAMTOOLS ]
+STR_VARIANT_NONE = "NONE"
+LSTR_VARIANT_CALLING_CHOICES = [ STR_VARIANT_GATK, STR_VARIANT_SAMTOOLS, STR_VARIANT_NONE ]
 
 # Choices for variant filtering
 STR_FILTERING_BCFTOOLS = "BCFTOOLS"
@@ -88,6 +89,7 @@ def func_do_star_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
     str_index_dir_1_change = os.path.join( "..", STR_INDEX_1 )
     str_index_dir_2 = os.path.join( args_call.str_file_base, STR_INDEX_2 )
     str_star_output_sam = os.path.join( str_align_dir_2, "Aligned.out.sam" )
+    str_star_output_bam = os.path.join( str_align_dir_2, "Aligned.out.bam" )
 
     # Commands to build and return
     lcmd_commands = []
@@ -153,7 +155,12 @@ def func_do_star_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
                                                                 args_call.str_sample_file_right_fq ],
                                             lstr_cur_products = [ str_align_dir_2 ] ),
                             Command.Command( str_cur_command = " ".join( [ "cd", os.path.join( "..", ".." ) ] ) ) ] )
-    return { INDEX_CMD : lcmd_commands, INDEX_FILE : str_star_output_sam, INDEX_FOLDER : str_align_dir_2 }
+        # SAM to BAM
+        lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools view -b -S -o", str_star_output_bam, str_star_output_sam ] ),
+                                               lstr_cur_dependencies = [ str_star_output_sam ],
+                                               lstr_cur_products = [ str_star_output_bam ] ) )
+
+    return { INDEX_CMD : lcmd_commands, INDEX_FILE : str_star_output_bam, INDEX_FOLDER : str_align_dir_2 }
 
 
 def func_do_top_hat_alignment( args_call, str_unique_id, pline_cur, f_index_only = False ):
@@ -411,17 +418,13 @@ def func_do_recalibration_gatk( args_call, str_align_file, str_unique_id, str_pr
     str_sorted_bam = os.path.join( str_tmp_dir, "sorted.bam" )
     str_split_bam = os.path.join( str_tmp_dir, "split.bam" )
     str_split_bai = os.path.join( str_tmp_dir, "split.bai" )
-
     # This is the file that is returned, could be many of the files below depending on the settings
     # This is dynamically set and different parts of this pipeline segment are activated.
     str_return_bam = ""
-
     # Allows the known variants vcf file to be available or not.
     lstr_known_vcf = [] if args_call.str_vcf_file is None else [ "-known", args_call.str_vcf_file ]
     lstr_known_two_dash_vcf = [] if args_call.str_vcf_file is None else [ "--known", args_call.str_vcf_file ]
-
     lcmd_gatk_recalibration_commands = []
-    
     # Create commands
     # SAM to BAM and QC
     cmd_add_or_replace_groups = Command.Command( str_cur_command = "".join( [ "java -jar AddOrReplaceReadGroups.jar I=", str_align_file,
@@ -698,7 +701,6 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
     * logr_cur : Pipeline logger
                : Logger
     """
-
     # Commands to run
     lcmd_samtools_variants_commands = []
     # The bam file, stored here because the path may be changed if the optional sam -> conversion is needed.
@@ -718,7 +720,6 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
                             Command.Command( str_cur_command = " ".join( [ "samtools view -b -S -o",str_bam, str_align_file ] ),
                                             lstr_cur_dependencies = lstr_dependencies,
                                             lstr_cur_products = [ str_bam ] ) ] )
-
     # Either prepare bams with GATK best practices or minimally
     if args_call.f_recalibrate_sam:
         # Create commands for recalibration
@@ -735,13 +736,19 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
                             Command.Command( str_cur_command = " ".join( [ "samtools index", str_bam_sorted ] ),
                                             lstr_cur_dependencies = [ str_bam_sorted ],
                                             lstr_cur_products = [ str_bam_sorted_index ] ) ] )
-
     # Identify variants
     str_samtools_calls = " ".join( [ "samtools mpileup -ugf", args_call.str_genome_fa, str_bam_sorted, "| bcftools call -mv -Ov >", str_variants_vcf ] )
     lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = str_samtools_calls,
                                             lstr_cur_dependencies = [ str_bam_sorted ],
                                             lstr_cur_products = [ str_variants_vcf ] ) )
     return { INDEX_CMD : lcmd_samtools_variants_commands, INDEX_FILE : str_variants_vcf }
+
+
+def func_do_variant_calling_none( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur ):
+    """
+    Does nothing, allows no calling
+    """
+    return { INDEX_CMD : [], INDEX_FILE : "" }
 
 
 def func_do_variant_filtering_bcftools( args_call, str_variants_file, lstr_dependencies, logr_cur ):
@@ -864,7 +871,8 @@ def run( args_call, f_do_index = False ):
     # Vary variant calling depending on arguments
     dict_variant_calling_funcs = { STR_DNASEQ_VALIDATION : func_call_dnaseq_like_rnaseq,
                                    STR_VARIANT_GATK : func_do_variant_calling_gatk,
-                                   STR_VARIANT_SAMTOOLS : func_do_variant_calling_samtools }
+                                   STR_VARIANT_SAMTOOLS : func_do_variant_calling_samtools,
+                                   STR_VARIANT_NONE : func_do_variant_calling_none }
 
     # Vary variant filtration
     dict_variant_filtering_funcs = { STR_FILTERING_BCFTOOLS : func_do_variant_filtering_bcftools,
@@ -944,28 +952,38 @@ def run( args_call, f_do_index = False ):
     if not pline_cur.func_mkdirs( [ str_misc_dir ] ):
         exit( 3 )
 
-    # Add variant calling commands
-    dict_ret_variant_calling =  dict_variant_calling_funcs[ args_call.str_variant_call_mode ]( args_call = args_call,
+    # If making depth files
+    if args_call.f_calculate_base_coverage:
+        # Create depth file
+        str_depth_compressed_file = os.path.basename( dict_align_info[ INDEX_FILE ] + ".depth.gz" )
+        str_depth_compressed_file = os.path.join( args_call.str_file_base, str_depth_compressed_file )
+        lcmd_commands.append( Command.Command( str_cur_command = "samtools depth " + dict_align_info[ INDEX_FILE ] + " | gzip > " + str_depth_compressed_file,
+                                               lstr_cur_dependencies = [ dict_align_info[ INDEX_FILE ] ],
+                                               lstr_cur_products = [ str_depth_compressed_file ] ) )
+    # If variant calling is occuring
+    if not ( args_call.str_variant_call_mode.lower() == STR_VARIANT_NONE.lower() ):
+        # Add variant calling commands
+        dict_ret_variant_calling =  dict_variant_calling_funcs[ args_call.str_variant_call_mode ]( args_call = args_call,
                                                                                         str_align_file = dict_align_info[ INDEX_FILE ],
                                                                                         str_unique_id = str_sample_postfix,
                                                                                         str_project_dir = args_call.str_file_base, 
                                                                                         str_tmp_dir = str_misc_dir, 
                                                                                         lstr_dependencies = [ dict_align_info[ INDEX_FOLDER ] ],
                                                                                         logr_cur = pline_cur.logr_logger )
-    lcmd_commands.extend( dict_ret_variant_calling[ INDEX_CMD ] )
+        lcmd_commands.extend( dict_ret_variant_calling[ INDEX_CMD ] )
 
-    # Add variant filtering
-    dict_ret_variant_filtration = dict_variant_filtering_funcs[ args_call.str_variant_filter_mode ]( args_call = args_call,
+        # Add variant filtering
+        dict_ret_variant_filtration = dict_variant_filtering_funcs[ args_call.str_variant_filter_mode ]( args_call = args_call,
                                                                                                      str_variants_file = dict_ret_variant_calling[ INDEX_FILE ],
                                                                                                      lstr_dependencies = [ dict_align_info[ INDEX_FOLDER ] ],
                                                                                                      logr_cur = pline_cur.logr_logger )
-    lcmd_commands.extend( dict_ret_variant_filtration[ INDEX_CMD ] )
+        lcmd_commands.extend( dict_ret_variant_filtration[ INDEX_CMD ] )
 
-    # Add commands to annotate and summarize files
-    str_annotated_vcf_file = os.path.splitext( dict_ret_variant_calling[ INDEX_FILE ] )[ 0 ] + "_annotated.vcf.gz"
-    str_annotate_cmd = " ".join( [ "python " + "summarize_annotate_vcf.py", "--dbsnp", args_call.str_vcf_file,
+        # Add commands to annotate and summarize files
+        str_annotated_vcf_file = os.path.join( os.path.dirname( dict_ret_variant_calling[ INDEX_FILE ] ), "variants_annotated.vcf.gz" )
+        str_annotate_cmd = " ".join( [ "python " + "summarize_annotate_vcf.py", "--dbsnp", args_call.str_vcf_file,
                        "--output_file", str_annotated_vcf_file, dict_ret_variant_calling[ INDEX_FILE ] ] )
-    lcmd_commands.append( Command.Command( str_cur_command = str_annotate_cmd,
+        lcmd_commands.append( Command.Command( str_cur_command = str_annotate_cmd,
                                           lstr_cur_dependencies = [ args_call.str_vcf_file ],
                                           lstr_cur_products = [ str_annotated_vcf_file ] ) )
 
@@ -993,6 +1011,7 @@ if __name__ == "__main__":
     prsr_arguments.add_argument( "--copy", metavar = "Copy_location", dest = "lstr_copy", default = None, action="append", help="Paths to copy the output directory after the pipeline is completed. Output directory must be specified; can be used more than once for multiple copy locations.")
     prsr_arguments.add_argument( "--compress", dest = "str_compress", default = "none", choices = Pipeline.LSTR_COMPRESSION_HANDLING_CHOICES, help = "Turns on compression of products and intermediary files made by the pipeline. Valid choices include:" + str( Pipeline.LSTR_COMPRESSION_HANDLING_CHOICES ) )
     prsr_arguments.add_argument( "-d", "--alignment_mode", metavar = "Alignment_mode", dest = "str_alignment_mode", default = STR_ALIGN_STAR, choices = LSTR_ALIGN_CHOICES, help = "Specifies the alignment and indexing algorithm to use." )
+    prsr_arguments.add_argument( "--base_depth", dest = "f_calculate_base_coverage", default = False, action = "store_true", help = "Calculates the base coverage per base." )
     prsr_arguments.add_argument( "-e", "--variant_call_mode", metavar = "Call_mode", dest = "str_variant_call_mode", default = STR_VARIANT_GATK, choices = LSTR_VARIANT_CALLING_CHOICES, help = "Specifies the variant calling method to use." )
     prsr_arguments.add_argument( "--variant_filtering_mode", metavar = "Filter_mode", dest = "str_variant_filter_mode", default = STR_FILTERING_DEFAULT, choices = LSTR_VARIANT_FILTERING_CHOICES, help = "Specifies the variant filtering method." )
     prsr_arguments.add_argument( "-f", "--reference", metavar = "Reference_genome", dest = "str_genome_fa", required = True, help = "Path to the reference genome to use in the analysis pipeline." )

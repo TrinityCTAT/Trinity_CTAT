@@ -31,11 +31,13 @@ pArgs = OptionParser( usage ="%prog -o output_dir file1.tab file2.tab" )
 pArgs = add_option( pArgs, c( "-c","--compare" ), type="character", action="store", dest="str_compare_file", default=NULL, help="Compares each of the given output files with the tab field given here as a reference.")
 pArgs = add_option( pArgs, c( "-k","--title_key" ), type="character", action="store", dest="str_title_key", default="Primary vs Secondary", help="Key identifying the contrast being visualized (eg \"DNA vs RNA\")")
 pArgs = add_option( pArgs, c( "-o","--group_output_dir" ), type="character", action="store", dest="str_output_dir", default=NULL, help="Output directory (required).")
-pArgs = add_option( pArgs, c( "-t","--measure_transitions" ), type="logical", action="store_true", dest="f_calculate_transitions", default=FALSE, help="Turns on calculating nucleotide transitions, can take time to calculate.")
+#pArgs = add_option( pArgs, c( "-t","--measure_transitions" ), type="logical", action="store_true", dest="f_calculate_transitions", default=FALSE, help="Turns on calculating nucleotide transitions, can take time to calculate.")
 pArgs = add_option( pArgs, c( "--method" ), type="character", action="store", dest="str_method_name", default=NULL, help="The name of the method being evaluated (Should match the input file.")
 pArgs = add_option( pArgs, c( "--method_compare" ), type="character", action="store", dest="str_method_name_compare", default=NULL, help="The name of the method that is used for comparison (should match the --compare file).")
 pArgs = add_option( pArgs, c( "--serial_plots" ), type="logical", action="store_true", dest="f_make_serial_plots", default=FALSE, help="After the sample space is defined, additionally plots each depth as a seperate plot.")
 lsArgs = parse_args( pArgs, positional_arguments=TRUE )
+
+lsArgs$options$f_calculate_transitions = FALSE
 
 func_plot_roc = function( list_TPR, list_FDR, vi_depths, i_mean_depth, str_pdf_file_name, str_title, str_legend_vary_title,
                           list_TPR_compare=NULL, list_FDR_compare=NULL, vi_depths_compare=NULL, str_method_name="",
