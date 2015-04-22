@@ -10,7 +10,8 @@ __email__ = "bhaas@broadinstitute.org"
 __status__ = "Development"
 
 
-__example__ = "FusionInspector --left_fq ../BT474--ACACA--STAC2.left.fq --right_fq ../BT474--ACACA--STAC2.right.fq --fusions fusion_gene_candidates.dat --out_dir myoutdir --out_prefix ladeda"
+__example__ = "FusionInspector --left_fq ../BT474--ACACA--STAC2.left.fq --right_fq ../BT474--ACACA--STAC2.right.fq \
+              --align_utils GSNAP,HISAT,STAR --fusions fusion_gene_candidates.dat --out_dir myoutdir --out_prefix ladeda"
 
 
 import sciedpiper.Command as Command
@@ -55,7 +56,8 @@ class FusionInspector( ParentScript.ParentScript ):
         arg_raw.add_argument("--right_fq", dest="right_fq_filename", required=True, help="right fastq file")
         arg_raw.add_argument("--out_dir", dest="out_dirname", required=True, help="output directory")
         arg_raw.add_argument("--out_prefix", dest="out_prefix", required=True, help="output filename prefix")
-
+        arg_raw.add_argument("--align_utils", dest="align_utils", required=True, help="alignment utilities to use. Comma-delimited selection of: GSNAP,HISAT,STAR")
+        
 
         #arg_raw.add_argument("--align_reads", dest="align_reads", default=None, required=False, help="read fasta files to align to the fusion contig. Include multiple files separated by commas (no spaces). Reads must have fusion name encoded as fusion_name|read_name, only those reads aligning to the corresponding fusion contig will be shown.")
         
@@ -151,91 +153,141 @@ class FusionInspector( ParentScript.ParentScript ):
 
 
 
-        ########################################################
-        ## align the reads against the fusion contig using GSNAP
-        ########################################################
+        bam_files_list = []
 
-        gsnap_bam_file = os.sep.join([workdir, args_parsed.out_prefix + ".gsnap.cSorted.bam"])
+        if (args_parsed.align_utils.find("GSNAP") > -1):
 
-        
-        cmdstr = str(TRINITY_HOME + "/util/misc/run_GSNAP.pl --genome " + workdir_mergedContig_fasta_filename +
-                     " --reads \"" +  args_parsed.left_fq_filename + " " + args_parsed.right_fq_filename + "\"" +
-                     " -G " + workdir_mergedContig_gtf_filename  + " --CPU 4 -N 20 --proper_pairs_only " +
-                     " --out_prefix " + os.sep.join([workdir, args_parsed.out_prefix + ".gsnap"]) )
+            ########################################################
+            ## align the reads against the fusion contig using GSNAP
+            ########################################################
 
-        lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
-                                               lstr_cur_dependencies = [ args_parsed.left_fq_filename, args_parsed.right_fq_filename,
-                                                                         workdir_mergedContig_fasta_filename, workdir_mergedContig_gtf_filename ],
-                                               lstr_cur_products = [ gsnap_bam_file ] ) )
-
-
-        ## remove duplicate reads
-        gsnap_rmdup_bam_file = os.sep.join([workdir, args_parsed.out_prefix + ".gsnap.cSorted.rmdup.bam"])
-
-        cmdstr = str("samtools rmdup " + gsnap_bam_file + " " + gsnap_rmdup_bam_file)
-
-        lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
-                                               lstr_cur_dependencies = [ gsnap_bam_file ],
-                                               lstr_cur_products = [ gsnap_rmdup_bam_file ] ) )
-
-        self.get_fusion_and_spanning_reads(args_parsed, mergedContig_gtf_filename, mergedContig_fasta_filename, gsnap_rmdup_bam_file, lcmd_commands)
-
-
-
-
-        ########################################################
-        ## align the reads against the fusion contig using HISAT
-        ########################################################
-
-        cmdstr = str(TRINITY_HOME + "/util/misc/run_HISAT.pl --genome " + workdir_mergedContig_fasta_filename +
-                     " --reads \"" +  args_parsed.left_fq_filename + " " + args_parsed.right_fq_filename + "\"" +
-                     " -G " + workdir_mergedContig_gtf_filename + " --CPU 4 " + " -N 20 --no-mixed --no-discordant " + 
-                     " --out_prefix " + os.sep.join([workdir, args_parsed.out_prefix + ".hisat"]) )  
-        
-        hisat_bam_file = os.sep.join([workdir, args_parsed.out_prefix + ".hisat.cSorted.bam"])
-        
-        lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
-                                               lstr_cur_dependencies = [ args_parsed.left_fq_filename,
-                                                                         args_parsed.right_fq_filename,
-                                                                         workdir_mergedContig_gtf_filename,
-                                                                         workdir_mergedContig_fasta_filename],
-                                               lstr_cur_products = [ hisat_bam_file ] ) )
-
-        # remove duplicate reads
-        hisat_rmdup_bam_file = os.sep.join([workdir, args_parsed.out_prefix + ".hisat.cSorted.rmdup.bam"])
-
-        cmdstr = str("samtools rmdup " + hisat_bam_file + " " + hisat_rmdup_bam_file)
-
-        lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
-                                               lstr_cur_dependencies = [ hisat_bam_file ],
-                                               lstr_cur_products = [ hisat_rmdup_bam_file ] ) )
+            gsnap_bam_file = os.sep.join([workdir, args_parsed.out_prefix + ".gsnap.cSorted.bam"])
 
         
+            cmdstr = str(TRINITY_HOME + "/util/misc/run_GSNAP.pl --genome " + workdir_mergedContig_fasta_filename +
+                         " --reads \"" +  args_parsed.left_fq_filename + " " + args_parsed.right_fq_filename + "\"" +
+                         " -G " + workdir_mergedContig_gtf_filename  + " --CPU 4 -N 20 --proper_pairs_only " +
+                         " --out_prefix " + os.sep.join([workdir, args_parsed.out_prefix + ".gsnap"]) )
+            
+            lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
+                                                   lstr_cur_dependencies = [ args_parsed.left_fq_filename, args_parsed.right_fq_filename,
+                                                                             workdir_mergedContig_fasta_filename, workdir_mergedContig_gtf_filename ],
+                                                   lstr_cur_products = [ gsnap_bam_file ] ) )
+
+
+            ## remove duplicate reads
+            gsnap_rmdup_bam_file = os.sep.join([workdir, args_parsed.out_prefix + ".gsnap.cSorted.rmdup.bam"])
+
+            cmdstr = str("samtools rmdup " + gsnap_bam_file + " " + gsnap_rmdup_bam_file)
+
+            lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
+                                                   lstr_cur_dependencies = [ gsnap_bam_file ],
+                                                   lstr_cur_products = [ gsnap_rmdup_bam_file ] ) )
+
+            self.get_fusion_and_spanning_reads(args_parsed, mergedContig_gtf_filename, mergedContig_fasta_filename, gsnap_rmdup_bam_file, lcmd_commands)
+
+            bam_files_list.append(gsnap_rudup_bam_file)
+
+
+        if (args_parsed.align_utils.find("HISAT")):
+
+            ########################################################
+            ## align the reads against the fusion contig using HISAT
+            ########################################################
+
+            cmdstr = str(TRINITY_HOME + "/util/misc/run_HISAT.pl --genome " + workdir_mergedContig_fasta_filename +
+                         " --reads \"" +  args_parsed.left_fq_filename + " " + args_parsed.right_fq_filename + "\"" +
+                         " -G " + workdir_mergedContig_gtf_filename + " --CPU 4 " + " -N 20 --no-mixed --no-discordant " + 
+                         " --out_prefix " + os.sep.join([workdir, args_parsed.out_prefix + ".hisat"]) )  
+
+            hisat_bam_file = os.sep.join([workdir, args_parsed.out_prefix + ".hisat.cSorted.bam"])
+
+            lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
+                                                   lstr_cur_dependencies = [ args_parsed.left_fq_filename,
+                                                                             args_parsed.right_fq_filename,
+                                                                             workdir_mergedContig_gtf_filename,
+                                                                             workdir_mergedContig_fasta_filename],
+                                                   lstr_cur_products = [ hisat_bam_file ] ) )
+
+            # remove duplicate reads
+            hisat_rmdup_bam_file = os.sep.join([workdir, args_parsed.out_prefix + ".hisat.cSorted.rmdup.bam"])
+
+            cmdstr = str("samtools rmdup " + hisat_bam_file + " " + hisat_rmdup_bam_file)
+
+            lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
+                                                   lstr_cur_dependencies = [ hisat_bam_file ],
+                                                   lstr_cur_products = [ hisat_rmdup_bam_file ] ) )
+
+
+
+            self.get_fusion_and_spanning_reads(args_parsed, workdir_mergedContig_gtf_filename, workdir_mergedContig_fasta_filename, hisat_rmdup_bam_file, lcmd_commands)
+
+            bam_files_list.append(hisat_rmdup_bam_file)
+
+
+        if (args_parsed.align_utils.find("STAR")):
+
+            #######################################################
+            ## align the reads against the fusion contig using STAR
+            #######################################################
+            
+            cmdstr = str(TRINITY_HOME + "/util/misc/run_STAR.pl --genome " + workdir_mergedContig_fasta_filename +
+                         " --reads \"" +  args_parsed.left_fq_filename + " " + args_parsed.right_fq_filename + "\"" +
+                         " -G " + workdir_mergedContig_gtf_filename + " --CPU 4 " +  
+                         " --out_prefix " + os.sep.join([workdir, args_parsed.out_prefix + ".star"]) )  
+
+            star_bam_file = os.sep.join([workdir, args_parsed.out_prefix + ".star.sortedByCoord.out.bam"])
+
+            lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
+                                                   lstr_cur_dependencies = [ args_parsed.left_fq_filename,
+                                                                             args_parsed.right_fq_filename,
+                                                                             workdir_mergedContig_gtf_filename,
+                                                                             workdir_mergedContig_fasta_filename],
+                                                   lstr_cur_products = [ star_bam_file ] ) )
+
+            # remove duplicate reads
+            star_rmdup_bam_file = os.sep.join([workdir, args_parsed.out_prefix + ".star.cSorted.rmdup.bam"])
+
+            cmdstr = str("samtools rmdup " + star_bam_file + " " + star_rmdup_bam_file)
+
+            lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
+                                                   lstr_cur_dependencies = [ star_bam_file ],
+                                                   lstr_cur_products = [ star_rmdup_bam_file ] ) )
+
+
+
+            self.get_fusion_and_spanning_reads(args_parsed, workdir_mergedContig_gtf_filename, workdir_mergedContig_fasta_filename, star_rmdup_bam_file, lcmd_commands)
+
+            bam_files_list.append(star_rmdup_bam_file)
+
+
         
-        self.get_fusion_and_spanning_reads(args_parsed, workdir_mergedContig_gtf_filename, workdir_mergedContig_fasta_filename, hisat_rmdup_bam_file, lcmd_commands)
-        
-
-
-
+        ###########################
         ## coalesce the fusion info
+        ###########################
+            
         fusion_summary_file = os.sep.join([workdir, args_parsed.out_prefix + ".fusion_preds.coalesced.summary"]) 
 
+        fusion_junction_info_files_list = []
+        fusion_spanning_info_files_list = []
+        for bam_file in bam_files_list:
+            fusion_junction_info_files_list.append(bam_file + ".fusion_junction_info")
+            fusion_spanning_info_files_list.append(bam_file + ".fusion_spanning_info")
+        
+        
         coalesce_cmd = str( os.sep.join([UTILDIR, "coalesce_junction_and_spanning_info.pl"]) + " " +
-                            ",".join([gsnap_rmdup_bam_file + ".fusion_junction_info", hisat_rmdup_bam_file + ".fusion_junction_info"]) + " " +
-                            ",".join([gsnap_rmdup_bam_file + ".fusion_spanning_info", hisat_rmdup_bam_file + ".fusion_spanning_info"]) +
+                            ",".join(fusion_junction_info_files_list) + " " +
+                            ",".join(fusion_spanning_info_files_list) +
                             " > " + fusion_summary_file )
         
-
+        
         lcmd_commands.append( Command.Command( str_cur_command = coalesce_cmd,
-                                               lstr_cur_dependencies = [ gsnap_rmdup_bam_file + ".fusion_junction_info",
-                                                                         hisat_rmdup_bam_file + ".fusion_junction_info",
-                                                                         gsnap_rmdup_bam_file + ".fusion_spanning_info",
-                                                                         hisat_rmdup_bam_file + ".fusion_spanning_info" ],
+                                               lstr_cur_dependencies = [ fusion_junction_info_files_list +
+                                                                         fusion_spanning_info_files_list ],
                                                lstr_cur_products = [ fusion_summary_file ] ) )
 
-
-
-
+        
+        
         #################################################################
         ## consolidate the Fusion Inspector reads into a single bam files
         #################################################################
