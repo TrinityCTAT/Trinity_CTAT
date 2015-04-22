@@ -17,7 +17,7 @@ my @files_to_keep = qw (cleanme.pl
                         runMe.pl
                         test_fusions.list
 
-
+test_FusionInspector.pl
 __runMe_kcopipe.sh
                         );
 
