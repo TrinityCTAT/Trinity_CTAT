@@ -7,6 +7,7 @@ use lib ("$FindBin::Bin/../../PerlLib");
 use SAM_reader;
 use SAM_entry;
 use Data::Dumper;
+use Carp;
 
 my $usage = "usage: $0 read_names.accs  fileA.bam,fileB.bam,...\n\n";
 
@@ -45,7 +46,7 @@ main: {
     }
 
     if (%reads_want) {
-        die "Error, missing junction reads: " . Dumper(\%reads_want);
+        confess "Error, missing junction reads: " . Dumper(\%reads_want);
         
     }
     
