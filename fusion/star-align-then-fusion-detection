@@ -62,23 +62,6 @@ main: {
     $cmd = "/home/unix/bhaas/GITHUB/STAR-Fusion/STAR-Fusion -S Chimeric.out.sam -J Chimeric.out.junction -G $FUSION_ANNOTATOR_LIB/gencode.v19.annotation.gtf.exons";
     $pipeliner->add_commands( Command->new($cmd, "star-fusion.ok") );
     
-=old_way
-    $cmd = "$UTILDIR/STAR_junction_to_genes.pl Chimeric.out.junction > Chimeric.out.junction.genes";
-    $pipeliner->add_commands(Command->new($cmd, "Chimeric.out.junction.genes.ok"));
-
-    ## assign spanning reads to genes:
-    
-    $cmd = "$UTILDIR/STAR_spanning_to_genes.pl Chimeric.out.sam > Chimeric.out.sam.spanning.genes";
-    $pipeliner->add_commands(Command->new($cmd, "Chimeric.out.sam.spanning.genes.ok"));
-
-    ## make a joint summary file:
-    $cmd = "
-
-$UTILDIR/STAR_collate_junction_and_spanning_results.pl Chimeric.out.junction.genes Chimeric.out.sam.spanning.genes > STAR.fusion_candidates.txt";
-    $pipeliner->add_commands(Command->new($cmd, "STAR.fusion_candidates.txt.ok"));
-    
-=cut
-
     $pipeliner->run();
 
     exit(0);
