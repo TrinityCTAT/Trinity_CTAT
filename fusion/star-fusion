@@ -11,6 +11,7 @@ use __GLOBALS__;
 use Pipeliner;
 
 
+
 my $usage = "usage: $0 left.fq right.fq output_directory\n\n";
 
 my $left_fq = $ARGV[0] or die $usage;
@@ -19,6 +20,9 @@ my $output_dir = $ARGV[2] or die $usage;
 
 
 my $UTILDIR = "$FindBin::Bin/util/star-fusion-util";
+
+my $STAR_FUSION_DIR = $ENV{STAR_FUSION_DIR} or die "Error, need env var STAR_FUSION_DIR pointing to the STAR-Fusion installation directory";
+
 
 main: {
 
