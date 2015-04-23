@@ -48,6 +48,10 @@ main: {
             $TAF_left, $TAF_right,
             $fusion_annotations, $TrinGG_Fusion) = split(/\t/);
 
+        unless ($TrinGG_Fusion) {
+            $TrinGG_Fusion = "."; # adding placeholder
+        }
+
         my $struct = { geneA => $geneA,
                        chr_brkpt_A => $chr_brkpt_A,
                                               
