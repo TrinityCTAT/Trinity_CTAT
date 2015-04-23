@@ -41,6 +41,7 @@ main: {
     
     my $cmd = "STAR --genomeDir $FUSION_ANNOTATOR_LIB/Hg19.fa_star_index "
         . " --readFilesIn $left_fq $right_fq "
+        . " --twopassMode Basic "
         . " --outSAMstrandField intronMotif "
         . " --outFilterIntronMotifs RemoveNoncanonicalUnannotated "
         . " --outReadsUnmapped None --chimSegmentMin 15 "
