@@ -25,7 +25,7 @@ main: {
         open (my $fh, "$junction_info_file") or die "error, cannot open file $junction_info_file";
         while (<$fh>) {
             chomp;
-            my ($geneA, $coordA, $orig_coordA, $geneB, $coordB, $orig_coordB, $fusion_read_count, $fusion_read_list) = split(/\t/);
+            my ($geneA, $coordA, $orig_coordA, $geneB, $coordB, $orig_coordB, $splice_info, $fusion_read_count, $fusion_read_list) = split(/\t/);
 
             foreach my $fusion_read (split(/,/, $fusion_read_list)) {
                 $junction_reads_ignore{$fusion_read}++;
@@ -37,7 +37,7 @@ main: {
             my $breakpoint = "$coordA-$coordB";
             
             $fusion_breakpoint_info{"$fusion_name|$breakpoint"} = join("\t", $geneA, $coordA, $orig_coordA,
-                                                                       $geneB, $coordB, $orig_coordB);
+                                                                       $geneB, $coordB, $orig_coordB, $splice_info);
             
 
         }

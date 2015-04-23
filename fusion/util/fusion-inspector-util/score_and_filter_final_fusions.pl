@@ -41,7 +41,7 @@ main: {
         if (/^\#/) { next; }
         chomp;
         my ($geneA, $chr_brkpt_A, 
-            $geneB, $chr_brkpt_B, 
+            $geneB, $chr_brkpt_B, $splice_type,
             $junction_count, $spanning_count, 
             $num_left_contrary_reads, $num_right_contrary_reads,
             $TAF_left, $TAF_right,
@@ -53,6 +53,8 @@ main: {
                        geneB => $geneB,
                        chr_brkpt_B => $chr_brkpt_B,
 
+                       splice_type => $splice_type,
+                       
                        junction_count => $junction_count,
                        spanning_count => $spanning_count,
                        
@@ -91,7 +93,7 @@ main: {
     # header
     print join("\t", "#fusion_name", "score", 
                "geneA", "chr_brkpt_A",
-               "geneB", "chr_brkpt_B", 
+               "geneB", "chr_brkpt_B", "splice_type",
                "junction_count", "spanning_count", 
                "num_left_contrary_reads", "num_right_contrary_reads",
                "TAF_left", "TAF_right",
@@ -104,6 +106,7 @@ main: {
         print join("\t", $fusion_name, $fusion_candidate->{score}, 
                    $fusion_candidate->{geneA}, $fusion_candidate->{chr_brkpt_A},
                    $fusion_candidate->{geneB}, $fusion_candidate->{chr_brkpt_B}, 
+                   $fusion_candidate->{splice_type},
                    $fusion_candidate->{junction_count}, $fusion_candidate->{spanning_count},
                    $fusion_candidate->{num_left_contrary_reads}, $fusion_candidate->{num_right_contrary_reads}, 
                    $fusion_candidate->{TAF_left}, $fusion_candidate->{TAF_right},

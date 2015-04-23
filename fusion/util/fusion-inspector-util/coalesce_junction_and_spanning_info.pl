@@ -31,7 +31,7 @@ main: {
 
     # generate coalesced view:
     print join("\t", "#geneA", "local_brkpt_A", "chr_brkpt_A", 
-               "geneB", "local_brkpt_B", "chr_brkpt_B", 
+               "geneB", "local_brkpt_B", "chr_brkpt_B", "splice_type",
                "junction_count", "spanning_count", "junction_reads", "spanning_reads", 
                "num_left_contrary_reads", "left_contrary_reads",
                "num_right_contrary_reads", "right_contrary_reads",
@@ -107,9 +107,9 @@ sub parse_info_file {
     open (my $fh, $file) or die "Error, cannot open file $file";
     while (<$fh>) {
         chomp;
-        my ($geneA, $coordA, $orig_coordA, $geneB, $coordB, $orig_coordB, $count, $read_list, @rest) = split(/\t/);
+        my ($geneA, $coordA, $orig_coordA, $geneB, $coordB, $orig_coordB, $splice_info, $count, $read_list, @rest) = split(/\t/);
         
-        my $fusion_token = join("\t", $geneA, $coordA, $orig_coordA, $geneB, $coordB, $orig_coordB);
+        my $fusion_token = join("\t", $geneA, $coordA, $orig_coordA, $geneB, $coordB, $orig_coordB, $splice_info);
         
         foreach my $read (split(/,/, $read_list)) {
 
@@ -117,7 +117,7 @@ sub parse_info_file {
         }
 
 
-        if (@rest) {
+        if (@rest) {  # in spanning file
             
             my ($left_contrary_support_count, $left_contrary_support_reads,
                 $right_contrary_support_count, $right_contrary_support_reads) = @rest;

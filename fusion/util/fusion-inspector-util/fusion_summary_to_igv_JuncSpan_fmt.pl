@@ -33,10 +33,10 @@ main: {
             my $break_left = $x[1];
             my $break_right = $x[4];
 
-            my @junction_reads = split(/,/, $x[8]);
+            my @junction_reads = split(/,/, $x[9]);
             my $num_junction_reads = scalar(@junction_reads);
 
-            my @spanning_frags = split(/,/, $x[9]);
+            my @spanning_frags = split(/,/, $x[10]);
             my $num_spanning_frags = scalar(@spanning_frags);
 
             my $fusion_name = join("--", $geneA, $geneB);
