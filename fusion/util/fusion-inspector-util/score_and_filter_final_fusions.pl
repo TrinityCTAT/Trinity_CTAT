@@ -112,7 +112,7 @@ main: {
         
         my $fusion_name = join("--", $fusion_candidate->{geneA}, $fusion_candidate->{geneB});
 
-        print join("\t", $fusion_name, $fusion_candidate->{score}, 
+        print join("\t", $fusion_name, sprintf("%.2f", $fusion_candidate->{score}), 
                    $fusion_candidate->{geneA}, $fusion_candidate->{chr_brkpt_A},
                    $fusion_candidate->{geneB}, $fusion_candidate->{chr_brkpt_B}, 
                    $fusion_candidate->{splice_type},
