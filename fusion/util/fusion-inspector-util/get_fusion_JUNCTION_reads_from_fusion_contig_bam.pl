@@ -248,6 +248,8 @@ sub hits_exon_bound {
     foreach my $coordset (@$genome_coords_aref) {
         my ($lend, $rend) = @$coordset;
 
+        if ($lend == $rend) { next; } # no single base searches
+
         my $read_coords_aref = shift @read_coordsets;
         my ($read_end5, $read_end3) = @$read_coords_aref;
         
@@ -320,8 +322,11 @@ sub parse_gtf_file {
                             orig_orient => $orig_orient,
 
         };
-        $interval_tree->insert($exon_struct, $lend, $rend);
-    
+
+        if ($lend != $rend) {
+            $interval_tree->insert($exon_struct, $lend, $rend);
+        }
+        
         push (@{$scaff_to_gene_to_coords{$scaffold_id}->{$gene_id}}, $lend, $rend);
         
     }

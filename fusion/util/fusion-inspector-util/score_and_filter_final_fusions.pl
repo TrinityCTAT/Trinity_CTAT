@@ -18,14 +18,15 @@ my $abridged_file = $ARGV[0] or die $usage;
 1       chr_brkpt_A
 2       geneB
 3       chr_brkpt_B
-4       junction_count
-5       spanning_count
-6       num_left_contrary_reads
-7       num_right_contrary_reads
-8       TAF_left
-9       TAF_right
-10      fusion_annotations
-11      TrinGG_Fusion
+4       splice_type
+5       junction_count
+6       spanning_count
+7       num_left_contrary_reads
+8       num_right_contrary_reads
+9       TAF_left
+10       TAF_right
+11      fusion_annotations
+12      TrinGG_Fusion
 
 =cut
 
@@ -79,14 +80,18 @@ main: {
 
     
     ## Filter using homology data
-    print STDERR "-parsing blast homology info: $FUSION_ANNOTATOR_LIB/blastn.gene_pairs.gz\n";
-    my %blast_pairs = &get_blast_pairs("$FUSION_ANNOTATOR_LIB/blastn.gene_pairs.gz");
+    if (0) {
     
-    print STDERR "-labeling fusions, generating final report.\n";
-
-    @fusion_candidates = &label_likely_artifacts(\@fusion_candidates, \%blast_pairs);
-
-
+        ## TODO: reexamine this later
+        
+        print STDERR "-parsing blast homology info: $FUSION_ANNOTATOR_LIB/blastn.gene_pairs.gz\n";
+        my %blast_pairs = &get_blast_pairs("$FUSION_ANNOTATOR_LIB/blastn.gene_pairs.gz"); 
+        
+        print STDERR "-labeling fusions, generating final report.\n";
+        
+        @fusion_candidates = &label_likely_artifacts(\@fusion_candidates, \%blast_pairs);
+    }
+    
     ## Generate final report
     @fusion_candidates = reverse sort {$a->{score}<=>$b->{score}} @fusion_candidates;
 

@@ -56,13 +56,19 @@ main: {
             @left_contrary_reads = keys %{$fusion_info{$fusion}->{'spanning-left_contrary_support'}};
         }
         my $num_left_contrary_reads = scalar(@left_contrary_reads);
-
+        if ($num_left_contrary_reads == 0) {
+            push (@left_contrary_reads, ".");
+        }
+        
 
         my @right_contrary_reads;
         if (exists $fusion_info{$fusion}->{'spanning-right_contrary_support'}) {
             @right_contrary_reads = keys %{$fusion_info{$fusion}->{'spanning-right_contrary_support'}};
         }
         my $num_right_contrary_reads = scalar(@right_contrary_reads);
+        if ($num_right_contrary_reads == 0) {
+            push (@right_contrary_reads, ".");
+        }
         
         my $TAF_left = ($num_junction_reads + $num_spanning_reads + $PSEUDOCOUNT) / ($num_left_contrary_reads + $PSEUDOCOUNT);
         $TAF_left = sprintf("%.2f", $TAF_left);
