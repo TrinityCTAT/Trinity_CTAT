@@ -228,8 +228,9 @@ class FusionInspector( ParentScript.ParentScript ):
             cmdstr = str(TRINITY_HOME + "/util/misc/run_STAR.pl --genome " + workdir_mergedContig_fasta_filename +
                          " --reads \"" +  args_parsed.left_fq_filename + " " + args_parsed.right_fq_filename + "\"" +
                          " -G " + workdir_mergedContig_gtf_filename + " --CPU 4 " +  
-                         " --out_prefix " + os.sep.join([workdir, args_parsed.out_prefix + ".star"]) )  
-
+                         " --out_prefix " + args_parsed.out_prefix + ".star"
+                         + " --out_dir " + workdir )   
+            
             star_bam_file = os.sep.join([workdir, args_parsed.out_prefix + ".star.sortedByCoord.out.bam"])
 
             lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
