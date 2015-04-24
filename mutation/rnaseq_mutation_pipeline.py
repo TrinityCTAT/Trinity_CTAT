@@ -980,9 +980,20 @@ def run( args_call, f_do_index = False ):
         lcmd_commands.extend( dict_ret_variant_filtration[ INDEX_CMD ] )
 
         # Add commands to annotate and summarize files
+        # This is a sciedpiper script and needs to get all the default parameters to be consistent with the parent script.
         str_annotated_vcf_file = os.path.join( os.path.dirname( dict_ret_variant_calling[ INDEX_FILE ] ), "variants_annotated.vcf.gz" )
-        str_annotate_cmd = " ".join( [ "python " + "summarize_annotate_vcf.py", "--dbsnp", args_call.str_vcf_file,
-                       "--output_file", str_annotated_vcf_file, dict_ret_variant_calling[ INDEX_FILE ] ] )
+        str_annotate_cmd = "python summarize_annotate_vcf.py --dbsnp " + args_call.str_vcf_file
+        if args_call.f_clean:
+            str_annotate_cmd = str_annotate_cmd + " --clean"
+        if args_call.str_log_file:
+            str_annotate_cmd = str_annotate_cmd + " --log " + os.path.splitext( args_call.str_log_file )[0] + "_ann.log"
+        if args_call.i_number_threads > 1:
+            str_annotate_cmd = str_annotate_cmd + " --threads " + str( args_call.i_number_threads )
+        if args_call.f_Test:
+            str_annotate_cmd = str_annotate_cmd + " --test"
+        if args_call.str_update_classpath:
+            str_annotate_cmd = str_annotate_cmd + " --update_command " + args_call.str_update_classpath
+        str_annotate_cmd = str_annotate_cmd + " --output_file " + str_annotated_vcf_file + " " + dict_ret_variant_calling[ INDEX_FILE ]
         lcmd_commands.append( Command.Command( str_cur_command = str_annotate_cmd,
                                           lstr_cur_dependencies = [ args_call.str_vcf_file ],
                                           lstr_cur_products = [ str_annotated_vcf_file ] ) )
