@@ -70,6 +70,8 @@ main: {
             my $itree = $scaffold_itree_to_exon_structs{$scaffold};
             my @exon_hits = &hits_exon_bound($genome_coords_aref, $read_coords_aref, $itree);
             
+            #print Dumper(\@exon_hits);
+
             unless (scalar @exon_hits > 1) { next; } 
             
             my %genes_matched;
@@ -77,12 +79,10 @@ main: {
                 $genes_matched{ $exon_hit->{exon_struct}->{gene_id} }++;
             }
             my $num_genes_matched = scalar(keys %genes_matched);
+            #print "Genes matched: $num_genes_matched\n";
             unless ($num_genes_matched > 1) { next; }
-
             
-            
-            
-            
+                        
             my $junction_coord_token = &get_junction_coord_token(@exon_hits);
             if ($junction_coord_token) {
                 
@@ -147,11 +147,12 @@ sub get_junction_coord_token {
             ## see if different genes and properly split alignment
             if ($exon_struct_i->{gene_id} ne $exon_struct_j->{gene_id}
                 &&
-                ($exon_hit_i->{read_end3} == $exon_hit_j->{read_end5} + 1
-                 ||
-                 $exon_hit_j->{read_end3} == $exon_hit_i->{read_end5} + 1) 
+                ( $exon_hit_i->{read_end3} == $exon_hit_j->{read_end5} - 1 # forward read alignment
+                  ||
+                  $exon_hit_i->{read_end5} == $exon_hit_j->{read_end3} + 1 # reverse read alignment
+                ) 
                 ) {
-                    
+                
                 ## determine deltas between exon ends and read alignment ends
                 my $delta_i = $exon_hit_i->{align_genome_rend} - $exon_hit_i->{exon_struct}->{rend};
                 my $delta_j = $exon_hit_j->{align_genome_lend} - $exon_hit_j->{exon_struct}->{lend};
