@@ -122,50 +122,55 @@ def func_read_VCF_file( str_file_name, dict_reference = None, f_no_prefilter_mod
   if f_reference:
     dict_return = dict_reference
 
-  with open( str_file_name, "r" ) as hndl_vcf:
-    print "Reading VCF file: " + str_file_name
+  print "Reading VCF file: " + str_file_name
+  hndl_vcf = None
+  if str_file_name.split( "." )[ -1 ] == ".gz":
+    hndl_vcf = gzip.open( str_file_name, "r" )
+  else:
+    hndl_vcf = open( str_file_name, "r" )
 
-    csvr_vcf = csv.reader( hndl_vcf, delimiter = CHR_VCF_DELIM )
-    for lstr_line in csvr_vcf:
+  csvr_vcf = csv.reader( hndl_vcf, delimiter = CHR_VCF_DELIM )
+  for lstr_line in csvr_vcf:
+    # Skip comment
+    if lstr_line[0][0] == CHR_COMMENT:
+      if lstr_line[0] == CHR_COMMENT_CHR:
+        if not len( lstr_line ) == I_SINGLE_VCF_SAMPLE:
+          print "This VCF file does not adhere to the expected 1 sample format. Terminating."
+      continue
 
-      # Skip comment
-      if lstr_line[0][0] == CHR_COMMENT:
-        if lstr_line[0] == CHR_COMMENT_CHR:
-          if not len( lstr_line ) == I_SINGLE_VCF_SAMPLE:
-            print "This VCF file does not adhere to the expected 1 sample format. Terminating."
+    # Make sure the line passes
+    if not f_no_prefilter_mode:
+      if not lstr_line[I_FILTER_INDEX] == STR_PASS:
         continue
 
-      # Make sure the line passes
-      if not f_no_prefilter_mode:
-        if not lstr_line[I_FILTER_INDEX] == STR_PASS:
-          continue
+    # Skip monomorphic sites
+    if lstr_line[ I_ALT_INDEX ] == CHR_MONOMORPHIC_REFERENCE:
+      continue
 
-      # Skip monomorphic sites
-      if lstr_line[ I_ALT_INDEX ] == CHR_MONOMORPHIC_REFERENCE:
-        continue
+    # Get call information
+    # Get the location of the call information from the format entry
+    i_genotype_index = lstr_line[ I_FORMAT_INDEX ].split( CHR_ANNOT_DELIM ).index( STR_FORMAT_GENOTYPE )
 
-      # Get call information
-      # Get the location of the call information from the format entry
-      i_genotype_index = lstr_line[ I_FORMAT_INDEX ].split( CHR_ANNOT_DELIM ).index( STR_FORMAT_GENOTYPE )
+    str_genotype = func_get_genotype( lstr_line[ I_REF_INDEX], lstr_line[ I_ALT_INDEX ], lstr_line[ I_GENOTYPE_INDEX ].split( CHR_ANNOT_DELIM )[ i_genotype_index ] )
+    if not str_genotype:
+      continue
 
-      str_genotype = func_get_genotype( lstr_line[ I_REF_INDEX], lstr_line[ I_ALT_INDEX ], lstr_line[ I_GENOTYPE_INDEX ].split( CHR_ANNOT_DELIM )[ i_genotype_index ] )
-      if not str_genotype:
-        continue
+    # Make genomic location
+    str_loc = lstr_line[I_CHR_INDEX] + STR_POS_SEP + lstr_line[ I_POS_INDEX ]
 
-      # Make genomic location
-      str_loc = lstr_line[I_CHR_INDEX] + STR_POS_SEP + lstr_line[ I_POS_INDEX ]
+    # Store in dict
+    # f_reference indicates a reference dict has been given.
+    # Both reference and not are recorded.
+    if f_reference:
+      if not str_loc in dict_return:
+        dict_return[ str_loc ] = [ "NA" ] * 8
+      dict_return[ str_loc ][ I_LOC_NOT_REF_VCF ] = str_loc
+      dict_return[ str_loc ][ I_REF_NOT_REF_VCF ] = lstr_line[ I_REF_INDEX ]
+      dict_return[ str_loc ][ I_GENOTYPE_NOT_REF_VCF ] = str_genotype
+    else:
+      dict_return[ str_loc ] = [str_loc, lstr_line[I_REF_INDEX], str_genotype, "NA", "NA", "NA", "NA", "NA" ]
 
-      # Store in dict
-      # f_reference indicates a reference dict has been given.
-      # Both reference and not are recorded.
-      if f_reference:
-        if not str_loc in dict_return:
-          dict_return[ str_loc ] = [ "NA" ] * 8
-        dict_return[ str_loc ][ I_LOC_NOT_REF_VCF ] = str_loc
-        dict_return[ str_loc ][ I_REF_NOT_REF_VCF ] = lstr_line[ I_REF_INDEX ]
-        dict_return[ str_loc ][ I_GENOTYPE_NOT_REF_VCF ] = str_genotype
-      else:
-        dict_return[ str_loc ] = [str_loc, lstr_line[I_REF_INDEX], str_genotype, "NA", "NA", "NA", "NA", "NA" ]
+  hndl_vcf.close()
   return dict_return
 
 # Dict of output {chr--1232:line}
