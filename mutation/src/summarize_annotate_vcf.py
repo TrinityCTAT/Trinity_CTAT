@@ -114,7 +114,7 @@ class SummarizeAnnotateVCF( ParentScript.ParentScript ):
     # bcftools annotate --annotations str_dbsnp_vcf -c
     # PM variant is clinicall precious (clinical and pubmed cited)
     # NSF, NSM, NSN, COMMON, SAO, KGPROD, KGVALIDATED, MUT, WTD, VLD, RS, PMC
-    str_annotate_command = " ".join( [ "bcftools", "annotate", "--output-type", "z", "--annotations", str_annotation_file, "--columns", "INFO/COMMON,INFO/PM,INFO/NSF,INFO/NSM,INFO/NSN,INFO/SAO,INFO/KGPROD,INFO/KGValidated,INFO/MUT,INFO/WTD,INFO/VLD,INFO/RS,INFO/PMC", "--output", args_parsed.str_output_file, str_combined_vcf ] )
+    str_annotate_command = " ".join( [ "bcftools", "annotate", "--output-type", "v", "--annotations", str_annotation_file, "--columns", "INFO/COMMON,INFO/PM,INFO/NSF,INFO/NSM,INFO/NSN,INFO/SAO,INFO/KGPROD,INFO/KGValidated,INFO/MUT,INFO/WTD,INFO/VLD,INFO/RS,INFO/PMC", "--output", args_parsed.str_output_file, str_combined_vcf ] )
     lcmd_commands.append( Command.Command( str_cur_command = str_annotate_command,
                                            lstr_cur_dependencies = [ str_annotation_file, str_combined_vcf ],
                                            lstr_cur_products = [ args_parsed.str_output_file ] ) )
