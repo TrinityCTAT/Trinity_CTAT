@@ -116,7 +116,7 @@ func_plot_roc = function( list_TPR, list_FDR, vi_depths, i_mean_depth, str_pdf_f
   legend( "topright", legend=vstr_legend_labels_exome, col=vstr_legend_col_exome, title=str_legend_vary_title, lty=vstr_legend_line_exome, lwd=2, cex=.75, pch=vstr_legend_shape_exome )
   vstr_roc_ticks=paste( VI_ROC_TICKS )
   axis( 2, at=VI_ROC_TICKS, labels=vstr_roc_ticks )
-  mtext( side=2, "True Positive Rate (TP/FP+FN)", line = 2 )
+  mtext( side=2, "True Positive Rate (TP/TP+FN)", line = 2 )
   axis( 1, at=VI_ROC_TICKS, labels=vstr_roc_ticks ) 
   mtext( side=1, "False Discovery Rate (FP/FP+TP)", line = 2 )
   dev.off()
@@ -172,7 +172,7 @@ func_plot_roc = function( list_TPR, list_FDR, vi_depths, i_mean_depth, str_pdf_f
     axis( 2, at=vi_serial_ticks, labels=vstr_serial_ticks )
     mtext( side=1, "Min RNA-Seq Coverage", line = 2 )
     axis( 1, at=vi_serial_ticks, labels=vstr_serial_ticks ) 
-    mtext( side=2, "True Positive Rate (TP/FP+FN)", line = 2 )
+    mtext( side=2, "True Positive Rate (TP/TP+FN)", line = 2 )
     dev.off()
   }
 }
