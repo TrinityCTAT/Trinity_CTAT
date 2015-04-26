@@ -981,7 +981,7 @@ def run( args_call, f_do_index = False ):
 
         # Add commands to annotate and summarize files
         # This is a sciedpiper script and needs to get all the default parameters to be consistent with the parent script.
-        str_annotated_vcf_file = os.path.join( os.path.dirname( dict_ret_variant_calling[ INDEX_FILE ] ), "variants_annotated.vcf.gz" )
+        str_annotated_vcf_file = os.path.join( os.path.dirname( dict_ret_variant_calling[ INDEX_FILE ] ), "variants_annotated.vcf" )
         str_annotate_cmd = "python summarize_annotate_vcf.py --dbsnp " + args_call.str_vcf_file
         if args_call.f_clean:
             str_annotate_cmd = str_annotate_cmd + " --clean"
