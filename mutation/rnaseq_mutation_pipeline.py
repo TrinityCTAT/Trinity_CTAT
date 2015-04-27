@@ -670,16 +670,16 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
                                             lstr_cur_dependencies = [ args_call.str_genome_fa, str_recal_snp_bam, str_recal_snp_bai ],
                                             lstr_cur_products = [ str_raw_vcf ] ).func_set_dependency_clean_level( [ str_recal_snp_bam, str_recal_snp_bai ], Command.CLEAN_NEVER )
     
-    # Hard filter like the RNA-seq
-    cmd_variant_filteration = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T VariantFiltration -R", 
-                                                                     args_call.str_genome_fa, "-V", str_raw_vcf, "-window 35",
-                                                                     "-cluster 3 -filterName FS -filter \"FS > 30.0\" -filterName QD",
-                                                                     "-filter \"QD < 2.0\" --out", str_filtered_variants_file ] ),
-                                            lstr_cur_dependencies = [ args_call.str_genome_fa, str_raw_vcf ],
-                                            lstr_cur_products = [ str_filtered_variants_file ] ).func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER  )
+#    # Hard filter like the RNA-seq
+#    cmd_variant_filteration = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T VariantFiltration -R", 
+#                                                                     args_call.str_genome_fa, "-V", str_raw_vcf, "-window 35",
+#                                                                     "-cluster 3 -filterName FS -filter \"FS > 30.0\" -filterName QD",
+#                                                                     "-filter \"QD < 2.0\" --out", str_filtered_variants_file ] ),
+#                                            lstr_cur_dependencies = [ args_call.str_genome_fa, str_raw_vcf ],
+#                                            lstr_cur_products = [ str_filtered_variants_file ] ).func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER  )
 
-    ls_cmds.extend( [ cmd_haplotype_caller, cmd_variant_filteration ] )
-    return { INDEX_CMD : ls_cmds, INDEX_FILE : str_filtered_variants_file }
+    ls_cmds.extend( [ cmd_haplotype_caller ] ) #, cmd_variant_filteration ] )
+    return { INDEX_CMD : ls_cmds, INDEX_FILE : str_raw_vcf }
 
 
 def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur ):
@@ -994,9 +994,12 @@ def run( args_call, f_do_index = False ):
         if args_call.str_update_classpath:
             str_annotate_cmd = str_annotate_cmd + " --update_command " + args_call.str_update_classpath
         str_annotate_cmd = str_annotate_cmd + " --output_file " + str_annotated_vcf_file + " " + dict_ret_variant_calling[ INDEX_FILE ]
-        lcmd_commands.append( Command.Command( str_cur_command = str_annotate_cmd,
+        cmd_summarize_annotate = Command.Command( str_cur_command = str_annotate_cmd, 
                                           lstr_cur_dependencies = [ args_call.str_vcf_file ],
-                                          lstr_cur_products = [ str_annotated_vcf_file ] ) )
+                                          lstr_cur_products = [ str_annotated_vcf_file ] )
+        cmd_summarize_annotate.f_stop_update_at_flags = True
+        lcmd_commands.append( cmd_summarize_annotate )
+
 
     # Run commands including variant calling
     if not pline_cur.func_run_commands( lcmd_commands = lcmd_commands, 
