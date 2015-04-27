@@ -449,6 +449,7 @@ dir.create( str_output_dir )
 
 # Information about the files as a group
 # Holds file information for the global images at the end.
+print( "STARTING visualize_mutation_depth_tab_files.R" )
 print( "Number of files reading:" )
 print( length( v_str_files ) )
 
