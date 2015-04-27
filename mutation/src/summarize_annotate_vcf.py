@@ -49,10 +49,10 @@ class SummarizeAnnotateVCF( ParentScript.ParentScript ):
     # List of files (compressed vcf) to work with
     lstr_compressed = []
 
-    # Manage Files
-    # Make sure the output file is named gz, if not, add it
-    if not os.path.splitext( args_parsed.str_output_file )[ 1 ] == ".gz":
-      args_parsed.str_output_file = args_parsed.str_output_file + ".gz"
+#    # Manage Files
+#    # Make sure the output file is named gz, if not, add it
+#    if not os.path.splitext( args_parsed.str_output_file )[ 1 ] == ".gz":
+#      args_parsed.str_output_file = args_parsed.str_output_file + ".gz"
 
     # If not compressed this will be updated
     str_annotation_file = args_parsed.str_dbsnp_vcf
