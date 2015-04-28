@@ -852,7 +852,7 @@ def run( args_call, f_do_index = False ):
         str_sample_postfix = os.path.splitext( os.path.basename( args_call.str_genome_fa ) )[ 0 ]
     str_sample_postfix = str_sample_postfix.replace(".","_")
 
-    STR_MISC_DIR = "_".join( [ "misc", str_sample_postfix ] )
+    STR_MISC_DIR = "misc"
 
     # Make the gtf files required for TOPHAT and GSNAP flows
     if args_call.str_alignment_mode in [ STR_ALIGN_GSNP, STR_ALIGN_TOPHAT ]:
