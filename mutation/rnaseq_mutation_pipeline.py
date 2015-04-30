@@ -509,6 +509,14 @@ def func_do_rnaseq_caller_gatk( args_call, str_input_bam, str_unique_id, str_pro
     # Files 
     str_variants_file = os.path.join( str_project_dir, "variants.vcf" )
     str_input_bai = ".".join( [ os.path.splitext( str_input_bam )[ 0 ], "bai" ] )
+
+    # Create depth file
+    if args_call.f_calculate_base_coverage:
+        str_depth_compressed_file = os.path.basename( str_input_bam + ".depth.gz" )
+        str_depth_compressed_file = os.path.join( args_call.str_file_base, str_depth_compressed_file )
+        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_input_bam + " | gzip > " + str_depth_compressed_file,
+                                               lstr_cur_dependencies = [ str_input_bam ],
+                                               lstr_cur_products = [ str_depth_compressed_file ] ) )
     
     # Variant calling
     cmd_haplotype_caller = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T HaplotypeCaller -R", args_call.str_genome_fa,
@@ -661,7 +669,15 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
                                 lstr_cur_dependencies = [ args_call.str_genome_fa, str_recal_table, str_recal_table_2 ],
                                 lstr_cur_products = [ str_recal_plot ] )
         ls_cmds.append( cmd_covariates )
-    
+
+    # Create depth file
+    if args_call.f_calculate_base_coverage:
+        str_depth_compressed_file = os.path.basename( str_recal_snp_bam + ".depth.gz" )
+        str_depth_compressed_file = os.path.join( args_call.str_file_base, str_depth_compressed_file )
+        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_recal_snp_bam + " | gzip > " + str_depth_compressed_file,
+                                               lstr_cur_dependencies = [ str_recal_snp_bam ],
+                                               lstr_cur_products = [ str_depth_compressed_file ] ) )
+
     # Call mutations - Single File, variant only calling in DNA-seq.
     # https://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php
     # java -jar GenomeAnalysisTk.jar -T HaplotypeCaller -R reference/file.fasta -I recal.bam -stand_call_conf 30 -stand_emit_conf -o output.vcf
@@ -736,6 +752,15 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
                             Command.Command( str_cur_command = " ".join( [ "samtools index", str_bam_sorted ] ),
                                             lstr_cur_dependencies = [ str_bam_sorted ],
                                             lstr_cur_products = [ str_bam_sorted_index ] ) ] )
+
+    # Create depth file
+    if args_call.f_calculate_base_coverage:
+        str_depth_compressed_file = os.path.basename( str_bam_sorted + ".depth.gz" )
+        str_depth_compressed_file = os.path.join( args_call.str_file_base, str_depth_compressed_file )
+        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_bam_sorted + " | gzip > " + str_depth_compressed_file,
+                                               lstr_cur_dependencies = [ str_bam_sorted ],
+                                               lstr_cur_products = [ str_depth_compressed_file ] ) )
+
     # Identify variants
     str_samtools_calls = " ".join( [ "samtools mpileup -ugf", args_call.str_genome_fa, str_bam_sorted, "| bcftools call -mv -Ov >", str_variants_vcf ] )
     lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = str_samtools_calls,
@@ -953,13 +978,14 @@ def run( args_call, f_do_index = False ):
         exit( 3 )
 
     # If making depth files
-    if args_call.f_calculate_base_coverage:
+    if args_call.f_calculate_base_coverage and ( args_call.variant_call_mode == STR_VARIANT_NONE ):
         # Create depth file
         str_depth_compressed_file = os.path.basename( dict_align_info[ INDEX_FILE ] + ".depth.gz" )
         str_depth_compressed_file = os.path.join( args_call.str_file_base, str_depth_compressed_file )
         lcmd_commands.append( Command.Command( str_cur_command = "samtools depth " + dict_align_info[ INDEX_FILE ] + " | gzip > " + str_depth_compressed_file,
                                                lstr_cur_dependencies = [ dict_align_info[ INDEX_FILE ] ],
                                                lstr_cur_products = [ str_depth_compressed_file ] ) )
+
     # If variant calling is occuring
     if not ( args_call.str_variant_call_mode.lower() == STR_VARIANT_NONE.lower() ):
         # Add variant calling commands
