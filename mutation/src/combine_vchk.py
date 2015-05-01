@@ -4,9 +4,18 @@ import argparse
 import barChart as bc
 import boxPlot as bx
 import glob
+import json
 import matplotlib.pyplot as plt
 import os
 import quickPlot as qp
+
+
+def func_write_json( dict_json, str_file_name ):
+    """ Write a dict representing json to a file """
+
+    with open( str_file_name, "w" ) as hndl_out:
+        hndl_out.write( json.dumps( dict_json, sort_keys=True, indent=2 ) )
+
 
 prsr_arguments = argparse.ArgumentParser( prog = "combine_vchk.py", description = "Combines vchk files from samtools and makes some charts on combined statistics (Currently just the transitions data)", formatter_class = argparse.ArgumentDefaultsHelpFormatter )
 prsr_arguments.add_argument( "--input_dir", required = True, dest = "str_input_dir", action = "store", help = "Directory that contains vchk files (recursive glob will grab any file with .vchk in root or child dirs." )
@@ -82,6 +91,7 @@ dict_rel_json = { qp.c_STR_TITLE: "Percent Base Transitions / Transversion",
                   qp.c_STR_DATA: lli_values,
                   qp.c_STR_DATA_LABEL: lstr_labels }
 bx.BoxPlot().func_plot( dict_rel_json, os.path.join( args_call.str_output_dir, "Distributions_transitions.pdf" ))
+func_write_json( dict_json=dict_rel_json, str_file_name= os.path.join( args_call.str_output_dir, "Distributions_transitions.json" ) )
 
 # Barchart
 dict_absolute_json = {  qp.c_STR_TITLE: "Total Base Transitions / Transversion",
@@ -92,3 +102,4 @@ dict_absolute_json = {  qp.c_STR_TITLE: "Total Base Transitions / Transversion",
                                            qp.c_STR_X_TICK_LABEL : lstr_labels_abs,  } ] }
 
 bc.BarChart().func_plot( dict_absolute_json, os.path.join( args_call.str_output_dir, "Total_transitions.pdf" ))
+func_write_json( dict_json=dict_absolute_json, str_file_name= os.path.join( args_call.str_output_dir, "Total_transitions.json" ) )
