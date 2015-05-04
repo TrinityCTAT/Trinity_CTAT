@@ -43,6 +43,8 @@ func_plot_roc = function( list_TPR, list_FDR, vi_depths, i_mean_depth, str_pdf_f
                           list_TPR_compare=NULL, list_FDR_compare=NULL, vi_depths_compare=NULL, str_method_name="",
                           str_method_name_compare="" )
 {
+  # Plots both ROCs and Optimization plots (coverage by metric)
+
   # Check parameters for comparison mode.
   if( ! is.null( vi_depths_compare ) )
   {
@@ -63,6 +65,7 @@ func_plot_roc = function( list_TPR, list_FDR, vi_depths, i_mean_depth, str_pdf_f
     }
   }
 
+  # Make plot for 
   # Generate basis for plot
   pdf( str_pdf_file_name, useDingbats = FALSE )
   plot.new()
@@ -124,7 +127,8 @@ func_plot_roc = function( list_TPR, list_FDR, vi_depths, i_mean_depth, str_pdf_f
   # Plot the measurements over depth
   # TPR over Depth
   # FDR over Depth
-  vi_serial_ticks=vi_depths
+  i_max_coverage = ceiling( max( vi_depths, na.rm=TRUE ) * 1.1 )
+  vi_serial_ticks= seq( 0, i_max_coverage, ceiling( max( vi_depths,na.rm=TRUE ) / 10.0 ) ) 
   vstr_serial_ticks=paste( vi_serial_ticks )
   for( i_name_single_plots in 1:length( vstr_line_names ) )
   {
@@ -134,7 +138,7 @@ func_plot_roc = function( list_TPR, list_FDR, vi_depths, i_mean_depth, str_pdf_f
     # Plot comparison line if given (FDR)
     str_cur_depth=vstr_line_names[ i_name_single_plots ]
     # Plot predictor line (FDR)
-    plot(x=vi_depths, y=list_FDR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_single_plots ], ylim=c(0,1) )
+    plot(x=vi_depths, y=list_FDR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_single_plots ], ylim=c(0,1), xlab=NA, ylab=NA, xaxt="n" )
     lines(x=vi_depths, y=list_FDR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_single_plots ], ylim=c(0,1) )
     points(x=vi_depths, y=list_FDR[[ vstr_line_names[ i_name_single_plots ]]], pch=24, col=vstr_exome_colors[ i_name_single_plots ], bg=vstr_roc_colors )
     if( ! is.null( vi_depths_compare ) )
@@ -156,7 +160,7 @@ func_plot_roc = function( list_TPR, list_FDR, vi_depths, i_mean_depth, str_pdf_f
     # Plot comparison line if given (TPR)
     str_cur_depth=vstr_line_names[ i_name_single_plots ]
     # Plot predictor line (TPR)
-    plot(x=vi_depths, y=list_TPR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_single_plots ], ylim=c(0,1) )
+    plot(x=vi_depths, y=list_TPR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_single_plots ], ylim=c(0,1), xlab=NA, ylab=NA, xaxt="n" )
     lines(x=vi_depths, y=list_TPR[[ vstr_line_names[ i_name_single_plots ]]], col=vstr_exome_colors[ i_name_single_plots ] )
     points(x=vi_depths, y=list_TPR[[ vstr_line_names[ i_name_single_plots ]]], pch=24, col=vstr_exome_colors[ i_name_single_plots ], bg=vstr_roc_colors )
     if( ! is.null( vi_depths_compare ) )
@@ -177,42 +181,45 @@ func_plot_roc = function( list_TPR, list_FDR, vi_depths, i_mean_depth, str_pdf_f
   }
 }
 
-func_plot_seperate_metrics = function( list_TPR, list_FDR, vi_depths, str_pdf_file_name, str_title_fragement,
-                                       str_method_name=NULL, str_method_name_compare=NULL, list_TPR_compare=NULL, list_FDR_compare=NULL, vi_depths_compare=NULL )
-{
-  # Cut off at 10% features
-  i_number_features = df_measurements[[ "TP_min" ]][ 1 ] + df_measurements[[ "FP_min" ]][ 1 ] + df_measurements[[ "FN_min" ]][ 1 ]
-  i_cut_off = floor( i_number_features * .1 )
-  i_cut_off_index = nrow( df_measurements )
-  for( i in 1:nrow( df_measurements ))
-  {
-    if( df_measurements[[ "TP_min" ]][ i ] + df_measurements[[ "FP_min" ]][ i ] + df_measurements[[ "FN_min" ]][ i ] < i_cut_off )
-    {
-      i_cut_off_index = i - 1
-      break
-    }
-  }
-  # Colors used in plotting
-  ## Fill
-  i_depth_used = length( df_measurements$Depth[ 1:i_cut_off_index ] )
-  i_depth_half = floor( i_depth_used /2 )
-  plt_blues = adjustcolor( colorRampPalette(brewer.pal( 9, "Blues" ))( i_depth_used ), alpha.f = 0.5 )
-
-  ## Borders
-  str_border_color = "#000000"
-  plt_border = sapply( c(round( ( i_depth_half:1 ) / i_depth_half, 2 ),rep(0, i_depth_used-i_depth_half)), function( x ) adjustcolor( str_border_color, alpha.f = x ) )
-
-  # At a given minimum, x = depth, (y) sensitivity vs ( x ) minimum read threshold
-  plot( df_measurements$Depth[ 1:i_cut_off_index ], df_measurements[[ "TPR_min" ]][ 1:i_cut_off_index ], main = "TPR vs Min Read Coverage", xlab = paste("Min Coverage (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), ylab = "TPR", pch = 21, col = plt_border, bg = plt_blues ) 
-#  abline( v = i_center_raw, col = "darkgoldenrod1" )
-
-  # At a given minimum, x = depth, (y) postivive predictive value vs ( x ) minimum read threshold
-  plot( df_measurements$Depth[ 1:i_cut_off_index ], df_measurements[[ "FDR_min" ]][ 1:i_cut_off_index ], main = "FDR vs Min Read Coverage", xlab = paste("Min Read Coverage (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), ylab = "FDR", pch = 21, col = plt_border, bg = plt_blues ) 
-
-  # Optimization plot
-  plot( df_measurements[[ "FDR_min" ]][ 1:i_cut_off_index ], df_measurements[[ "TPR_min" ]][ 1:i_cut_off_index ], main = paste("TPR vs FDR (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), xlab = "False Discovery Rate (FP/FP+TP)", ylab = "Sensitivity (TP/TP+FN)", pch = 21, col = plt_border, bg = plt_blues )
-  plot( df_measurements[[ "FDR_min" ]][ 1:i_cut_off_index ], df_measurements[[ "TPR_min" ]][ 1:i_cut_off_index ], main = "TPR vs FDR", xlab = "False Discovery Rate (FP/TP+FP)", ylab = "TPR (TP/TP+FN)", pch = 21, col = plt_border, bg = plt_blues )
-}
+#func_plot_seperate_metrics = function( list_TPR, list_FDR, vi_depths, str_pdf_file_name, str_title_fragement,
+#                                       str_method_name=NULL, str_method_name_compare=NULL, list_TPR_compare=NULL, list_FDR_compare=NULL, vi_depths_compare=NULL )
+#{
+#  # Cut off at 10% features
+#  i_number_features = df_measurements[[ "TP_min" ]][ 1 ] + df_measurements[[ "FP_min" ]][ 1 ] + df_measurements[[ "FN_min" ]][ 1 ]
+#  i_cut_off = floor( i_number_features * .1 )
+#  i_cut_off_index = nrow( df_measurements )
+#  for( i in 1:nrow( df_measurements ))
+#  {
+#    if( df_measurements[[ "TP_min" ]][ i ] + df_measurements[[ "FP_min" ]][ i ] + df_measurements[[ "FN_min" ]][ i ] < i_cut_off )
+#    {
+#      i_cut_off_index = i - 1
+#      break
+#    }
+#  }
+#  # Colors used in plotting
+#  ## Fill
+#  i_depth_used = length( df_measurements$Depth[ 1:i_cut_off_index ] )
+#  i_depth_half = floor( i_depth_used /2 )
+#  plt_blues = adjustcolor( colorRampPalette(brewer.pal( 9, "Blues" ))( i_depth_used ), alpha.f = 0.5 )
+#
+#  #labels
+#  str_x_axis = paste("Min Coverage (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep="")
+#
+#  ## Borders
+#  str_border_color = "#000000"
+#  plt_border = sapply( c(round( ( i_depth_half:1 ) / i_depth_half, 2 ),rep(0, i_depth_used-i_depth_half)), function( x ) adjustcolor( str_border_color, alpha.f = x ) )
+#
+#  # At a given minimum, x = depth, (y) sensitivity vs ( x ) minimum read threshold
+#  plot( df_measurements$Depth[ 1:i_cut_off_index ], df_measurements[[ "TPR_min" ]][ 1:i_cut_off_index ], main = "TPR vs Min Read Coverage", xlab = str_x_axis, ylab = "TPR", pch = 21, col = plt_border, bg = plt_blues ) 
+#
+#  # At a given minimum, x = depth, (y) postivive predictive value vs ( x ) minimum read threshold
+#  plot( df_measurements$Depth[ 1:i_cut_off_index ], df_measurements[[ "FDR_min" ]][ 1:i_cut_off_index ], main = "FDR vs Min Read Coverage", xlab = str_x_axis, ylab = "FDR", pch = 21, col = plt_border, bg = plt_blues ) 
+#
+#  # Optimization plot
+#  plot( df_measurements[[ "FDR_min" ]][ 1:i_cut_off_index ], df_measurements[[ "TPR_min" ]][ 1:i_cut_off_index ], main = paste("TPR vs FDR (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), xlab = "False Discovery Rate (FP/FP+TP)", ylab = "Sensitivity (TP/TP+FN)", pch = 21, col = plt_border, bg = plt_blues )
+#  plot( df_measurements[[ "FDR_min" ]][ 1:i_cut_off_index ], df_measurements[[ "TPR_min" ]][ 1:i_cut_off_index ], main = "TPR vs FDR", xlab = "False Discovery Rate (FP/TP+FP)", ylab = "TPR (TP/TP+FN)", pch = 21, col = plt_border, bg = plt_blues )
+#  write.table( df_roc, file = file.path( str_output_dir, paste( str_file_base_name, paste("roc_truth_",i_cur_truth_coverage,"_pred_",i_cur_pred_coverage,".txt",sep=""), sep = "_" ) ) )
+#}
 
 # Calculate rocs
 # vi_primary_calls: Indicies of the truth calls
