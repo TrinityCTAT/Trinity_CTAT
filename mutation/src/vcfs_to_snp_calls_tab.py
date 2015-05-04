@@ -140,7 +140,7 @@ def func_read_VCF_file( str_file_name, dict_reference = None, f_no_prefilter_mod
 
     # Make sure the line passes
     if not f_no_prefilter_mode:
-      if not lstr_line[I_FILTER_INDEX] == STR_PASS:
+      if not lstr_line[I_FILTER_INDEX] in [ STR_PASS, "." ]:
         continue
 
     # Skip monomorphic sites
