@@ -512,9 +512,11 @@ def func_do_rnaseq_caller_gatk( args_call, str_input_bam, str_unique_id, str_pro
 
     # Create depth file
     if args_call.f_calculate_base_coverage:
-        str_depth_compressed_file = os.path.basename( str_input_bam + ".depth.gz" )
+#        str_depth_compressed_file = os.path.basename( str_input_bam + ".depth.gz" )
+        str_depth_compressed_file = os.path.basename( str_input_bam + ".depth" )
         str_depth_compressed_file = os.path.join( args_call.str_file_base, str_depth_compressed_file )
-        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_input_bam + " | gzip > " + str_depth_compressed_file,
+#        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_input_bam + " | gzip > " + str_depth_compressed_file,
+        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_input_bam + " > " + str_depth_compressed_file,
                                                lstr_cur_dependencies = [ str_input_bam ],
                                                lstr_cur_products = [ str_depth_compressed_file ] ) )
     
@@ -672,9 +674,11 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
 
     # Create depth file
     if args_call.f_calculate_base_coverage:
-        str_depth_compressed_file = os.path.basename( str_recal_snp_bam + ".depth.gz" )
+#        str_depth_compressed_file = os.path.basename( str_recal_snp_bam + ".depth.gz" )
+        str_depth_compressed_file = os.path.basename( str_recal_snp_bam + ".depth" )
         str_depth_compressed_file = os.path.join( args_call.str_file_base, str_depth_compressed_file )
-        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_recal_snp_bam + " | gzip > " + str_depth_compressed_file,
+#        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_recal_snp_bam + " | gzip > " + str_depth_compressed_file,
+        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_recal_snp_bam + " > " + str_depth_compressed_file,
                                                lstr_cur_dependencies = [ str_recal_snp_bam ],
                                                lstr_cur_products = [ str_depth_compressed_file ] ) )
 
@@ -755,9 +759,11 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
 
     # Create depth file
     if args_call.f_calculate_base_coverage:
-        str_depth_compressed_file = os.path.basename( str_bam_sorted + ".depth.gz" )
+#        str_depth_compressed_file = os.path.basename( str_bam_sorted + ".depth.gz" )
+        str_depth_compressed_file = os.path.basename( str_bam_sorted + ".depth" )
         str_depth_compressed_file = os.path.join( args_call.str_file_base, str_depth_compressed_file )
-        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_bam_sorted + " | gzip > " + str_depth_compressed_file,
+#        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_bam_sorted + " | gzip > " + str_depth_compressed_file,
+        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_bam_sorted + " > " + str_depth_compressed_file,
                                                lstr_cur_dependencies = [ str_bam_sorted ],
                                                lstr_cur_products = [ str_depth_compressed_file ] ) )
 
@@ -980,9 +986,11 @@ def run( args_call, f_do_index = False ):
     # If making depth files
     if args_call.f_calculate_base_coverage and ( args_call.variant_call_mode == STR_VARIANT_NONE ):
         # Create depth file
-        str_depth_compressed_file = os.path.basename( dict_align_info[ INDEX_FILE ] + ".depth.gz" )
+#        str_depth_compressed_file = os.path.basename( dict_align_info[ INDEX_FILE ] + ".depth.gz" )
+        str_depth_compressed_file = os.path.basename( dict_align_info[ INDEX_FILE ] + ".depth" )
         str_depth_compressed_file = os.path.join( args_call.str_file_base, str_depth_compressed_file )
-        lcmd_commands.append( Command.Command( str_cur_command = "samtools depth " + dict_align_info[ INDEX_FILE ] + " | gzip > " + str_depth_compressed_file,
+#        lcmd_commands.append( Command.Command( str_cur_command = "samtools depth " + dict_align_info[ INDEX_FILE ] + " | gzip > " + str_depth_compressed_file,
+        lcmd_commands.append( Command.Command( str_cur_command = "samtools depth " + dict_align_info[ INDEX_FILE ] + " > " + str_depth_compressed_file,
                                                lstr_cur_dependencies = [ dict_align_info[ INDEX_FILE ] ],
                                                lstr_cur_products = [ str_depth_compressed_file ] ) )
 
