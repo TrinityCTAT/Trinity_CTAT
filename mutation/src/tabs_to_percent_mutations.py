@@ -13,6 +13,11 @@ import csv
 import matplotlib.pyplot as plt
 import os
 
+# VCF related constants
+c_I_VCF_CHR = 0
+c_I_VCF_POS = 1
+c_I_VCF_FILTER = 6
+
 i_gtf_annotations = 8
 i_gtf_location = 0
 i_tab_location = 0
@@ -57,7 +62,7 @@ def func_plot_one( str_file_output, lstr_write_genes, li_write_mutations ):
   plt.savefig( str_file_output )
 
 
-def func_read_tab( str_tab_file, lstr_target_genes ):
+def func_read_tab( str_file, lstr_target_genes ):
 
   # Initialize mutation counts mutation counts
   # { str_gene_name: 0 }
@@ -66,17 +71,52 @@ def func_read_tab( str_tab_file, lstr_target_genes ):
   dict_mutation_samples = dict( [ [ str_key_gene_name, [] ] for str_key_gene_name in lstr_target_genes ] )
 
   # Read in tab file
-  with open( str_tab_file, "r" ) as hndl_tab:
-    i_samples = i_samples + 1
+  with open( str_file, "r" ) as hndl_tab:
     for lstr_tab_line in csv.reader( hndl_tab, delimiter = "\t" ):
+      # Make sure the entry is not NA (only in the tab file because there is an entry in the comparison sample
       if lstr_tab_line[ i_tab_location ] in dict_target_genes:
         if lstr_tab_line[ i_tab_mutation ].lower() == "na":
           pass
+        # Get the associated gene for the feature
         str_cur_gene = dict_target_genes[ lstr_tab_line[ i_tab_location ] ]
+        # Update the gene's mutation count
         dict_mutation_counts[ str_cur_gene ] = dict_mutation_counts[ str_cur_gene ] + 1
+        # Update that the sample had the mutation in it
         lstr_samples_cur_gene = dict_mutation_samples[ str_cur_gene ]
-        if not str_tab_file in lstr_samples_cur_gene:
-          lstr_samples_cur_gene.append( str_tab_file )
+        if not str_file in lstr_samples_cur_gene:
+          lstr_samples_cur_gene.append( str_file )
+    return( ( dict_mutation_samples, dict_mutation_counts ) )
+
+
+def func_read_vcf( str_file, lstr_target_genes ):
+
+  # Initialize mutation counts mutation counts
+  # { str_gene_name: 0 }
+  dict_mutation_counts = dict( [ [ str_key_gene_name, 0 ] for str_key_gene_name in lstr_target_genes ] )
+  # { str_gene_name: [] }
+  dict_mutation_samples = dict( [ [ str_key_gene_name, [] ] for str_key_gene_name in lstr_target_genes ] )
+
+  # Read in vcf file
+  with open( str_file, "r" ) as hndl_vcf:
+    for lstr_vcf_line in csv.reader( hndl_vcf, delimiter = "\t" ):
+      # Skip comments
+      if lstr_vcf_line[ 0 ][ 0 ] == "#":
+        continue
+      # Get genomic location
+      str_position = "--".join( c_I_VCF_CHR, c_I_VCF_POS )
+      # If the location is in a gene of interest
+      if str_position in dict_target_genes:
+        # Skip SNPs that failed a filter if a filter was ran
+        if not lstr_vcf_line[ c_I_VCF_FILTER ].lower() in [ "pass", "." ]:
+          pass
+        # Get the associated gene for the feature
+        str_cur_gene = dict_target_genes[ str_position ]
+        # Update the gene's mutation count
+        dict_mutation_counts[ str_cur_gene ] = dict_mutation_counts[ str_cur_gene ] + 1
+        # Update that the sample had the mutation in it
+        lstr_samples_cur_gene = dict_mutation_samples[ str_cur_gene ]
+        if not str_file in lstr_samples_cur_gene:
+          lstr_samples_cur_gene.append( str_file )
     return( ( dict_mutation_samples, dict_mutation_counts ) )
 
 
@@ -106,10 +146,17 @@ def func_write_data_to_file( str_data_file, dict_mutation_samples, dict_mutation
 prsr_arguments = argparse.ArgumentParser( prog = "tab_to_percent_mutations.py", description = "Counts mutation prevalence from tab files", conflict_handler="resolve", formatter_class = argparse.ArgumentDefaultsHelpFormatter )
 prsr_arguments.add_argument( "-g", "--gtf", metavar = "GTF_file", dest = "str_gtf", default = None, required = True, help = "GTF file to get gene locations." )
 prsr_arguments.add_argument( "-k", "--key", metavar = "Key_genes", dest = "str_key_genes", default = None, required = True, help = "Key genes of interest to count mutations in. comma delimited. Example: gene1,gene2,gene3,gene4." )
-prsr_arguments.add_argument( "-t", "--tab", metavar = "Tab_file", dest = "lstr_tab_files", default = None, required = True, action = "append", help = "Tab files to parse for mutations" )
+prsr_arguments.add_argument( "-t", "--tab", metavar = "Tab_file", dest = "lstr_tab_files", default = [], action = "append", help = "Tab files to parse for mutations" )
 prsr_arguments.add_argument( "-o", "--out_file", metavar = "Output_file", dest = "str_output_file", default = None, required = True, help = "PDF figure." )
 prsr_arguments.add_argument( "-s", "--second", dest = "f_second_entry", default = False, action="store_true", help = "Switches between reading in the first or second evidence type in the tab files." )
+prsr_arguments.add_argument( "--vcf", metavar = "VCF_file", dest = "lstr_vcf_files", default = [], help = "VCF files to parse for mutations." )
 args_call = prsr_arguments.parse_args()
+
+# Require lstr_tab files or lstr_vcf_files
+# These are the files that are evaluated
+if len(  lstr_tab_files ) == 0 and len( lstr_vcf_files ) == 0:
+  print "Please provide either tab files or vcf files to parse."
+  exit( 99 )
 
 # Shift reading if looking at the second entry in the tab file.
 i_tab_second_shift = 4
@@ -136,14 +183,14 @@ dict_mutation_counts_total = dict( [ [ str_key_gene_name, 0 ] for str_key_gene_n
 dict_mutation_samples_total = dict( [ [ str_key_gene_name, [] ] for str_key_gene_name in lstr_target_genes ] )
 
 # Count mutations from each file.
-for str_tab_file in args_call.lstr_tab_files:
+for str_file in args_call.lstr_tab_files + args_call.lstr_vcf_files:
 
   # Per file view output file name
-  str_per_file_text_file = os.path.splitext( str_output_text_file )[ 0 ] + "_" + os.path.basename( str_tab_file ) + ".txt"
-  str_per_file_pdf_file = os.path.splitext( str_per_file_text_file )[ 0 ] + "_" + os.path.basename( str_tab_file ) + ".pdf"
+  str_per_file_text_file = os.path.splitext( str_output_text_file )[ 0 ] + "_" + os.path.basename( str_file ) + ".txt"
+  str_per_file_pdf_file = os.path.splitext( str_per_file_text_file )[ 0 ] + "_" + os.path.basename( str_file ) + ".pdf"
 
   # Read table and count key mutations
-  dict_mutation_samples, dict_mutation_counts = func_read_tab( str_tab_file = str_per_file_text_file, lstr_target_genes = lstr_target_genes )
+  dict_mutation_samples, dict_mutation_counts = func_read_vcf( str_file = str_file, lstr_target_genes = lstr_target_genes ) if os.path.splitext( str_file )[ 1 ] == "vcf" else func_read_tab( str_file = str_file, lstr_target_genes = lstr_target_genes )
 
   # Write to file
   lstr_write_genes, li_write_mutations = func_write_data_to_file( str_data_file = str_per_file_text_file, 
