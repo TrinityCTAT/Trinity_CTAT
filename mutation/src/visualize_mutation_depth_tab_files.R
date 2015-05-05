@@ -31,7 +31,6 @@ pArgs = OptionParser( usage ="%prog -o output_dir file1.tab file2.tab" )
 pArgs = add_option( pArgs, c( "-c","--compare" ), type="character", action="store", dest="str_compare_file", default=NULL, help="Compares each of the given output files with the tab field given here as a reference.")
 pArgs = add_option( pArgs, c( "-k","--title_key" ), type="character", action="store", dest="str_title_key", default="Primary vs Secondary", help="Key identifying the contrast being visualized (eg \"DNA vs RNA\")")
 pArgs = add_option( pArgs, c( "-o","--group_output_dir" ), type="character", action="store", dest="str_output_dir", default=NULL, help="Output directory (required).")
-#pArgs = add_option( pArgs, c( "-t","--measure_transitions" ), type="logical", action="store_true", dest="f_calculate_transitions", default=FALSE, help="Turns on calculating nucleotide transitions, can take time to calculate.")
 pArgs = add_option( pArgs, c( "--method" ), type="character", action="store", dest="str_method_name", default=NULL, help="The name of the method being evaluated (Should match the input file.")
 pArgs = add_option( pArgs, c( "--method_compare" ), type="character", action="store", dest="str_method_name_compare", default=NULL, help="The name of the method that is used for comparison (should match the --compare file).")
 pArgs = add_option( pArgs, c( "--serial_plots" ), type="logical", action="store_true", dest="f_make_serial_plots", default=FALSE, help="After the sample space is defined, additionally plots each depth as a seperate plot.")
@@ -181,46 +180,6 @@ func_plot_roc = function( list_TPR, list_FDR, vi_depths, i_mean_depth, str_pdf_f
   }
 }
 
-#func_plot_seperate_metrics = function( list_TPR, list_FDR, vi_depths, str_pdf_file_name, str_title_fragement,
-#                                       str_method_name=NULL, str_method_name_compare=NULL, list_TPR_compare=NULL, list_FDR_compare=NULL, vi_depths_compare=NULL )
-#{
-#  # Cut off at 10% features
-#  i_number_features = df_measurements[[ "TP_min" ]][ 1 ] + df_measurements[[ "FP_min" ]][ 1 ] + df_measurements[[ "FN_min" ]][ 1 ]
-#  i_cut_off = floor( i_number_features * .1 )
-#  i_cut_off_index = nrow( df_measurements )
-#  for( i in 1:nrow( df_measurements ))
-#  {
-#    if( df_measurements[[ "TP_min" ]][ i ] + df_measurements[[ "FP_min" ]][ i ] + df_measurements[[ "FN_min" ]][ i ] < i_cut_off )
-#    {
-#      i_cut_off_index = i - 1
-#      break
-#    }
-#  }
-#  # Colors used in plotting
-#  ## Fill
-#  i_depth_used = length( df_measurements$Depth[ 1:i_cut_off_index ] )
-#  i_depth_half = floor( i_depth_used /2 )
-#  plt_blues = adjustcolor( colorRampPalette(brewer.pal( 9, "Blues" ))( i_depth_used ), alpha.f = 0.5 )
-#
-#  #labels
-#  str_x_axis = paste("Min Coverage (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep="")
-#
-#  ## Borders
-#  str_border_color = "#000000"
-#  plt_border = sapply( c(round( ( i_depth_half:1 ) / i_depth_half, 2 ),rep(0, i_depth_used-i_depth_half)), function( x ) adjustcolor( str_border_color, alpha.f = x ) )
-#
-#  # At a given minimum, x = depth, (y) sensitivity vs ( x ) minimum read threshold
-#  plot( df_measurements$Depth[ 1:i_cut_off_index ], df_measurements[[ "TPR_min" ]][ 1:i_cut_off_index ], main = "TPR vs Min Read Coverage", xlab = str_x_axis, ylab = "TPR", pch = 21, col = plt_border, bg = plt_blues ) 
-#
-#  # At a given minimum, x = depth, (y) postivive predictive value vs ( x ) minimum read threshold
-#  plot( df_measurements$Depth[ 1:i_cut_off_index ], df_measurements[[ "FDR_min" ]][ 1:i_cut_off_index ], main = "FDR vs Min Read Coverage", xlab = str_x_axis, ylab = "FDR", pch = 21, col = plt_border, bg = plt_blues ) 
-#
-#  # Optimization plot
-#  plot( df_measurements[[ "FDR_min" ]][ 1:i_cut_off_index ], df_measurements[[ "TPR_min" ]][ 1:i_cut_off_index ], main = paste("TPR vs FDR (Requiring ",C_I_MIN_PERCENT_FEATURES * 100,"% data)",sep=""), xlab = "False Discovery Rate (FP/FP+TP)", ylab = "Sensitivity (TP/TP+FN)", pch = 21, col = plt_border, bg = plt_blues )
-#  plot( df_measurements[[ "FDR_min" ]][ 1:i_cut_off_index ], df_measurements[[ "TPR_min" ]][ 1:i_cut_off_index ], main = "TPR vs FDR", xlab = "False Discovery Rate (FP/TP+FP)", ylab = "TPR (TP/TP+FN)", pch = 21, col = plt_border, bg = plt_blues )
-#  write.table( df_roc, file = file.path( str_output_dir, paste( str_file_base_name, paste("roc_truth_",i_cur_truth_coverage,"_pred_",i_cur_pred_coverage,".txt",sep=""), sep = "_" ) ) )
-#}
-
 # Calculate rocs
 # vi_primary_calls: Indicies of the truth calls
 # vi_secondary_calls: Indicies of calls for the calls being investigated
@@ -305,11 +264,8 @@ func_vary_coverage_and_measure_classes = function( df_data, vi_vary_truth, vi_va
     vi_roc_secondary_calls = vi_secondary_calls
     vi_roc_depths = sort( VI_ROC_DEPTHS, decreasing=FALSE )
     vNA_init = rep(NA,length( vi_roc_depths ))
-    df_roc = data.frame( TPR=vNA_init, FDR=vNA_init, TP=vNA_init, FP=vNA_init, FN=vNA_init,
-                           FP_AG=vNA_init, FP_AC=vNA_init, FP_AT=vNA_init, FP_GC=vNA_init, FP_GA=vNA_init, FP_GT=vNA_init, FP_CG=vNA_init, FP_CT=vNA_init, FP_CA=vNA_init,
-                           TP_AG=vNA_init, TP_AC=vNA_init, TP_AT=vNA_init, TP_GC=vNA_init, TP_GA=vNA_init, TP_GT=vNA_init, TP_CG=vNA_init, TP_CT=vNA_init, TP_CA=vNA_init )
+    df_roc = data.frame( TPR=vNA_init, FDR=vNA_init, TP=vNA_init, FP=vNA_init, FN=vNA_init )
     rownames( df_roc ) = vi_roc_depths
-    f_measure_transitions = f_calculate_transitions
     for( i_cur_roc_depth in vi_roc_depths )
     {
       if( i_cur_roc_depth < i_cur_pred_coverage )
@@ -333,61 +289,6 @@ func_vary_coverage_and_measure_classes = function( df_data, vi_vary_truth, vi_va
         vi_TP = c( vi_TP, ls_roc_results[[ "TP" ]] )
         vi_FP = c( vi_FP, ls_roc_results[[ "FP" ]] )
         vi_FN = c( vi_FN, ls_roc_results[[ "FN" ]] )
-        if( f_measure_transitions )
-        {
-          # Used to count nucleotide transitions in errors
-          ltrans_fp = list( "A->G"=0, "A->C"=0,"A->T"=0, "G->C"=0, "G->A"=0, "G->T"=0, "C->G"=0, "C->T"=0, "C->A"=0 )
-          ltrans_tp = list( "A->G"=0, "A->C"=0,"A->T"=0, "G->C"=0, "G->A"=0, "G->T"=0, "C->G"=0, "C->T"=0, "C->A"=0 )
-          # Store transitions
-          # Get transition in the prediction
-          for( i_TP_index in ls_roc_results[[ "TP_indices" ]] )
-          {
-            df_row = df_tab[ i_TP_index, ]
-            str_ref = as.character( df_row[[ C_I_SECONDARY_REF ]] )
-            vstr_genotype = unlist( strsplit( as.character( df_row[[ C_I_SECONDARY_GT ]] ), "/" ))
-            for( str_gt in vstr_genotype )
-            {
-              if( ! str_gt == str_ref )
-              {
-                str_trans = paste( str_ref, str_gt, sep = "->" )
-                ltrans_tp[[ str_trans ]] = ltrans_tp[[ str_trans ]] + 1
-              }
-            }
-          }
-          for( i_FP_index in ls_roc_results[[ "FP_indices" ]] )
-          {
-            df_row = df_tab[ i_FP_index, ]
-            str_ref = as.character( df_row[[ C_I_SECONDARY_REF ]] )
-            vstr_genotype = unlist( strsplit( as.character(df_row[[ C_I_SECONDARY_GT ]]), "/" ) )
-            for( str_gt in vstr_genotype )
-            {
-              if( ! str_gt == str_ref )
-              {
-                str_trans = paste( str_ref, str_gt, sep = "->" )
-                ltrans_fp[[ str_trans ]] = ltrans_fp[[ str_trans ]] + 1
-              }
-            }
-          }
-          df_roc[[ i_cur_roc_depth, "FP_AC" ]] = ltrans_fp[[ "A->C" ]]
-          df_roc[[ i_cur_roc_depth, "FP_AG" ]] = ltrans_fp[[ "A->G" ]]
-          df_roc[[ i_cur_roc_depth, "FP_AT" ]] = ltrans_fp[[ "A->T" ]]
-          df_roc[[ i_cur_roc_depth, "FP_GC" ]] = ltrans_fp[[ "G->C" ]]
-          df_roc[[ i_cur_roc_depth, "FP_GT" ]] = ltrans_fp[[ "G->T" ]]
-          df_roc[[ i_cur_roc_depth, "FP_GA" ]] = ltrans_fp[[ "G->A" ]]
-          df_roc[[ i_cur_roc_depth, "FP_CT" ]] = ltrans_fp[[ "C->T" ]]
-          df_roc[[ i_cur_roc_depth, "FP_CA" ]] = ltrans_fp[[ "C->A" ]]
-          df_roc[[ i_cur_roc_depth, "FP_CG" ]] = ltrans_fp[[ "C->G" ]]
-          df_roc[[ i_cur_roc_depth, "TP_AC" ]] = ltrans_tp[[ "A->C" ]]
-          df_roc[[ i_cur_roc_depth, "TP_AG" ]] = ltrans_tp[[ "A->G" ]]
-          df_roc[[ i_cur_roc_depth, "TP_AT" ]] = ltrans_tp[[ "A->T" ]]
-          df_roc[[ i_cur_roc_depth, "TP_GC" ]] = ltrans_tp[[ "G->C" ]]
-          df_roc[[ i_cur_roc_depth, "TP_GT" ]] = ltrans_tp[[ "G->T" ]]
-          df_roc[[ i_cur_roc_depth, "TP_GA" ]] = ltrans_tp[[ "G->A" ]]
-          df_roc[[ i_cur_roc_depth, "TP_CT" ]] = ltrans_tp[[ "C->T" ]]
-          df_roc[[ i_cur_roc_depth, "TP_CA" ]] = ltrans_tp[[ "C->A" ]]
-          df_roc[[ i_cur_roc_depth, "TP_CG" ]] = ltrans_tp[[ "C->G" ]]
-          f_measure_transitions = FALSE
-        }
       }
     }
     # Update list of TPR and FDR
@@ -531,14 +432,6 @@ for( str_file in v_str_files )
                  str_legend_vary_title="Min Exome Cov" )
     }
   }
-
-#  # Plot metrics seperately by depth
-#  func_plot_seperate_metrics( list_TPR=ls_classes[[ "TPR" ]], list_FDR=ls_classes[[ "FDR" ]], vi_depths=ls_classes[[ "DEPTHS" ]],
-#                              list_TPR_compare=ls_classes_compare_vary_min_truth[["TPR"]], list_FDR_compare=ls_classes_compare_vary_min_truth[["FDR"]],
-#                              vi_depths_compare=ls_classes_compare_vary_min_truth[["DEPTH"]],
-#                              str_pdf_file_name=,
-#                              str_method_name=lsArgs$options$str_method_name, str_method_name_compare=lsArgs$options$str_method_name_compare,
-#                              str_title_fragement=paste( "( RNA Seq Min Cov ", I_SELECTED_PRED_MIN_COV, " )", sep="" ) )
 
   # Vary the problem space holding truth at 10 min coverage and vary pred min coverage
   # then investigate each pred min coverage in the resulting sample space
