@@ -512,8 +512,8 @@ def func_do_rnaseq_caller_gatk( args_call, str_input_bam, str_unique_id, str_pro
 
     # Create depth file
     if args_call.f_calculate_base_coverage:
-#        str_depth_compressed_file = os.path.basename( str_input_bam + ".depth.gz" )
-        str_depth_compressed_file = os.path.basename( str_input_bam + ".depth" )
+#        str_depth_compressed_file = os.path.basename( args_call.str_file_base ) + ".depth.gz"
+        str_depth_compressed_file = os.path.basename( args_call.str_file_base ) + ".depth"
         str_depth_compressed_file = os.path.join( args_call.str_file_base, str_depth_compressed_file )
 #        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_input_bam + " | gzip > " + str_depth_compressed_file,
         lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_input_bam + " > " + str_depth_compressed_file,
@@ -525,7 +525,8 @@ def func_do_rnaseq_caller_gatk( args_call, str_input_bam, str_unique_id, str_pro
                                                            "-I", str_input_bam, "-recoverDanglingHeads -dontUseSoftClippedBases",
                                                            "-stand_call_conf 20.0 -stand_emit_conf 20.0 --out", str_variants_file] ),
                                             lstr_cur_dependencies = [ args_call.str_genome_fa, str_input_bam, str_input_bai ],
-                                            lstr_cur_products = [ str_variants_file ] ).func_set_dependency_clean_level( [ str_input_bam, str_input_bai ], Command.CLEAN_NEVER )
+                                            lstr_cur_products = [ str_variants_file ] )
+    cmd_haplotype_caller.func_set_dependency_clean_level( [ str_input_bam, str_input_bai ], Command.CLEAN_NEVER )
 
     return { INDEX_CMD : [ cmd_haplotype_caller ], INDEX_FILE : str_variants_file }
 
@@ -674,8 +675,8 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
 
     # Create depth file
     if args_call.f_calculate_base_coverage:
-#        str_depth_compressed_file = os.path.basename( str_recal_snp_bam + ".depth.gz" )
-        str_depth_compressed_file = os.path.basename( str_recal_snp_bam + ".depth" )
+#        str_depth_compressed_file = os.path.basename( args_call.str_file_base ) + ".depth.gz"
+        str_depth_compressed_file = os.path.basename( args_call.str_file_base ) + ".depth"
         str_depth_compressed_file = os.path.join( args_call.str_file_base, str_depth_compressed_file )
 #        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_recal_snp_bam + " | gzip > " + str_depth_compressed_file,
         lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_recal_snp_bam + " > " + str_depth_compressed_file,
@@ -688,7 +689,8 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
     cmd_haplotype_caller = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T HaplotypeCaller -R", args_call.str_genome_fa,
                                                            "-I", str_recal_snp_bam, "-stand_call_conf 30.0 -stand_emit_conf 10.0 -o", str_raw_vcf] ),
                                             lstr_cur_dependencies = [ args_call.str_genome_fa, str_recal_snp_bam, str_recal_snp_bai ],
-                                            lstr_cur_products = [ str_raw_vcf ] ).func_set_dependency_clean_level( [ str_recal_snp_bam, str_recal_snp_bai ], Command.CLEAN_NEVER )
+                                            lstr_cur_products = [ str_raw_vcf ] )
+    cmd_haplotype_caller.func_set_dependency_clean_level( [ str_recal_snp_bam, str_recal_snp_bai ], Command.CLEAN_NEVER )
     
 #    # Hard filter like the RNA-seq
 #    cmd_variant_filteration = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T VariantFiltration -R", 
@@ -696,7 +698,8 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
 #                                                                     "-cluster 3 -filterName FS -filter \"FS > 30.0\" -filterName QD",
 #                                                                     "-filter \"QD < 2.0\" --out", str_filtered_variants_file ] ),
 #                                            lstr_cur_dependencies = [ args_call.str_genome_fa, str_raw_vcf ],
-#                                            lstr_cur_products = [ str_filtered_variants_file ] ).func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER  )
+#                                            lstr_cur_products = [ str_filtered_variants_file ] )
+#    cmd_variant_filteration.func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER  )
 
     ls_cmds.extend( [ cmd_haplotype_caller ] ) #, cmd_variant_filteration ] )
     return { INDEX_CMD : ls_cmds, INDEX_FILE : str_raw_vcf }
@@ -759,19 +762,25 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
 
     # Create depth file
     if args_call.f_calculate_base_coverage:
-#        str_depth_compressed_file = os.path.basename( str_bam_sorted + ".depth.gz" )
-        str_depth_compressed_file = os.path.basename( str_bam_sorted + ".depth" )
+#        str_depth_compressed_file = os.path.basename( args_call.str_file_base + ".depth.gz" )
+        str_depth_compressed_file = os.path.basename( args_call.str_file_base + ".depth" )
         str_depth_compressed_file = os.path.join( args_call.str_file_base, str_depth_compressed_file )
 #        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_bam_sorted + " | gzip > " + str_depth_compressed_file,
-        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_bam_sorted + " > " + str_depth_compressed_file,
-                                               lstr_cur_dependencies = [ str_bam_sorted ],
-                                               lstr_cur_products = [ str_depth_compressed_file ] ) )
+
+        cmd_depth_file = Command.Command( str_cur_command = "samtools depth " + str_bam_sorted + " > " + str_depth_compressed_file,
+                                          lstr_cur_dependencies = [ str_bam_sorted ],
+                                          lstr_cur_products = [ str_depth_compressed_file ] )
+        cmd_depth_file.func_set_dependency_clean_level( [ str_bam_sorted ], Command.CLEAN_NEVER )
+        lcmd_samtools_variants_commands.append( cmd_depth_file )
 
     # Identify variants
     str_samtools_calls = " ".join( [ "samtools mpileup -ugf", args_call.str_genome_fa, str_bam_sorted, "| bcftools call -mv -Ov >", str_variants_vcf ] )
-    lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = str_samtools_calls,
-                                            lstr_cur_dependencies = [ str_bam_sorted ],
-                                            lstr_cur_products = [ str_variants_vcf ] ) )
+    cmd_sam_call =  Command.Command( str_cur_command = str_samtools_calls,
+                                     lstr_cur_dependencies = [ str_bam_sorted ],
+                                     lstr_cur_products = [ str_variants_vcf ] )
+    cmd_sam_call.func_set_dependency_clean_level( [ str_bam_sorted ], Command.CLEAN_NEVER )
+    lcmd_samtools_variants_commands.append( cmd_sam_call )
+
     return { INDEX_CMD : lcmd_samtools_variants_commands, INDEX_FILE : str_variants_vcf }
 
 
@@ -800,11 +809,12 @@ def func_do_variant_filtering_bcftools( args_call, str_variants_file, lstr_depen
     str_filtered_variants_file = os.path.join( os.path.splitext( str_variants_file )[ 0 ] + "_filtered_variants.vcf" )
 
     # Filter variants
-    str_filter_command = "bcftools filter --output-type v --output " + str_filtered_variants_file + " -sLowQual -g3 -G10 -e'%QUAL<10 || (RPB<0.1 && %QUAL<15) || (AC<2 && %QUAL<15)' " + str_variants_file
+    str_filter_command = "bcftools filter --output-type v --output " + str_filtered_variants_file + " -sLowQual -g3 -G10 -e \"%QUAL<10 || (RPB<0.1 && %QUAL<15) || (AC<2 && %QUAL<15)\" " + str_variants_file
 
     cmd_variant_filtration = Command.Command( str_cur_command = str_filter_command,
                                             lstr_cur_dependencies = [ args_call.str_genome_fa ] + lstr_dependencies,
-                                            lstr_cur_products = [ str_filtered_variants_file ] ).func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER )
+                                            lstr_cur_products = [ str_filtered_variants_file ] )
+    cmd_variant_filtration.func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER )
 
     return { INDEX_CMD : [ cmd_variant_filtration ], INDEX_FILE : str_filtered_variants_file }
 
@@ -828,7 +838,8 @@ def func_do_variant_filtering_gatk( args_call, str_variants_file, lstr_dependenc
                          "-cluster 3 -filterName FS -filter \"FS > 30.0\" -filterName QD","-filter \"QD < 2.0\" --out", str_filtered_variants_file ] )
     cmd_variant_filteration = Command.Command( str_cur_command = str_filter_command, 
                                                lstr_cur_dependencies = [ args_call.str_genome_fa ] + lstr_dependencies,
-                                               lstr_cur_products = [ str_filtered_variants_file ] ).func_set_dependency_clean_level( [ str_variants_file ], Command.CLEAN_NEVER )
+                                               lstr_cur_products = [ str_filtered_variants_file ] )
+    cmd_variant_filteration.func_set_dependency_clean_level( [ str_variants_file ], Command.CLEAN_NEVER )
     return { INDEX_CMD : [ cmd_variant_filteration ], INDEX_FILE : str_filtered_variants_file }
 
 
@@ -1017,8 +1028,9 @@ def run( args_call, f_do_index = False ):
         # This is a sciedpiper script and needs to get all the default parameters to be consistent with the parent script.
         str_annotated_vcf_file = os.path.join( os.path.dirname( dict_ret_variant_calling[ INDEX_FILE ] ), "variants_annotated.vcf" )
         str_annotate_cmd = "python summarize_annotate_vcf.py --dbsnp " + args_call.str_vcf_file
-        if args_call.f_clean:
-            str_annotate_cmd = str_annotate_cmd + " --clean"
+# keep cleaning off for the summarize script
+#        if args_call.f_clean:
+#            str_annotate_cmd = str_annotate_cmd + " --clean"
         if args_call.str_log_file:
             str_annotate_cmd = str_annotate_cmd + " --log " + os.path.splitext( args_call.str_log_file )[0] + "_ann.log"
         if args_call.i_number_threads > 1:
