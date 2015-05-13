@@ -23,7 +23,7 @@ main: {
     ####################
     
     $pipeliner->add_commands( 
-        new Command("$INSTALL_DIR/FusionInspector --fusions ./test_fusions.list --gtf $FUSION_ANNOTATOR_LIB/gencode.v19.rna_seq_pipeline.gtf --genome_fa $FUSION_ANNOTATOR_LIB/Hg19.fa --left_fq reads.left.simPE.fq --right reads.right.simPE.fq --out_dir Fusion_Inspector/ --out_prefix fi_test --align_utils GSNAP,HISAT,STAR ",
+        new Command("$INSTALL_DIR/FusionInspector --fusions ./test_fusions.list --gtf $FUSION_ANNOTATOR_LIB/gencode.v19.rna_seq_pipeline.gtf --genome_fa $FUSION_ANNOTATOR_LIB/Hg19.fa --left_fq $left_fq --right $right_fq --out_dir Fusion_Inspector/ --out_prefix fi_test --align_utils GSNAP,HISAT,STAR ",
                     "Fusion_Inspector.ok")
         );
     
