@@ -22,6 +22,7 @@ __runMe_kcopipe.sh
 test_TrinityFusion.pl
 test_STAR-fusion.pl
 test_PRADA.pl
+test_SoapFuse.pl
                         );
 
 
