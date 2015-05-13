@@ -7,6 +7,7 @@ use Getopt::Long qw(:config no_ignore_case bundling pass_through);
 use Cwd;
 use FindBin;
 
+
 my $SOAPFUSE_DIR = $ENV{SOAPFUSE_DIR}; # "/seq/regev_genome_portal/SOFTWARE/SoapFuse/SOAPfuse-v1.26";
 #my $UTIL_DIR = "$FindBin::Bin/util";
 
@@ -15,63 +16,22 @@ unless ($SOAPFUSE_DIR) {
 }
 
 
+my $usage = "usage: $0 reads.left.fq reads.right.fq output_directory/ [NO_CLEANUP_FLAG]\n\n";
+my $left_fq = $ARGV[0] or die $usage;
+my $right_fq = $ARGV[1] or die $usage;
+my $output_directory = $ARGV[2] or die $usage;
+my $NO_CLEANUP_FLAG = $ARGV[3] || 0;
+
+
 my $MIN_SEQ_LEN = 25;
 
-my $help_flag;
+my $soap_fuse_config_file = "$SOAPFUSE_DIR/config/gencode_v19.config";
 
-
-my $usage = <<__EOUSAGE__;
-
-###############################################################
-#
-# --left <string>      left.fq
-# --right <string>     right.fq
-#
-# --soap_fuse_config <string>    SoapFuse config file
-#
-# --output_dir <string>          dir for all output
-#
-# --no_cleanup                   leave all output files as is. Otherwise, capture just the final outputs.
-#
-###############################################################
-
-
-__EOUSAGE__
-
-    ;
-
-
-my $left_fq;
-my $right_fq;
-my $soap_fuse_config_file;
-my $output_directory;
-my $NO_CLEANUP_FLAG = 0;
-
-&GetOptions ( 'h' => \$help_flag,
-
-              'left=s' => \$left_fq,
-              'right=s' => \$right_fq,
-              
-              'soap_fuse_config=s' => \$soap_fuse_config_file,
-              'output_dir=s' => \$output_directory,
-              
-              'no_cleanup' => \$NO_CLEANUP_FLAG,
-              
-              );
-
-if ($help_flag) {
-    die $usage;
-}
-
-unless ($left_fq && $right_fq && $soap_fuse_config_file && $output_directory) {
-    die $usage;
-}
 
 $left_fq = &ensure_full_path($left_fq, 1);
 $right_fq = &ensure_full_path($right_fq, 1);
 $soap_fuse_config_file = &ensure_full_path($soap_fuse_config_file, 1);
 $output_directory = &ensure_full_path($output_directory, 0);
-
 
 
 
