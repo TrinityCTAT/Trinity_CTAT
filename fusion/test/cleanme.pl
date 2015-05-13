@@ -21,7 +21,7 @@ test_FusionInspector.pl
 __runMe_kcopipe.sh
 test_TrinityFusion.pl
 test_STAR-fusion.pl
-
+test_PRADA.pl
                         );
 
 
