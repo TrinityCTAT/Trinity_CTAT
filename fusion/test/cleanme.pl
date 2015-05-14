@@ -34,6 +34,8 @@ my %keep = map { + $_ => 1 } @files_to_keep;
 `rm -rf ./Trinity_Fusion` if (-d "Trinity_Fusion");
 `rm -rf ./Fusion_Inspector` if (-d "Fusion_Inspector");
 `rm -rf ./trinity_out_dir` if (-d "trinity_out_dir");
+`rm -rf ./prada_outdir` if (-d "prada_outdir");
+`rm -rf ./soapfuse_outdir` if (-d "soapfuse_outdir");
 
 foreach my $file (<*>) {
 	
