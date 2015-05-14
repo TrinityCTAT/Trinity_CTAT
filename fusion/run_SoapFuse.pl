@@ -37,57 +37,49 @@ $output_directory = &ensure_full_path($output_directory, 0);
 
 main: {
 
-    my $checkpoint = "$output_directory/SoapFuse.ok";
-    if (-e $checkpoint) {
-        print STDERR "Already ran SoapFuse here: $checkpoint.\n";
-        exit(0);
-    }
     
-
+    my $checkpoint = "$output_directory/SoapFuse.ok";
+    
     unless (-d $output_directory) {
         mkdir $output_directory or die "Error, cannot mkdir $output_directory";
     }
-
+    
     chdir $output_directory or die "Error, cannot cd to $output_directory";
     
-    ## Prep reads in SoapFuse-expected file structure
-
-    my $soap_sample_dir = "sample/lib";
-    if (! -d $soap_sample_dir) {
-        &process_cmd("mkdir -p $soap_sample_dir");
-    }
-    chdir $soap_sample_dir or die "Error, cannot chdir $soap_sample_dir";
-    
-
-    
-    &ensure_gzip_fq_file($left_fq, "run_1.fq.gz");
-    &ensure_gzip_fq_file($right_fq, "run_2.fq.gz");    
-
-
-    
-    ## Run SoapFuse
-    chdir $output_directory or die "Error, cannot cd to $output_directory";
-
-    my $read_length = &get_read_length($left_fq);
-
-    my $samples_file = "samples_list.txt";
-    open (my $ofh, ">$samples_file") or die "Error, cannot write to file $samples_file";
-    print $ofh join("\t", "sample", "lib", "run", $read_length);
-    close $ofh;
-
-    my $cmd = "$SOAPFUSE_DIR/SOAPfuse-RUN.pl -c $SOAPFUSE_DIR/config/gencode_v19.config -fd . -l samples_list.txt -o soap_fuse_outdir ";
+    my $fusion_summary_file = "./soap_fuse_outdir/final_fusion_genes/sample.final.Fusion.specific.for.genes";
     
     if (! -e $checkpoint) {
+    
+        ## Prep reads in SoapFuse-expected file structure
         
+        my $soap_sample_dir = "sample/lib";
+        if (! -d $soap_sample_dir) {
+            &process_cmd("mkdir -p $soap_sample_dir");
+        }
+        chdir $soap_sample_dir or die "Error, cannot chdir $soap_sample_dir";
+        
+        
+        
+        &ensure_gzip_fq_file($left_fq, "run_1.fq.gz");
+        &ensure_gzip_fq_file($right_fq, "run_2.fq.gz");    
+        
+        
+        
+        ## Run SoapFuse
+        chdir $output_directory or die "Error, cannot cd to $output_directory";
+        
+        my $read_length = &get_read_length($left_fq);
+        
+        my $samples_file = "samples_list.txt";
+        {
+            open (my $ofh, ">$samples_file") or die "Error, cannot write to file $samples_file";
+            print $ofh join("\t", "sample", "lib", "run", $read_length);
+            close $ofh;
+        }
+        
+        my $cmd = "$SOAPFUSE_DIR/SOAPfuse-RUN.pl -c $SOAPFUSE_DIR/config/gencode_v19.config -fd . -l samples_list.txt -o soap_fuse_outdir ";
+                
         &process_cmd($cmd);
-        
-        
-        ## extract the fusion reads:
-        #my $cmd = "$UTIL_DIR/soapFuse_junc_read_extractor.pl ./soap_fuse_outdir/final_fusion_genes/sample/sample.final.Span_reads > ./soap_fuse_outdir/final_fusion_genes/sample/sample.final.Span_reads.fa";
-        #&process_cmd($cmd);
-        
-        #$cmd = "$UTIL_DIR/soapFuse_junc_read_extractor.pl ./soap_fuse_outdir/final_fusion_genes/sample/sample.final.Junc_reads > ./soap_fuse_outdir/final_fusion_genes/sample/sample.final.Junc_reads.fa";
-        #&process_cmd($cmd);
         
         
         #############
@@ -101,14 +93,32 @@ main: {
             
             &process_cmd("rm -rf ./soap_fuse_outdir") if (-d "./soap_fuse_outdir");
             
-            
+            $fusion_summary_file = "./final_fusion_genes/sample/sample.final.Fusion.specific.for.genes";
         }
-    
-        &process_cmd("touch $checkpoint"); 
-
-    }
         
+        &process_cmd("touch $checkpoint"); 
+        
+    }
     
+    #$fusion_summary_file = "./final_fusion_genes/sample/sample.final.Fusion.specific.for.genes";
+    
+    my $adj_summary_file = "SoapFuse.fusion_genes.summary";
+    open (my $fh, $fusion_summary_file) or die "Error, cannot open file $fusion_summary_file";
+    open (my $ofh, ">$adj_summary_file") or die "Error, cannot write to $adj_summary_file";
+    my $header = <$fh>;
+    print $ofh "#fusion_name\t$header";
+    while (<$fh>) {
+        my @x = split(/\t/);
+        my $geneA = $x[0];
+        my $geneB = $x[5];
+        my $fusion_name = "$geneA--$geneB";
+        unshift(@x, $fusion_name);
+        print $ofh join("\t", @x);
+    }
+    close $fh;
+    close $ofh;
+    
+
     exit(0);
 }
 

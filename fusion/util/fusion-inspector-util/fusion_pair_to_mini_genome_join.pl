@@ -86,28 +86,33 @@ main: {
     my @chim_pairs;
     
   parse_fusion_candidates: {
-      open (my $fh, $fusions_file) or die "Error, cannot open file $fusions_file";
-      while (<$fh>) {
-          if ($exclude_paralogs_flag && /PARALOG/) { next; }
-          if (/^\#/) { next; }
-          unless (/\w/) { next; }
+      
+      my @fusion_files = split(/,/, $fusions_file);
+      foreach my $file (@fusion_files) {
           
-          my ($chim_pair, @rest) = split(/\s+/);
-          if ($chim_pair =~ /^(\S+)--(\S+)$/) {
+          open (my $fh, $file) or die "Error, cannot open file $file";
+          while (<$fh>) {
+              if ($exclude_paralogs_flag && /PARALOG/) { next; }
+              if (/^\#/) { next; }
+              unless (/\w/) { next; }
               
-              my ($geneA, $geneB) = ($1, $2);
-              
-              if ($geneA eq $geneB) { next; } ## no selfies
-
-              $in_fusion{$geneA}++;
-              $in_fusion{$geneB}++;
-              push (@chim_pairs, $chim_pair);
+              my ($chim_pair, @rest) = split(/\s+/);
+              if ($chim_pair =~ /^(\S+)--(\S+)$/) {
+                  
+                  my ($geneA, $geneB) = ($1, $2);
+                  
+                  if ($geneA eq $geneB) { next; } ## no selfies
+                  
+                  $in_fusion{$geneA}++;
+                  $in_fusion{$geneB}++;
+                  push (@chim_pairs, $chim_pair);
+              }
+              else {
+                  die "Error, cannot parse $chim_pair as a fusion-gene candidate.";
+              }
           }
-          else {
-              die "Error, cannot parse $chim_pair as a fusion-gene candidate.";
-          }
+          close $fh;
       }
-      close $fh;
     }
     
     my %gene_to_gtf = &extract_gene_gtfs($gtf_file, \%in_fusion);

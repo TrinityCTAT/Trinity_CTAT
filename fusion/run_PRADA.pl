@@ -66,6 +66,27 @@ main: {
     unlink($left_fq_use, $right_fq_use);
     
 
+  update_summary_file:
+    ## reformat:
+    my $prada_summary_file = "$output_dir/prada_fusions/prada.fus.summary.txt";
+    unless (-s $prada_summary_file) {
+        die "Error, cannot locate output file: $prada_summary_file";
+    }
+    my $adj_output_file = "$output_dir/prada.fusions.summary";
+    open (my $fh, $prada_summary_file) or die "Error, cannot open file $prada_summary_file";
+    open (my $ofh, ">$adj_output_file") or die "Error, cannot write to file $adj_output_file";
+    my $header = <$fh>;
+    print $ofh "#fusion_name\t$header";
+    while (<$fh>) {
+        my @x = split(/\t/);
+        my ($geneA, $geneB) = ($x[0], $x[1]);
+        unshift (@x, "$geneA--$geneB");
+        print $ofh join("\t", @x);
+    }
+    close $fh;
+    close $ofh;
+    
+
     exit(0);
     
 }
