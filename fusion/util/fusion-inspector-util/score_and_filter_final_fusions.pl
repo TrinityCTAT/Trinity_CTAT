@@ -82,19 +82,8 @@ main: {
     close $fh;
 
 
+    @fusion_candidates = &label_likely_artifacts(\@fusion_candidates);
     
-    ## Filter using homology data
-    if (0) {
-    
-        ## TODO: reexamine this later
-        
-        print STDERR "-parsing blast homology info: $FUSION_ANNOTATOR_LIB/blastn.gene_pairs.gz\n";
-        my %blast_pairs = &get_blast_pairs("$FUSION_ANNOTATOR_LIB/blastn.gene_pairs.gz"); 
-        
-        print STDERR "-labeling fusions, generating final report.\n";
-        
-        @fusion_candidates = &label_likely_artifacts(\@fusion_candidates, \%blast_pairs);
-    }
     
     ## Generate final report
     @fusion_candidates = reverse sort {$a->{score}<=>$b->{score}} @fusion_candidates;
@@ -132,12 +121,11 @@ main: {
 
 ####
 sub label_likely_artifacts {
-    my ($fusion_candidates_aref, $blast_pairs_href) = @_;
+    my ($fusion_candidates_aref) = @_;
     
     # sort by score
     my @fusion_candidates = reverse sort {$a->{score}<=>$b->{score}} @$fusion_candidates_aref;
     
-
 
     my %seen;
     foreach my $struct (@fusion_candidates) {
@@ -148,39 +136,46 @@ sub label_likely_artifacts {
 
         if ($seen{$geneA} || $seen{$geneB}) {
             
-            if (my $chosenB = $seen{$geneA}) {
+            if (my $chosenB_href = $seen{$geneA}) {
                 
-                if ($blast_pairs_href->{$chosenB}->{$geneB}) {
-                    $is_likely_artifact = 1;
+                foreach my $chosenB (keys %$chosenB_href) {
                     
-                    if ($struct->{fusion_annotations} eq '.') {
-                        $struct->{fusion_annotations} = "POTENTIAL_FUSION_ARTIFACT";
+                    if ( grep { /BLAST|CLUST/ } &FusionAnnotator::get_annotations($geneB, $chosenB) ) {
+                    
+                        $is_likely_artifact = 1;
                     }
-                    else {
-                        # append to existing annots
-                        $struct->{fusion_annotations} .= ",POTENTIAL_FUSION_ARTIFACT";
-                    }
-                    $struct->{score} = -1;
-                }
-            }
                 
-
-            if (my $chosenA = $seen{$geneB}) {
-
-                if ($blast_pairs_href->{$chosenA}->{$geneA}) {
-                    $is_likely_artifact = 1;
+                }
+            }
+            
+            
+            if (my $chosenA_href = $seen{$geneB}) {
+                
+                foreach my $chosenA (keys %$chosenA_href) {
+                   
+                    if (grep { /BLAST|CLUST/ } &FusionAnnotator::get_annotations($geneA, $chosenA) ) {
+                        
+                        $is_likely_artifact = 1;
+                    }
                 }
             }
         }
-
+        
+        
         if ($is_likely_artifact) {
-            
-            
-            
+            if ($struct->{fusion_annotations} eq '.') {
+                $struct->{fusion_annotations} = "POTENTIAL_FUSION_ARTIFACT";
+            }
+            else {
+                # append to existing annots
+                $struct->{fusion_annotations} .= ",POTENTIAL_FUSION_ARTIFACT";
+            }
+            $struct->{score} = -1;
         }
+                
         else {
-            $seen{$geneA} = $geneB;
-            $seen{$geneB} = $geneA;
+            $seen{$geneA}->{$geneB} = 1;
+            $seen{$geneB}->{$geneA} = 1;
         }
 
     }
@@ -188,25 +183,3 @@ sub label_likely_artifacts {
     return(@fusion_candidates);
         
 }
-
-
-####
-sub get_blast_pairs {
-    my ($blast_pairs_file) = @_;
-
-    my %blast_pairs;
-
-    open (my $fh, "gunzip -c $blast_pairs_file | ") or die "Error, cannot open file $blast_pairs_file";
-    while (<$fh>) {
-        chomp;
-        my ($geneA, $geneB, @rest) = split(/\t/);
-        
-        $blast_pairs{$geneA}->{$geneB} = 1;
-        $blast_pairs{$geneB}->{$geneA} = 1;
-
-    }
-    close $fh;
-
-    return(%blast_pairs);
-}
-
