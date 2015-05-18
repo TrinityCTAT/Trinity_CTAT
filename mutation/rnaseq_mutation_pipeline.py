@@ -806,6 +806,7 @@ def func_do_variant_filtering_bcftools( args_call, str_variants_file, lstr_depen
     """
 
     # Filtered variants file
+    str_standard_variants_file = os.path.join( os.path.splitext( str_variants_file )[ 0 ] + "_initial_filtering_variants.vcf" )
     str_filtered_variants_file = os.path.join( os.path.splitext( str_variants_file )[ 0 ] + "_filtered_variants.vcf" )
 
     # Filter variants 
@@ -813,8 +814,14 @@ def func_do_variant_filtering_bcftools( args_call, str_variants_file, lstr_depen
 
     cmd_variant_filtration = Command.Command( str_cur_command = str_filter_command,
                                             lstr_cur_dependencies = [ args_call.str_genome_fa ] + lstr_dependencies,
-                                            lstr_cur_products = [ str_filtered_variants_file ] )
-    cmd_variant_filtration.func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER )
+                                            lstr_cur_products = [ str_standard_variants_file ] )
+
+    # Filter out clusters of SNPs
+    str_custom_filter_command = " ".join( [ "filter_vcf.py", "--in", str_standard_variants_file, str_filtered_variants_file ] )
+    cmd_secondary_filters = Command.Command( str_cur_command = str_custom_filter_command,
+                                             lstr_cur_dependencies = [ str_standard_variants_file ],
+                                             lstr_cur_products = [ str_filtered_variants_file ] )
+    cmd_secondary_filters.func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER )
 
     return { INDEX_CMD : [ cmd_variant_filtration ], INDEX_FILE : str_filtered_variants_file }
 
@@ -1036,7 +1043,7 @@ def run( args_call, f_do_index = False ):
         exit( 3 )
 
     # If making depth files
-    if args_call.f_calculate_base_coverage and ( args_call.variant_call_mode == STR_VARIANT_NONE ):
+    if args_call.f_calculate_base_coverage and ( args_call.str_variant_call_mode == STR_VARIANT_NONE ):
         # Create depth file
 #        str_depth_compressed_file = os.path.basename( dict_align_info[ INDEX_FILE ] + ".depth.gz" )
         str_depth_compressed_file = os.path.basename( dict_align_info[ INDEX_FILE ] + ".depth" )
