@@ -808,8 +808,8 @@ def func_do_variant_filtering_bcftools( args_call, str_variants_file, lstr_depen
     # Filtered variants file
     str_filtered_variants_file = os.path.join( os.path.splitext( str_variants_file )[ 0 ] + "_filtered_variants.vcf" )
 
-    # Filter variants
-    str_filter_command = "bcftools filter --output-type v --output " + str_filtered_variants_file + " -sLowQual -g3 -G10 -e \"%QUAL<10 || (RPB<0.1 && %QUAL<15) || (AC<2 && %QUAL<15)\" " + str_variants_file
+    # Filter variants 
+    str_filter_command = "bcftools filter --output-type v --output " + str_filtered_variants_file + " -sLowQual -g 3 -G 10 -e \"%QUAL<10 || (RPB<0.1 && %QUAL<15) || (AC<2 && %QUAL<15)\" " + str_variants_file
 
     cmd_variant_filtration = Command.Command( str_cur_command = str_filter_command,
                                             lstr_cur_dependencies = [ args_call.str_genome_fa ] + lstr_dependencies,
@@ -856,6 +856,47 @@ def func_do_variant_filtering_none( args_call, str_variants_file, lstr_dependenc
                : Logger
     """
     return { INDEX_CMD : [], INDEX_FILE : "" }
+
+
+def func_do_variant_filtering_cancer( args_call, str_variants_file, lstr_dependencies, logr_cur ):
+    """
+    Creates the commands for the hard filtering and annotation intended for cancer projects.
+    * args_call : Arguments for the pipeline
+                : Dict
+    * str_variants_file : Path to file to be filtered
+                        : String path
+    * lstr_dependencies : List of file paths of dependencies from any previously running commands.
+                        : List of strings
+    * logr_cur : Pipeline logger
+               : Logger
+    """
+
+    # Pull out and annotate Coding Cancer Mutations
+    # Adding the following annotations from COSMIC 
+    # If the VCF does not have an annotation in COSMIC then it is dropped
+    # GENE, COSMIC_ID, TISSUE, TUMOR, FATHMM, SOMATIC
+    lcmd_cancer_filter = []
+    if args_parsed.str_cosmic_coding_vcf:
+
+        # Annotate cancer variants
+        str_cancer_mutations_unfiltered = os.path.splitext( str_variants_file )[ 0 ] + "_cancer_unfiltered.vcf"
+        str_cancer_annotation_command = " ".join( [ "bcftools", "annotate", "--output_type", "v",
+                                                    "--annotations", args_parsed.str_cosmic_coding_vcf,
+                                                    "--columns", "INFO/GENE,INFO/COSMIC_ID,INFO/TISSUE,INFO/TUMOR,INFO/FATHMM,INFO/SOMATIC",
+                                                    "--output", str_cancer_mutations_unfiltered, str_variants_file ] )
+        lcmd_commands.append( Command.Command( str_cur_command = str_cancer_annotation_command,
+                                               lstr_cur_dependencies = [ args_parsed.str_cosmic_coding_vcf, str_variants_file ],
+                                               lstr_cur_products = [ str_cancer_mutations_unfiltered ] ) )
+        # Filter on cancer annotations
+        str_cancer_mutations_filtered = os.path.splitext( str_variants_file )[ 0 ] + "_cancer_filtered.vcf"
+        str_cancer_filter_command = " ".join( [ "grep","-e","[^#|COSMIC\_ID]", str_cancer_mutations_unfiltered,">", str_cancer_mutations_filtered ] ) 
+        cmd_cancer_filter = Command.Command( str_cur_command = str_cancer_filter_command,
+                                               lstr_cur_dependencies = [ str_cancer_mutations_unfiltered ],
+                                               lstr_cur_products = [ str_cancer_mutations_filtered ] )
+        cmd_cancer_filter.func_set_dependency_clean_level( [ str_cancer_mutations_filtered ], Command.CLEAN_NEVER )
+        lcmd_command_filter.append( cmd_cancer_filter )
+
+    return { INDEX_CMD : lcmd_cancer_filter, INDEX_FILE : str_cancer_mutations_filtered }
 
 
 def run( args_call, f_do_index = False ):
@@ -1070,6 +1111,7 @@ if __name__ == "__main__":
     prsr_arguments.add_argument( "-c", "--clean", dest = "f_clean", default = False, action="store_true", help = "Turns on (true) or off (false) cleaning of intermediary product files." ) 
     prsr_arguments.add_argument( "--copy", metavar = "Copy_location", dest = "lstr_copy", default = None, action="append", help="Paths to copy the output directory after the pipeline is completed. Output directory must be specified; can be used more than once for multiple copy locations.")
     prsr_arguments.add_argument( "--compress", dest = "str_compress", default = "none", choices = Pipeline.LSTR_COMPRESSION_HANDLING_CHOICES, help = "Turns on compression of products and intermediary files made by the pipeline. Valid choices include:" + str( Pipeline.LSTR_COMPRESSION_HANDLING_CHOICES ) )
+    prsr_arguments.add_argument( "--cosmic_vcf", metavar="cosmic_reference_vcf", dest="str_cosmic_coding_vcf", default=None, action="store", help="Coding Cosmic Mutation VCF annotated with Phenotype Information." )
     prsr_arguments.add_argument( "-d", "--alignment_mode", metavar = "Alignment_mode", dest = "str_alignment_mode", default = STR_ALIGN_STAR, choices = LSTR_ALIGN_CHOICES, help = "Specifies the alignment and indexing algorithm to use." )
     prsr_arguments.add_argument( "--base_depth", dest = "f_calculate_base_coverage", default = False, action = "store_true", help = "Calculates the base coverage per base." )
     prsr_arguments.add_argument( "-e", "--variant_call_mode", metavar = "Call_mode", dest = "str_variant_call_mode", default = STR_VARIANT_GATK, choices = LSTR_VARIANT_CALLING_CHOICES, help = "Specifies the variant calling method to use." )
