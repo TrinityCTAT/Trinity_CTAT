@@ -103,21 +103,9 @@ main: {
     
     my $params_href = $cgi->Vars();
     
-    my $project_dir = $params_href->{project_dir};
+    my $dataset = $params_href->{dataset} or die "Error, must specify dataset param";
     
-    if ($project_dir) {
-        
-        my $sample = $params_href->{sample};
-        
-        &sample_listing($project_dir, $sample);
-        
-        if ($sample && $sample ne 'null') {
-            &js_IGV($project_dir, $sample);
-        }
-    }
-    else {
-        &get_proj_dir();
-    }
+    &js_IGV("CTAT_GALAXY_DATA/$dataset");
     
     print $cgi->end_html();
 
@@ -127,38 +115,14 @@ main: {
 
 
 ####
-sub get_proj_dir {
-    
-    my @project_dirs;
-    foreach my $dir (<*>) {
-        if (-d $dir) {
-            push (@project_dirs, $dir);
-        }
-    }
-
-    my $script_name = basename($0);
-
-    my $html = "<ul>Select a project\n";
-    foreach my $dir (@project_dirs) {
-        $html .= "    <li><a href=\"$script_name?project_dir=$dir\">$dir</a></li>\n";
-    }
-    $html .= "</ul>\n";
-    
-    print $html;
-
-    return;
-}
-
-
-####
 sub js_IGV {
-    my ($project_dir, $sample) = @_;
+    my ($project_dir) = @_;
     
     
-    print "<h2>IGV for fusions in sample: $sample<h2>\n";
+    print "<h2>Fusion Inspector Web<h2>\n";
     
     
-    &add_fusion_list("$project_dir/$sample/FUSION_INSPECTOR/finspector.fa.fai", "$project_dir/$sample/FUSION_INSPECTOR/finspector.fusion_predictions.txt");
+    &add_fusion_list("$project_dir/FInspector.fa.fai", "$project_dir/FInspector.fusion_predictions.txt");
     
     
     print <<__EOIGV;
@@ -177,8 +141,8 @@ sub js_IGV {
                       options = {
                         showKaryo: false,
                         showNavigation: true,
-                        fastaURL: "$project_dir/$sample/FUSION_INSPECTOR/finspector.fa",
-                        cytobandURL: "$project_dir/$sample/FUSION_INSPECTOR/cytoBand.txt",
+                        fastaURL: "$project_dir/FInspector.fa",
+                        cytobandURL: "$project_dir/cytoBand.txt",
                         tracks: [
                             {
                               type: "sequence",
@@ -187,7 +151,7 @@ sub js_IGV {
 
                             {
                               label: "ref_annot",
-                              url: "$project_dir/$sample/FUSION_INSPECTOR/finspector.bed.sorted.bed.gz",
+                              url: "$project_dir/FInspector.bed.sorted.bed.gz",
                               displayMode: "SQUISHED",
                               indexed: $indexed_flag,
                               order: 10
@@ -199,7 +163,7 @@ sub js_IGV {
                             {
                               label: "JuncSpanView",
                               type: "FusionJuncSpan",
-                              url: "$project_dir/$sample/FUSION_INSPECTOR/finspector.igv.FusionJuncSpan",
+                              url: "$project_dir/FInspector.igv.FusionJuncSpan",
                               displayMode: "SQUISHED",
                               indexed: false,
                               order: 20
@@ -210,7 +174,7 @@ sub js_IGV {
 
                             {
                               label: "Trinity_fusion",
-                              url: "$project_dir/$sample/FUSION_INSPECTOR/finspector.gmap_trinity_GG.fusions.gff3.bed.sorted.bed.gz",
+                              url: "$project_dir/FInspector.gmap_trinity_GG.fusions.gff3.bed.sorted.bed.gz",
                               displayMode: "EXPANDED",
                               color: "green",
                               indexed: $indexed_flag,
@@ -220,7 +184,7 @@ sub js_IGV {
             
 
                             {
-                              url: "$project_dir/$sample/FUSION_INSPECTOR/finspector.junction_reads.bam.bed.sorted.bed.gz",
+                              url: "$project_dir/FInspector.junction_reads.bam.bed.sorted.bed.gz",
                               label: "FInspector_junction_reads",
                               displayMode: "SQUISHED",
                               minHeight: 30,
@@ -232,7 +196,7 @@ sub js_IGV {
                             },
 
                             {
-                              url: "$project_dir/$sample/FUSION_INSPECTOR/finspector.junction_reads.bam",
+                              url: "$project_dir/FInspector.junction_reads.bam",
                               label: "FInspector_junction_reads_bam",
                               height: 100,
                               indexed: true,
@@ -244,7 +208,7 @@ sub js_IGV {
 
                             
                             {
-                              url: "$project_dir/$sample/FUSION_INSPECTOR/finspector.spanning_reads.bam.bed.sorted.bed.gz",
+                              url: "$project_dir/FInspector.spanning_reads.bam.bed.sorted.bed.gz",
                               label: "FInspector_spanning_reads",
                               displayMode: "SQUISHED",
                               minHeight: 30,
@@ -255,7 +219,7 @@ sub js_IGV {
                             },
 
 {
-                              url: "$project_dir/$sample/FUSION_INSPECTOR/finspector.spanning_reads.bam",
+                              url: "$project_dir/FInspector.spanning_reads.bam",
                               label: "FInspector_spanning_reads_bam",
                               height: 100,
                               indexed: true,
@@ -263,24 +227,6 @@ sub js_IGV {
                               order: 55
                             
                             }
-
-
-       /*
-
-                        ,
-
-
-                           {
-                             url: "$project_dir/$sample/FUSION_INSPECTOR/finspector.consolidated.cSorted.bam",
-                             label: "SupportingReadsBam",
-                             height: 100,
-                             indexed: true,
-                             visibilityWindow: 2000000,
-                             order: 60
-                           
-                           }
-                            
-         */                   
 
 
                             
@@ -307,51 +253,6 @@ __EOIGV
 
 }
 
-####
-sub sample_listing {
-    my ($project_dir, $selected_sample) = @_;
-    
-    my @samples;
-    foreach my $sample_dir (<$project_dir/*>) {
-        if (-d $sample_dir) {
-            push (@samples, basename($sample_dir));
-        }
-    }
-
-    
-    print "<h1>Fusion Portal</h1>\n";
-    print "<p>Select a sample: ";
-    print "<select id='sample_name'>\n";
-    print "   <option value='null'>-- choose sample --</option>\n";
-    foreach my $sample (sort @samples) {
-        print "   <option value=\'$sample\'";
-        if (defined $selected_sample && $sample eq $selected_sample) {
-            print " selected ";
-        }
-        print ">$sample</option>\n";
-    }
-    print "</select>\n";
-
-    print <<__EOSCRIPT;
-
-    <script>
-    document.getElementById("sample_name").onchange = function() {
-        var selected_sample = this.value;
-
-        window.location = "${scriptname}?sample=" + selected_sample + "\&project_dir=$project_dir";
-    }
-    </script>
-    
-
-__EOSCRIPT
-
-    ;
-
-
-    return;
-    
-
-}
 
 
 
