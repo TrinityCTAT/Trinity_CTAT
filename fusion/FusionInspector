@@ -46,6 +46,7 @@ class FusionInspector( ParentScript.ParentScript ):
         arg_raw.add_argument("--fusions", dest="chim_summary_files", default="", required=True, help="fusions summary files (list, comma-delimited and no spaces)")
         arg_raw.add_argument("--gtf", dest="gtf_filename", default="", required=True, help="genome annotation in gtf format")
         arg_raw.add_argument("--genome_fa", dest="genome_fasta_filename", required=True, help="genome sequence in fasta format")
+        arg_raw.add_argument("--cdna_fa", dest="cdna_fasta_filename", required=True, help="cdna fasta file")
         arg_raw.add_argument("--left_fq", dest="left_fq_filename", required=True, help="left fastq file")
         arg_raw.add_argument("--right_fq", dest="right_fq_filename", required=True, help="right fastq file")
         arg_raw.add_argument("--out_dir", dest="out_dirname", required=True, help="output directory")
@@ -263,7 +264,7 @@ class FusionInspector( ParentScript.ParentScript ):
         ## coalesce the fusion info
         ###########################
             
-        fusion_summary_file = os.sep.join([workdir, args_parsed.out_prefix + ".fusion_preds.coalesced.summary"]) 
+        fusion_summary_pre_read_filter = os.sep.join([workdir, args_parsed.out_prefix + ".fusion_preds.coalesced.pre_read_filter"]) 
 
         fusion_junction_info_files_list = []
         fusion_junction_reads_list = []
@@ -283,16 +284,40 @@ class FusionInspector( ParentScript.ParentScript ):
         coalesce_cmd = str( os.sep.join([UTILDIR, "coalesce_junction_and_spanning_info.pl"]) + " " +
                             ",".join(fusion_junction_info_files_list) + " " +
                             ",".join(fusion_spanning_info_files_list) +
-                            " > " + fusion_summary_file )
+                            " > " + fusion_summary_pre_read_filter )
         
         
         lcmd_commands.append( Command.Command( str_cur_command = coalesce_cmd,
                                                lstr_cur_dependencies = [ fusion_junction_info_files_list +
                                                                          fusion_spanning_info_files_list ],
+                                               lstr_cur_products = [ fusion_summary_pre_read_filter ] ) )
+        
+
+
+        ##############################################
+        ## Filter out false-positive evidence reads ##
+        ##############################################
+
+        fusion_summary_file = os.sep.join([workdir, args_parsed.out_prefix + ".fusion_preds.coalesced.summary"]) 
+        
+        filter_FP_reads_cmd = str(os.sep.join([UTILDIR, "filter_FP_evidence_reads.pl"]) + " " +
+                                  " --left_fq " + args_parsed.left_fq_filename +
+                                  " --right_fq " + args_parsed.right_fq_filename +
+                                  " --cdna_fa " + args_parsed.cdna_fasta_filename +
+                                  " --fusion_summary " + fusion_summary_pre_read_filter +
+                                  " > " + fusion_summary_file)
+
+        lcmd_commands.append( Command.Command( str_cur_command = filter_FP_reads_cmd,
+                                               lstr_cur_dependencies = [args_parsed.left_fq_filename,
+                                                                        args_parsed.right_fq_filename,
+                                                                        args_parsed.cdna_fasta_filename,
+                                                                        fusion_summary_pre_read_filter
+                                                                        ],
                                                lstr_cur_products = [ fusion_summary_file ] ) )
+
         
-        
-        
+                                              
+                
         #################################################################
         ## consolidate the Fusion Inspector reads into a single bam files
         #################################################################
