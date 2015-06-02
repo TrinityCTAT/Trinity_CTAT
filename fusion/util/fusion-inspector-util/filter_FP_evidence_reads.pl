@@ -12,6 +12,7 @@ use Pipeliner;
 use Fastq_reader;
 use SAM_reader;
 use SAM_entry;
+use Cwd;
 
 my $usage = <<__EOUSAGE__;
 
@@ -25,6 +26,10 @@ my $usage = <<__EOUSAGE__;
 #
 #  --fusion_summary <string>      fusion summary file (pre-filtering)
 #
+#  *Optional
+#
+#  --tmpdir <string>              dir for tmpfiles (default is curr dir)
+#
 ###############################################################################################
 
 
@@ -37,6 +42,7 @@ my $right_fq;
 my $cdna_fa;
 my $fusion_summary;
 my $help_flag;
+my $tmpdir = cwd();
 
 &GetOptions ( 'h' => \$help_flag,
               
@@ -44,6 +50,9 @@ my $help_flag;
               'right_fq=s' => \$right_fq,
               'cdna_fa=s' => \$cdna_fa,
               'fusion_summary=s' => \$fusion_summary,
+    
+              'tmpdir=s' => \$tmpdir,
+    
     );
 
 
@@ -75,7 +84,7 @@ main: {
 
         print STDERR "-extracting junction reads from fq file\n";
         
-        my $junc_reads_fq = "tmp.junc_reads.fq";
+        my $junc_reads_fq = "$tmpdir/tmp.junc_reads.fq";
         my $junc_reads_chkpt = "$junc_reads_fq.ok";
         ## examine junction reads
         unless (-e $junc_reads_chkpt) {
@@ -126,17 +135,17 @@ main: {
 
         print STDERR "-extracting spanning frags from fq files\n";
         
-        my $span_reads_left_fq = "tmp.span_reads.left.fq";
-        my $span_reads_right_fq = "tmp.span_reads.right.fq";
+        my $span_reads_left_fq = "$tmpdir/tmp.span_reads.left.fq";
+        my $span_reads_right_fq = "$tmpdir/tmp.span_reads.right.fq";
         
-        my $span_reads_chkpt = "tmp.span_reads.ok";
+        my $span_reads_chkpt = "$tmpdir/tmp.span_reads.ok";
         unless (-e $span_reads_chkpt) {
 
             &extract_spanning_reads(\%spanning_frags, $left_fq, $span_reads_left_fq);
             &extract_spanning_reads(\%spanning_frags, $right_fq, $span_reads_right_fq);
             
             ## align the reads to the cdna fasta file
-            my $span_frags_sam = "tmp.span_reads.sam";
+            my $span_frags_sam = "$tmpdir/tmp.span_reads.sam";
             my $sam_chkpt = "$span_frags_sam.ok";
             
             my $bowtie_cmd = "bowtie -q -S --sam-nohead --best --chunkmbs 512 $cdna_fa -1 $span_reads_left_fq -2 $span_reads_right_fq > $span_frags_sam";

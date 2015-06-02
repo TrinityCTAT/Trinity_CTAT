@@ -305,6 +305,7 @@ class FusionInspector( ParentScript.ParentScript ):
                                   " --right_fq " + args_parsed.right_fq_filename +
                                   " --cdna_fa " + args_parsed.cdna_fasta_filename +
                                   " --fusion_summary " + fusion_summary_pre_read_filter +
+                                  " --tmpdir " + workdir +
                                   " > " + fusion_summary_file)
 
         lcmd_commands.append( Command.Command( str_cur_command = filter_FP_reads_cmd,
