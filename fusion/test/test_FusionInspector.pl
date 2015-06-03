@@ -22,14 +22,14 @@ main: {
     ## FusionInspector #
     ####################
     
-    $pipeliner->add_commands( 
-        new Command("$INSTALL_DIR/FusionInspector --fusions test_fusions.list,test_fusions.list2,test_fusions.list3 --gtf $FUSION_ANNOTATOR_LIB/gencode.v19.rna_seq_pipeline.gtf --genome_fa $FUSION_ANNOTATOR_LIB/Hg19.fa --cdna_fa $FUSION_ANNOTATOR_LIB/gencode.v19.annotation.gtf.gff3.cdna --left_fq $left_fq --right $right_fq --out_dir Fusion_Inspector/ --out_prefix fi_test --align_utils STAR --include_Trinity",
-                    "Fusion_Inspector.ok")
-        );
+    my $cmd = "$INSTALL_DIR/FusionInspector --fusions test_fusions.list,test_fusions.list2,test_fusions.list3 --gtf $FUSION_ANNOTATOR_LIB/gencode.v19.rna_seq_pipeline.gtf --genome_fa $FUSION_ANNOTATOR_LIB/Hg19.fa --cdna_fa $FUSION_ANNOTATOR_LIB/gencode.v19.annotation.gtf.gff3.cdna --left_fq $left_fq --right $right_fq --out_dir Fusion_Inspector/ --out_prefix fi_test --align_utils STAR ";
     
-    
-    
+    if (@ARGV) {
+        $cmd .= " --include_Trinity"
+    }
 
+    $pipeliner->add_commands( new Command($cmd, "Fusion_Inspector.ok") );
+    
     ## Execute pipeline
     
     $pipeliner->run();

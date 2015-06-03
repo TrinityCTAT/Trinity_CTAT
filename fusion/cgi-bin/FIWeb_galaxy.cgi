@@ -85,10 +85,11 @@ main: {
             background-color: rgba(49, 106, 246, 1);
         }
 
-
+       
        .igv-viewport-div {
            overflow-y: auto;
        }
+       
 
    </style>
 

@@ -14,6 +14,9 @@ use SAM_reader;
 use SAM_entry;
 use Cwd;
 
+
+my $CPU = 1;
+
 my $usage = <<__EOUSAGE__;
 
 ###############################################################################################
@@ -29,6 +32,8 @@ my $usage = <<__EOUSAGE__;
 #  *Optional
 #
 #  --tmpdir <string>              dir for tmpfiles (default is curr dir)
+#
+#  --CPU <int>                    multithreading for trimmomatic (default: $CPU)
 #
 ###############################################################################################
 
@@ -52,7 +57,8 @@ my $tmpdir = cwd();
               'fusion_summary=s' => \$fusion_summary,
     
               'tmpdir=s' => \$tmpdir,
-    
+              'CPU=i' => \$CPU,
+              
     );
 
 
@@ -64,6 +70,12 @@ unless ($left_fq && $right_fq && $cdna_fa && $fusion_summary) {
     die $usage;
 }
 
+my $TRINITY_HOME = $ENV{TRINITY_HOME} or die "Error, need env var TRINITY_HOME set to Trinity installation directory";
+my $TRIMMOMATIC_JAR = "$TRINITY_HOME/trinity-plugins/Trimmomatic/trimmomatic.jar";
+unless (-s $TRIMMOMATIC_JAR) {
+    die "Error, cannot locate trimmomatic jar file at $TRIMMOMATIC_JAR";
+}
+my $TRIMMOMATIC_SETTINGS = "SLIDINGWINDOW:4:5 LEADING:5 TRAILING:5 MINLEN:25";
 
 main: {
 
@@ -90,9 +102,11 @@ main: {
         unless (-e $junc_reads_chkpt) {
             
             ## get the reads
-            &extract_junction_reads(\%junction_reads, $left_fq, $right_fq, $junc_reads_fq);
+            my $pre_Qtrimmed_reads = "$junc_reads_fq.pre_Qtrimmed";
+            &extract_junction_reads(\%junction_reads, $left_fq, $right_fq, $pre_Qtrimmed_reads);
             
-            
+            &quality_trim_junc_reads(\%junction_reads, $pre_Qtrimmed_reads, $junc_reads_fq);
+                        
             ## align the reads to the cdna fasta file
             my $junc_reads_sam = "$junc_reads_fq.sam";
             my $sam_chkpt = "$junc_reads_sam.ok";
@@ -140,9 +154,17 @@ main: {
         
         my $span_reads_chkpt = "$tmpdir/tmp.span_reads.ok";
         unless (-e $span_reads_chkpt) {
-
-            &extract_spanning_reads(\%spanning_frags, $left_fq, $span_reads_left_fq);
-            &extract_spanning_reads(\%spanning_frags, $right_fq, $span_reads_right_fq);
+            
+            my $pre_Qtrimmed_left_fq = "$span_reads_left_fq.preQtrimmed.fq";
+            my $pre_Qtrimmed_right_fq = "$span_reads_right_fq.preQtrimmed.fq";
+            
+            &extract_spanning_reads(\%spanning_frags, $left_fq, $pre_Qtrimmed_left_fq);
+            &extract_spanning_reads(\%spanning_frags, $right_fq, $pre_Qtrimmed_right_fq);
+            
+            &quality_trim_spanning_reads(\%spanning_frags, 
+                                         $pre_Qtrimmed_left_fq, $pre_Qtrimmed_right_fq, 
+                                         $span_reads_left_fq, $span_reads_right_fq);
+            
             
             ## align the reads to the cdna fasta file
             my $span_frags_sam = "$tmpdir/tmp.span_reads.sam";
@@ -320,6 +342,81 @@ sub exclude_FP_junction_and_spanning_reads {
 
     }
     close $fh;
+
+    return;
+}
+
+
+####
+sub quality_trim_junc_reads {
+    my ($junction_reads_href, $pre_Qtrimmed_reads, $junc_reads_fq) = @_;
+    
+    my $cmd = "java -Xmx1G -jar $TRIMMOMATIC_JAR SE -threads $CPU -phred33 $pre_Qtrimmed_reads $junc_reads_fq $TRIMMOMATIC_SETTINGS";
+    &process_cmd($cmd);
+
+    my %trimmed_reads;
+    my $fastq_reader = new Fastq_reader($junc_reads_fq) or confess "Error, cannot open file $junc_reads_fq";
+    while (my $fq_obj = $fastq_reader->next()) {
+
+        my $read_name = $fq_obj->get_full_read_name();
+        $trimmed_reads{$read_name} = 1;
+    }
+
+    my @junc_read_accs = keys %$junction_reads_href;
+    foreach my $junc_read_acc (@junc_read_accs) {
+        if (exists $trimmed_reads{$junc_read_acc}) {
+            delete $trimmed_reads{$junc_read_acc};
+            # retain as junc read
+        }
+        else {
+            # no longer keep in junc reads
+            delete $junction_reads_href->{$junc_read_acc} or confess "Error, wasnt able to delete $junc_read_acc from junction read list";
+        }
+    }
+
+    if (%trimmed_reads) {
+        confess "Error, some trimmed reads weren't recognized among the junction read set: " . Dumper(\%trimmed_reads);
+    }
+
+    return;
+}
+
+
+####
+sub quality_trim_spanning_reads {
+    my ($spanning_frags_href, $pre_Qtrim_left_fq, $pre_Qtrim_right_fq, $span_left_fq, $span_right_fq) = @_;
+
+    my $cmd = "java -Xmx1G -jar $TRIMMOMATIC_JAR PE -threads $CPU -phred33 "
+        . " $pre_Qtrim_left_fq $pre_Qtrim_right_fq "
+        . " $span_left_fq $span_left_fq.U "
+        . " $span_right_fq $span_right_fq.U "
+        . " $TRIMMOMATIC_SETTINGS ";
+
+    &process_cmd($cmd);
+
+    my %trimmed_span_frags;
+    my $fastq_reader = new Fastq_reader($span_left_fq);
+    while (my $fq_obj = $fastq_reader->next() ) {
+
+        my $read_name = $fq_obj->get_core_read_name();
+        $trimmed_span_frags{$read_name} = 1;
+    
+    }
+    
+    my @span_frag_accs = keys %$spanning_frags_href;
+    foreach my $span_frag_acc (@span_frag_accs) {
+        if (exists $trimmed_span_frags{$span_frag_acc}) {
+            delete $trimmed_span_frags{$span_frag_acc};
+        }
+        else {
+            delete $spanning_frags_href->{$span_frag_acc} or confess "Error, wasant able to delete $span_frag_acc from spanning frag list";
+        }
+    }
+    
+    if (%trimmed_span_frags) {
+        confess "Error, some trimmed spanning frags werent recognized among the spanning frag set: " . Dumper(\%trimmed_span_frags);
+    }
+
 
     return;
 }
