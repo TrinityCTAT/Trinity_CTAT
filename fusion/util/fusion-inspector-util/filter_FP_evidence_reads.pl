@@ -333,9 +333,39 @@ sub exclude_FP_junction_and_spanning_reads {
         }
 
         if (@adj_junc_reads) {
+            
+            ## adjust the stats based on the adjusted evidence counts.
+            
             $x[9] = join(",", @adj_junc_reads);
             $x[10] = join(",", @adj_spanning_frags);
 
+            my $orig_junc_read_count = $x[7];
+            my $orig_span_frag_count = $x[8];
+
+
+            my $num_junction_reads = $x[7] = scalar(@adj_junc_reads);
+            my $num_spanning_reads = $x[8] = scalar(@adj_spanning_frags);
+            
+            my $PSEUDOCOUNT = 1;
+
+            my $num_left_contrary_reads = $x[11];
+            my $num_right_contrary_reads = $x[13];
+
+            my $TAF_left = ($num_junction_reads + $num_spanning_reads + $PSEUDOCOUNT) / ($num_left_contrary_reads + $PSEUDOCOUNT);
+            $TAF_left = sprintf("%.2f", $TAF_left);
+        
+            my $TAF_right = ($num_junction_reads + $num_spanning_reads + $PSEUDOCOUNT) / ($num_right_contrary_reads + $PSEUDOCOUNT);
+            $TAF_right = sprintf("%.2f", $TAF_right);
+        
+            $x[15] = $TAF_left;
+            $x[16] = $TAF_right;
+            
+
+            my $pct_filtered_junction = sprintf("%.2f", ($orig_junc_read_count - $num_junction_reads) / $orig_junc_read_count * 100);
+            my $pct_filtered_spanning = sprintf("%.2f", ($orig_span_frag_count - $num_spanning_reads) / $orig_span_frag_count * 100);
+
+            $x[17] .= ",PctFiltJ[$pct_filtered_junction],PctFiltS[$pct_filtered_spanning]";
+            
             print join("\t", @x) . "\n";
         }
         
