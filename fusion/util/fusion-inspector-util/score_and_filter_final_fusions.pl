@@ -128,6 +128,7 @@ sub label_likely_artifacts {
     
 
     my %seen;
+    my %selected;
     foreach my $struct (@fusion_candidates) {
         my $geneA = $struct->{geneA};
         my $geneB = $struct->{geneB};
@@ -138,9 +139,15 @@ sub label_likely_artifacts {
             
             if (my $chosenB_href = $seen{$geneA}) {
                 
+                my $prev_selected_struct = $selected{$geneA};
+                
                 foreach my $chosenB (keys %$chosenB_href) {
                     
-                    if ( grep { /BLAST|CLUST/ } &FusionAnnotator::get_annotations($geneB, $chosenB) ) {
+                    if ( grep { /BLAST|CLUST/ } &FusionAnnotator::get_annotations($geneB, $chosenB) 
+                         
+                         && $struct->{score} < $prev_selected_struct->{score} # if equivalent, allow both.
+                         
+                        ) {
                     
                         $is_likely_artifact = 1;
                     }
@@ -151,9 +158,16 @@ sub label_likely_artifacts {
             
             if (my $chosenA_href = $seen{$geneB}) {
                 
+                my $prev_selected_struct = $selected{$geneB};
+                
+
                 foreach my $chosenA (keys %$chosenA_href) {
                    
-                    if (grep { /BLAST|CLUST/ } &FusionAnnotator::get_annotations($geneA, $chosenA) ) {
+                    if (grep { /BLAST|CLUST/ } &FusionAnnotator::get_annotations($geneA, $chosenA) 
+                        
+                        && $struct->{score} < $prev_selected_struct->{score}
+                        
+                        ) {
                         
                         $is_likely_artifact = 1;
                     }
@@ -176,6 +190,8 @@ sub label_likely_artifacts {
         else {
             $seen{$geneA}->{$geneB} = 1;
             $seen{$geneB}->{$geneA} = 1;
+            $selected{$geneA} = $struct;
+            $selected{$geneB} = $struct;
         }
 
     }
