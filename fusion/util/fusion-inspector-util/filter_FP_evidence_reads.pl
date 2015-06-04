@@ -97,51 +97,45 @@ main: {
         print STDERR "-extracting junction reads from fq file\n";
         
         my $junc_reads_fq = "$tmpdir/tmp.junc_reads.fq";
-        my $junc_reads_chkpt = "$junc_reads_fq.ok";
         ## examine junction reads
-        unless (-e $junc_reads_chkpt) {
-            
-            ## get the reads
-            my $pre_Qtrimmed_reads = "$junc_reads_fq.pre_Qtrimmed";
-            &extract_junction_reads(\%junction_reads, $left_fq, $right_fq, $pre_Qtrimmed_reads);
-            
-            &quality_trim_junc_reads(\%junction_reads, $pre_Qtrimmed_reads, $junc_reads_fq);
-                        
-            ## align the reads to the cdna fasta file
-            my $junc_reads_sam = "$junc_reads_fq.sam";
-            my $sam_chkpt = "$junc_reads_sam.ok";
-            my $bowtie_cmd = "bowtie -q -S --sam-nohead --best --chunkmbs 512 $cdna_fa  $junc_reads_fq > $junc_reads_sam";
-            &process_cmd($bowtie_cmd) unless (-e $sam_chkpt);
-            
-            &process_cmd("touch $sam_chkpt");
-            
-            ## eliminate those junction reads that do actually align ok to reference transcripts
-            my $number_reads_mapped = 0;
-            my $sam_reader = new SAM_reader($junc_reads_sam);
-            while (my $sam_entry = $sam_reader->get_next()) {
-                if (! $sam_entry->is_query_unmapped()) {
-                    my $full_read_name = $sam_entry->get_read_name();
-                    $number_reads_mapped++;
-                    
-                    if (delete $junction_reads{$full_read_name}) {
-                        print STDERR "-deleted junction read: $full_read_name\n";
-                    }
-                    else {
-                        print STDERR Dumper(\%junction_reads);
-                        die "Error, cannot delete junction read: $full_read_name\n";
-                    }
-                    
-                    
+        
+        ## get the reads
+        my $pre_Qtrimmed_reads = "$junc_reads_fq.pre_Qtrimmed";
+        &extract_junction_reads(\%junction_reads, $left_fq, $right_fq, $pre_Qtrimmed_reads);
+        
+        &quality_trim_junc_reads(\%junction_reads, $pre_Qtrimmed_reads, $junc_reads_fq);
+        
+        ## align the reads to the cdna fasta file
+        my $junc_reads_sam = "$junc_reads_fq.sam";
+        my $sam_chkpt = "$junc_reads_sam.ok";
+        my $bowtie_cmd = "bowtie -q -S --sam-nohead --best --chunkmbs 512 $cdna_fa  $junc_reads_fq > $junc_reads_sam";
+        &process_cmd($bowtie_cmd) unless (-e $sam_chkpt);
+        
+        &process_cmd("touch $sam_chkpt");
+        
+        ## eliminate those junction reads that do actually align ok to reference transcripts
+        my $number_reads_mapped = 0;
+        my $sam_reader = new SAM_reader($junc_reads_sam);
+        while (my $sam_entry = $sam_reader->get_next()) {
+            if (! $sam_entry->is_query_unmapped()) {
+                my $full_read_name = $sam_entry->get_read_name();
+                $number_reads_mapped++;
+                
+                if (delete $junction_reads{$full_read_name}) {
+                    print STDERR "-deleted junction read: $full_read_name\n";
                 }
+                else {
+                    print STDERR Dumper(\%junction_reads);
+                    die "Error, cannot delete junction read: $full_read_name\n";
+                }
+                
+                
             }
-            print STDERR "- $number_reads_mapped junction reads excluded due to mapping ok to reference transcripts\n";
-            
-            #make checkpoint
-            &process_cmd("touch $junc_reads_chkpt");
-            
         }
+        print STDERR "- $number_reads_mapped junction reads excluded due to mapping ok to reference transcripts\n";
+        
     }
-
+    
     {
         ##
         ## Examine/filter the spanning frags
@@ -152,50 +146,40 @@ main: {
         my $span_reads_left_fq = "$tmpdir/tmp.span_reads.left.fq";
         my $span_reads_right_fq = "$tmpdir/tmp.span_reads.right.fq";
         
-        my $span_reads_chkpt = "$tmpdir/tmp.span_reads.ok";
-        unless (-e $span_reads_chkpt) {
-            
-            my $pre_Qtrimmed_left_fq = "$span_reads_left_fq.preQtrimmed.fq";
-            my $pre_Qtrimmed_right_fq = "$span_reads_right_fq.preQtrimmed.fq";
-            
-            &extract_spanning_reads(\%spanning_frags, $left_fq, $pre_Qtrimmed_left_fq);
-            &extract_spanning_reads(\%spanning_frags, $right_fq, $pre_Qtrimmed_right_fq);
-            
-            &quality_trim_spanning_reads(\%spanning_frags, 
-                                         $pre_Qtrimmed_left_fq, $pre_Qtrimmed_right_fq, 
-                                         $span_reads_left_fq, $span_reads_right_fq);
-            
-            
-            ## align the reads to the cdna fasta file
-            my $span_frags_sam = "$tmpdir/tmp.span_reads.sam";
-            my $sam_chkpt = "$span_frags_sam.ok";
-            
-            my $bowtie_cmd = "bowtie -q -S --sam-nohead --best --chunkmbs 512 $cdna_fa -1 $span_reads_left_fq -2 $span_reads_right_fq > $span_frags_sam";
-            &process_cmd($bowtie_cmd) unless (-e $sam_chkpt);
-
-            ## eliminate those spanning frags that do actually align ok to reference transcripts
-            my $number_frags_mapped = 0;
-            my $sam_reader = new SAM_reader($span_frags_sam);
-            while (my $sam_entry = $sam_reader->get_next()) {
-                my $core_read_name = $sam_entry->get_core_read_name();
-                if ( (exists $spanning_frags{$core_read_name}) && $sam_entry->is_proper_pair() ) {
-                    
-                    $number_frags_mapped++;
-                    delete $spanning_frags{$core_read_name} or die "Error, could not delete $core_read_name from spanning_frags";
-                }
-            }
-            &process_cmd("touch $sam_chkpt");
-            
-            print STDERR "- $number_frags_mapped spanning frags excluded due to mapping ok to reference transcripts\n";
-            
-            &process_cmd("touch $span_reads_chkpt");
-        }
-     
-        ## align reads, identify those that actually align as proper pairs.
+        my $pre_Qtrimmed_left_fq = "$span_reads_left_fq.preQtrimmed.fq";
+        my $pre_Qtrimmed_right_fq = "$span_reads_right_fq.preQtrimmed.fq";
         
-   
+        &extract_spanning_reads(\%spanning_frags, $left_fq, $pre_Qtrimmed_left_fq);
+        &extract_spanning_reads(\%spanning_frags, $right_fq, $pre_Qtrimmed_right_fq);
+        
+        &quality_trim_spanning_reads(\%spanning_frags, 
+                                     $pre_Qtrimmed_left_fq, $pre_Qtrimmed_right_fq, 
+                                     $span_reads_left_fq, $span_reads_right_fq);
+        
+        
+        ## align reads, identify those that actually align as proper pairs.
+        my $span_frags_sam = "$tmpdir/tmp.span_reads.sam";
+        my $sam_chkpt = "$span_frags_sam.ok";
+        
+        my $bowtie_cmd = "bowtie -q -S --sam-nohead --best --chunkmbs 512 $cdna_fa -1 $span_reads_left_fq -2 $span_reads_right_fq > $span_frags_sam";
+        &process_cmd($bowtie_cmd) unless (-e $sam_chkpt);
+        
+        ## eliminate those spanning frags that do actually align ok to reference transcripts
+        my $number_frags_mapped = 0;
+        my $sam_reader = new SAM_reader($span_frags_sam);
+        while (my $sam_entry = $sam_reader->get_next()) {
+            my $core_read_name = $sam_entry->get_core_read_name();
+            if ( (exists $spanning_frags{$core_read_name}) && $sam_entry->is_proper_pair() ) {
+                
+                $number_frags_mapped++;
+                delete $spanning_frags{$core_read_name} or die "Error, could not delete $core_read_name from spanning_frags";
+            }
+        }
+        &process_cmd("touch $sam_chkpt");
+        
+        print STDERR "- $number_frags_mapped spanning frags excluded due to mapping ok to reference transcripts\n";
+        
     }
-
     
     ##
     ## report the adjusted fusion summary, removing the false evidence:
@@ -362,10 +346,23 @@ sub exclude_FP_junction_and_spanning_reads {
             
 
             my $pct_filtered_junction = sprintf("%.2f", ($orig_junc_read_count - $num_junction_reads) / $orig_junc_read_count * 100);
-            my $pct_filtered_spanning = sprintf("%.2f", ($orig_span_frag_count - $num_spanning_reads) / $orig_span_frag_count * 100);
-
-            $x[17] .= ",PctFiltJ[$pct_filtered_junction],PctFiltS[$pct_filtered_spanning]";
+            my $pct_filtered_spanning = 0;
+            if ($orig_span_frag_count > 0) {
+                $pct_filtered_spanning = sprintf("%.2f", ($orig_span_frag_count - $num_spanning_reads) / $orig_span_frag_count * 100);
+            }
             
+            if ($pct_filtered_junction > 0 || $pct_filtered_spanning > 0) {
+                # add to annotations
+                if ($x[17] eq ".") {
+                    $x[17] = "";
+                }
+                else {
+                    $x[17] .= ",";
+                }
+                
+                $x[17] .= "PctFiltJ[$pct_filtered_junction],PctFiltS[$pct_filtered_spanning]";
+            }
+                        
             print join("\t", @x) . "\n";
         }
         

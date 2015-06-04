@@ -7,6 +7,9 @@ use lib ("$FindBin::Bin/../../PerlLib");
 use __GLOBALS__;
 use FusionAnnotator;
 
+
+my $MAX_PCT_J_EV_READS_FILTERED = 90;
+
 my $usage = "\n\tusage: $0 fi_test.fusion_preds.coalesced.summary.wTrinityGG.abridged\n\n";
 
 my $abridged_file = $ARGV[0] or die $usage;
@@ -135,7 +138,17 @@ sub label_likely_artifacts {
 
         my $is_likely_artifact = 0;
 
-        if ($seen{$geneA} || $seen{$geneB}) {
+        my $fusion_annot = $struct->{fusion_annotations};
+        if($fusion_annot =~ /PctFiltJ\[([^\]]+)/g) {
+            # PctFiltJ[$pct_filtered_junction],PctFiltS[$pct_filtered_spanning]
+            my $pct_filt = $1;
+            if ($pct_filt > $MAX_PCT_J_EV_READS_FILTERED) {
+                $is_likely_artifact = 1;
+                last;
+            }
+        }
+        
+        if ( (! $is_likely_artifact) && ($seen{$geneA} || $seen{$geneB}) ) {
             
             if (my $chosenB_href = $seen{$geneA}) {
                 
