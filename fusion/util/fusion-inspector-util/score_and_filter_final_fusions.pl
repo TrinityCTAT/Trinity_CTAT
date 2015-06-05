@@ -2,6 +2,7 @@
 
 use strict;
 use warnings;
+use Carp;
 use FindBin;
 use lib ("$FindBin::Bin/../../PerlLib");
 use __GLOBALS__;
@@ -9,6 +10,8 @@ use FusionAnnotator;
 
 
 my $MAX_PCT_J_EV_READS_FILTERED = 90;
+
+my $MIN_SCORE_PCT_FUSION_TO_PARALOG_FUSION = 90; # if there exists fusion A-B but also a predicted A-C where B,C are paralogs and A-C scores <= A-B, store A-C as an alternate under A-B.
 
 my $usage = "\n\tusage: $0 fi_test.fusion_preds.coalesced.summary.wTrinityGG.abridged\n\n";
 
@@ -77,6 +80,8 @@ main: {
         
                        score => sqrt($junction_count**2 + $spanning_count**2), 
                        
+                       alternates => [],
+
         };
         
         push (@fusion_candidates, $struct);
@@ -98,11 +103,13 @@ main: {
                "junction_count", "spanning_count", 
                "num_left_contrary_reads", "num_right_contrary_reads",
                "TAF_left", "TAF_right",
-               "fusion_annots", "TrinityGG_assembled") . "\n";
+               "fusion_annots", "TrinityGG_assembled", "Alternates") . "\n";
 
     foreach my $fusion_candidate (@fusion_candidates) {
         
         my $fusion_name = join("--", $fusion_candidate->{geneA}, $fusion_candidate->{geneB});
+
+        my $alternate_fusions = join(",", @{$fusion_candidate->{alternates}}) || ".";
 
         print join("\t", $fusion_name, sprintf("%.2f", $fusion_candidate->{score}), 
                    $fusion_candidate->{geneA}, $fusion_candidate->{chr_brkpt_A},
@@ -111,10 +118,13 @@ main: {
                    $fusion_candidate->{junction_count}, $fusion_candidate->{spanning_count},
                    $fusion_candidate->{num_left_contrary_reads}, $fusion_candidate->{num_right_contrary_reads}, 
                    $fusion_candidate->{TAF_left}, $fusion_candidate->{TAF_right},
-                   $fusion_candidate->{fusion_annotations}, $fusion_candidate->{TrinGG_Fusion}) . "\n";
+                   $fusion_candidate->{fusion_annotations}, $fusion_candidate->{TrinGG_Fusion},
+                   $alternate_fusions,
+                   
+            ) . "\n";
 
     }
-
+    
     print STDERR "-done.\n\n";
     
 
@@ -132,9 +142,19 @@ sub label_likely_artifacts {
 
     my %seen;
     my %selected;
+    
+    my %fusion_name_to_fusion_struct;
+
     foreach my $struct (@fusion_candidates) {
         my $geneA = $struct->{geneA};
         my $geneB = $struct->{geneB};
+
+        my $fusion_name = "$geneA--$geneB";
+        unless (exists $fusion_name_to_fusion_struct{$fusion_name}) {
+            $fusion_name_to_fusion_struct{$fusion_name} = $struct;
+        }
+        
+        my $score = $struct->{score};
 
         my $is_likely_artifact = 0;
 
@@ -152,37 +172,42 @@ sub label_likely_artifacts {
             
             if (my $chosenB_href = $seen{$geneA}) {
                 
-                my $prev_selected_struct = $selected{$geneA};
-                
                 foreach my $chosenB (keys %$chosenB_href) {
                     
-                    if ( grep { /BLAST|CLUST/ } &FusionAnnotator::get_annotations($geneB, $chosenB) 
-                         
-                         && $struct->{score} < $prev_selected_struct->{score} # if equivalent, allow both.
-                         
-                        ) {
-                    
+                    if ( grep { /BLAST|CLUST/ } &FusionAnnotator::get_annotations($geneB, $chosenB) ) {
+
                         $is_likely_artifact = 1;
+                    
+                        my $chosen_struct = $fusion_name_to_fusion_struct{"$geneA--$chosenB"} or confess "Error, no struct stored for fusion: $geneA--$chosenB";
+                        
+                        if ($score >= $MIN_SCORE_PCT_FUSION_TO_PARALOG_FUSION/100 * $chosen_struct->{score}) {
+                            
+                            push (@{$chosen_struct->{alternates}}, $fusion_name);
+                        
+                        }
+                        
                     }
-                
+                    
                 }
             }
             
             
             if (my $chosenA_href = $seen{$geneB}) {
                 
-                my $prev_selected_struct = $selected{$geneB};
-                
-
                 foreach my $chosenA (keys %$chosenA_href) {
                    
-                    if (grep { /BLAST|CLUST/ } &FusionAnnotator::get_annotations($geneA, $chosenA) 
-                        
-                        && $struct->{score} < $prev_selected_struct->{score}
-                        
-                        ) {
+                    if (grep { /BLAST|CLUST/ } &FusionAnnotator::get_annotations($geneA, $chosenA) ) {
                         
                         $is_likely_artifact = 1;
+                        
+                        my $chosen_struct = $fusion_name_to_fusion_struct{"$chosenA--$geneB"} or confess "Error, no struct stored for fusion: $chosenA--$geneB";
+                        
+                        if ($score >= $MIN_SCORE_PCT_FUSION_TO_PARALOG_FUSION/100 * $chosen_struct->{score}) {
+                            
+                            push (@{$chosen_struct->{alternates}}, $fusion_name);
+                            
+                        }                    
+                        
                     }
                 }
             }
@@ -203,8 +228,7 @@ sub label_likely_artifacts {
         else {
             $seen{$geneA}->{$geneB} = 1;
             $seen{$geneB}->{$geneA} = 1;
-            $selected{$geneA} = $struct;
-            $selected{$geneB} = $struct;
+            
         }
 
     }
