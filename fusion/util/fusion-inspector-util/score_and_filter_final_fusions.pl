@@ -7,7 +7,7 @@ use FindBin;
 use lib ("$FindBin::Bin/../../PerlLib");
 use __GLOBALS__;
 use FusionAnnotator;
-
+use Data::Dumper;
 
 my $MAX_PCT_J_EV_READS_FILTERED = 90;
 
@@ -58,30 +58,34 @@ main: {
             $TrinGG_Fusion = "."; # adding placeholder
         }
 
-        my $struct = { geneA => $geneA,
-                       chr_brkpt_A => $chr_brkpt_A,
-                                              
-                       geneB => $geneB,
-                       chr_brkpt_B => $chr_brkpt_B,
+        my $struct = { 
 
-                       splice_type => $splice_type,
-                       
-                       junction_count => $junction_count,
-                       spanning_count => $spanning_count,
-                       
-                       num_left_contrary_reads => $num_left_contrary_reads,
-                       num_right_contrary_reads => $num_right_contrary_reads,
-
-                       TAF_left => $TAF_left,
-                       TAF_right => $TAF_right,
-                       
-                       fusion_annotations => $fusion_annotations,
-                       TrinGG_Fusion => $TrinGG_Fusion,
-        
-                       score => sqrt($junction_count**2 + $spanning_count**2), 
-                       
-                       alternates => [],
-
+            fusion_name => "$geneA--$geneB",
+            
+            geneA => $geneA,
+            chr_brkpt_A => $chr_brkpt_A,
+            
+            geneB => $geneB,
+            chr_brkpt_B => $chr_brkpt_B,
+            
+            splice_type => $splice_type,
+            
+            junction_count => $junction_count,
+            spanning_count => $spanning_count,
+            
+            num_left_contrary_reads => $num_left_contrary_reads,
+            num_right_contrary_reads => $num_right_contrary_reads,
+            
+            TAF_left => $TAF_left,
+            TAF_right => $TAF_right,
+            
+            fusion_annotations => $fusion_annotations,
+            TrinGG_Fusion => $TrinGG_Fusion,
+            
+            score => sqrt($junction_count**2 + $spanning_count**2), 
+            
+            alternates => [],
+            
         };
         
         push (@fusion_candidates, $struct);
@@ -140,7 +144,12 @@ sub label_likely_artifacts {
     my @fusion_candidates = reverse sort {$a->{score}<=>$b->{score}} @$fusion_candidates_aref;
     
 
-    my %seen;
+    #print Dumper(\@fusion_candidates);
+    
+
+    my %AtoB;
+    my %BtoA;
+    
     my %selected;
     
     my %fusion_name_to_fusion_struct;
@@ -168,9 +177,9 @@ sub label_likely_artifacts {
             }
         }
         
-        if ( (! $is_likely_artifact) && ($seen{$geneA} || $seen{$geneB}) ) {
+        if ( (! $is_likely_artifact) && ($AtoB{$geneA} || $BtoA{$geneB}) ) {
             
-            if (my $chosenB_href = $seen{$geneA}) {
+            if (my $chosenB_href = $AtoB{$geneA}) {
                 
                 foreach my $chosenB (keys %$chosenB_href) {
                     
@@ -192,7 +201,7 @@ sub label_likely_artifacts {
             }
             
             
-            if (my $chosenA_href = $seen{$geneB}) {
+            if (my $chosenA_href = $BtoA{$geneB}) {
                 
                 foreach my $chosenA (keys %$chosenA_href) {
                    
@@ -226,11 +235,11 @@ sub label_likely_artifacts {
         }
                 
         else {
-            $seen{$geneA}->{$geneB} = 1;
-            $seen{$geneB}->{$geneA} = 1;
+            $AtoB{$geneA}->{$geneB} = 1;
+            $BtoA{$geneB}->{$geneA} = 1;
             
         }
-
+        
     }
 
     return(@fusion_candidates);
