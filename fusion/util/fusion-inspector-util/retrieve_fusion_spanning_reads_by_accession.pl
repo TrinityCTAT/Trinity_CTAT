@@ -17,7 +17,7 @@ main: {
     
     my %cores_want;
     {
-        my @read_infos = `cat $read_name_accs_list`;
+        my @read_infos = `cat $read_name_accs_list | egrep -v ^\#`;
         chomp @read_infos;
         foreach my $read_info (@read_infos) {
             my ($geneA, $geneB, $reads_list) = split(/\t/, $read_info);

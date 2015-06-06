@@ -326,7 +326,7 @@ class FusionInspector( ParentScript.ParentScript ):
         ## Junction reads
         
         summary_junction_reads_list = fusion_summary_file + ".fusion_junction_read_accs"
-        cmdstr = str("cut -f 1,4,10 " + fusion_summary_file + " | egrep -v ^\# > " + summary_junction_reads_list)
+        cmdstr = str("cut -f 1,4,10 " + fusion_summary_file + " > " + summary_junction_reads_list)
 
         lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
                                                lstr_cur_dependencies = [ fusion_summary_file ],
@@ -334,11 +334,13 @@ class FusionInspector( ParentScript.ParentScript ):
         
 
 
-
+        ## //TODO: Separate this into two steps: retrieve, then do bam conversion, to ensure retrieval works via exit code.
+        
         consolidated_junction_reads_bam =  os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".junction_reads"])
-        cmdstr = str("set -o pipefail && " + UTILDIR + "/retrieve_fusion_junction_reads_by_accession.pl " + summary_junction_reads_list
+        cmdstr = str(UTILDIR + "/retrieve_fusion_junction_reads_by_accession.pl " + summary_junction_reads_list
                      + " " + ",".join(fusion_junction_reads_list) +
-                     " | samtools view -bT " + mergedContig_fasta_filename + " - | samtools sort - " + consolidated_junction_reads_bam)
+                     " | samtools view -bT " + mergedContig_fasta_filename + " - | samtools sort - " + consolidated_junction_reads_bam +
+                     " || : ") # cant afford for this to fail due to lack of evidence reads
 
         consolidated_junction_reads_bam += ".bam"
         
@@ -358,16 +360,19 @@ class FusionInspector( ParentScript.ParentScript ):
         ## Spanning reads
         
         summary_spanning_reads_list = fusion_summary_file + ".fusion_spanning_read_accs"
-        cmdstr = str("cut -f 1,4,11 " + fusion_summary_file + " | egrep -v ^\# > " + summary_spanning_reads_list)
+        cmdstr = str("cut -f 1,4,11 " + fusion_summary_file + " > " + summary_spanning_reads_list)
 
         lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
                                                lstr_cur_dependencies = [ fusion_summary_file ],
                                                lstr_cur_products = [ summary_spanning_reads_list ] ) )
+
+        ## //TODO: Separate this into two steps: retrieve, then do bam conversion, to ensure retrieval works via exit code.
         
         consolidated_spanning_reads_bam =  os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".spanning_reads"])
-        cmdstr = str("set -o pipefail && " + UTILDIR + "/retrieve_fusion_spanning_reads_by_accession.pl " + summary_spanning_reads_list
+        cmdstr = str(UTILDIR + "/retrieve_fusion_spanning_reads_by_accession.pl " + summary_spanning_reads_list
                      + " " + ",".join(fusion_spanning_reads_list) +
-                     " | samtools view -bT " + mergedContig_fasta_filename + " - | samtools sort - " + consolidated_spanning_reads_bam)
+                     " | samtools view -bT " + mergedContig_fasta_filename + " - | samtools sort - " + consolidated_spanning_reads_bam +
+                     " || : ") # again, cant afford for this to fail due to lack of evidence reads.
 
         consolidated_spanning_reads_bam += ".bam"
         
