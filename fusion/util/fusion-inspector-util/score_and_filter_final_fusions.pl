@@ -13,6 +13,9 @@ my $MAX_PCT_J_EV_READS_FILTERED = 90;
 
 my $MIN_SCORE_PCT_FUSION_TO_PARALOG_FUSION = 90; # if there exists fusion A-B but also a predicted A-C where B,C are paralogs and A-C scores <= A-B, store A-C as an alternate under A-B.
 
+my $min_novel_junction_support = 10; # same as we use in STAR-Fusion
+
+
 my $usage = "\n\tusage: $0 fi_test.fusion_preds.coalesced.summary.wTrinityGG.abridged\n\n";
 
 my $abridged_file = $ARGV[0] or die $usage;
@@ -164,11 +167,19 @@ sub label_likely_artifacts {
         }
         
         my $score = $struct->{score};
+        my $fusion_annot = $struct->{fusion_annotations};
 
         my $is_likely_artifact = 0;
+        
+        my $fusion_splice_type = $struct->{splice_type};
+        my $num_junction_reads = $struct->{junction_count};
 
-        my $fusion_annot = $struct->{fusion_annotations};
-        if($fusion_annot =~ /PctFiltJ\[([^\]]+)/g) {
+        if ($fusion_splice_type eq "INCL_NON_REF_SPLICE" && $num_junction_reads < $min_novel_junction_support) {
+            
+            $is_likely_artifact = 1;
+            
+        }
+        elsif($fusion_annot =~ /PctFiltJ\[([^\]]+)/g) {
             # PctFiltJ[$pct_filtered_junction],PctFiltS[$pct_filtered_spanning]
             my $pct_filt = $1;
             if ($pct_filt > $MAX_PCT_J_EV_READS_FILTERED) {
