@@ -82,8 +82,10 @@ unless ($fusions_file && $gtf_file && $genome_fasta_file) {
 
 main: {
 
-    my %in_fusion;
     my @chim_pairs;
+
+
+    my %gene_to_gtf = &extract_gene_gtfs($gtf_file);
     
   parse_fusion_candidates: {
       
@@ -103,8 +105,6 @@ main: {
                   
                   if ($geneA eq $geneB) { next; } ## no selfies
                   
-                  $in_fusion{$geneA}++;
-                  $in_fusion{$geneB}++;
                   push (@chim_pairs, $chim_pair);
               }
               else {
@@ -115,12 +115,53 @@ main: {
       }
     }
     
-    my %gene_to_gtf = &extract_gene_gtfs($gtf_file, \%in_fusion);
+    ## split readthru transcripts into their separate parts
+    my @tmp_chim_pairs;
+    foreach my $chim_pair (@chim_pairs) {
+        my ($left_gene, $right_gene) = split(/--/, $chim_pair);
+        
+        my @pairs;
+
+        my @left_genes = split(/-/, $left_gene);
+        my @right_genes = split(/-/, $right_gene);
+        
+        my $all_ok = 1;
+
+        foreach my $tmp_left_gene (@left_genes) {
+            foreach my $tmp_right_gene (@right_genes) {
+                
+                if (exists $gene_to_gtf{$tmp_left_gene}
+                    &&
+                    exists $gene_to_gtf{$tmp_right_gene}) {
+                    
+                    push (@pairs, "$tmp_left_gene--$tmp_right_gene");
+                }
+                else {
+                    $all_ok = 0;
+                }
+            }
+        }
+        
+        if ($all_ok) {
+            push (@tmp_chim_pairs, @pairs);
+        }
+        else {
+            # keep original version
+            push (@tmp_chim_pairs, $chim_pair);
+        }
+    }
+    
+    @chim_pairs = @tmp_chim_pairs;
+    
+
+
 
     open (my $out_genome_ofh, ">$out_prefix.fa") or die "Error, cannot write to $out_prefix.fa";
     open (my $out_gtf_ofh, ">$out_prefix.gtf") or die "Error, cannot write to $out_prefix.gtf";
 
     my %seen;
+    
+    
     foreach my $chim_pair (@chim_pairs) {
         
         if ($seen{$chim_pair}) {
@@ -390,7 +431,7 @@ sub get_genomic_region_sequence {
 
 ####
 sub extract_gene_gtfs {
-    my ($gtf_file, $in_fusion_href) = @_;
+    my ($gtf_file) = @_;
 
     my %gene_to_gtf;
 
@@ -418,11 +459,10 @@ sub extract_gene_gtfs {
         my $orig_info = "$chr,$lend,$rend,$orient";
         $line .= " orig_coord_info \"$orig_info\";\n";
         
-        if ($in_fusion_href->{$gene_id}) {
-            $gene_to_gtf{$gene_id} .= $line;
+        $gene_to_gtf{$gene_id} .= $line;
             
-        }
-        elsif ($in_fusion_href->{$gene_name}) {
+        
+        if ($gene_name && $gene_name ne $gene_id) {
             $gene_to_gtf{$gene_name} .= $line;
         }
         
