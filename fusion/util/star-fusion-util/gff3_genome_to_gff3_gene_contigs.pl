@@ -13,6 +13,8 @@ use Nuc_translator;
 
 my $max_intron_length = 500;
 my $genome_flank_size = 1000;
+my $min_gene_length = 100;
+
 
 my $usage = <<__EOUSAGE__;
 
@@ -33,6 +35,8 @@ my $usage = <<__EOUSAGE__;
 #  --genome_flank <int>             amt. of genomic sequence to extract flanking each gene (default: $genome_flank_size)
 #
 #  --out_prefix <string>            output prefix for output files (gtf and fasta) default: geneMergeContig.\${process_id}
+#
+#  --min_gene_length <int>          default: $min_gene_length
 #
 ###############################################################################################
 
@@ -59,6 +63,8 @@ my $shrink_introns_flag = 0;
               
               'out_prefix=s' => \$out_prefix,
               
+              'min_gene_length=i' => \$min_gene_length,
+
     );
 
 
@@ -101,15 +107,20 @@ main: {
 
             my $supercontig = $gene_sequence_region;
                         
-            $supercontig =~ s/(\S{60})/$1\n/g; # make fasta 
-            chomp $supercontig;
-            
-            print $out_genome_ofh ">$gene_id\n$supercontig\n";
+            if (length($supercontig) >= $min_gene_length) {
+                
+                $supercontig =~ s/(\S{60})/$1\n/g; # make fasta 
+                chomp $supercontig;
+                
+                print $out_genome_ofh ">$gene_id\n$supercontig\n";
 
-            my $out_gtf = &set_gtf_scaffold_name($gene_id, $gene_supercontig_gtf);
-            
-            print $out_gtf_ofh $out_gtf;
-            
+                my $out_gtf = &set_gtf_scaffold_name($gene_id, $gene_supercontig_gtf);
+                
+                print $out_gtf_ofh $out_gtf;
+            }
+            else {
+                print STDERR "-skipping $gene_id, too short.\n";
+            }
         };
 
         if ($@) {
