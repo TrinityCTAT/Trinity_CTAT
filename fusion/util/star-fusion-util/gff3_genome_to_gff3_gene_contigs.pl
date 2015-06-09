@@ -7,6 +7,9 @@ use Getopt::Long qw(:config no_ignore_case bundling pass_through);
 
 use FindBin;
 use lib ("$FindBin::Bin/../../PerlLib");
+use Fasta_reader;
+use Overlap_piler;
+use Nuc_translator;
 
 my $max_intron_length = 500;
 my $genome_flank_size = 1000;
@@ -69,19 +72,28 @@ unless ($gtf_file && $genome_fasta_file) {
 
 main: {
 
+    print STDERR "-parsing GTF file: $gtf_file\n";
     my %gene_to_gtf = &extract_gene_gtfs($gtf_file);
+    
+    print STDERR "-parsing genome sequence from $genome_fasta_file\n";
+    my $fasta_reader = new Fasta_reader($genome_fasta_file);
+    my %genome = $fasta_reader->retrieve_all_seqs_hash();
     
     open (my $out_genome_ofh, ">$out_prefix.fa") or die "Error, cannot write to $out_prefix.fa";
     open (my $out_gtf_ofh, ">$out_prefix.gtf") or die "Error, cannot write to $out_prefix.gtf";
 
+    
+
         
     foreach my $gene_id (keys %gene_to_gtf) {
    
+        print STDERR "-processing gene: $gene_id\n";
+        
         my $gene_gtf = $gene_to_gtf{$gene_id};
 
         eval {
 
-            my ($gene_supercontig_gtf, $gene_sequence_region) = &get_gene_contig_gtf($gene_gtf, $genome_fasta_file);
+            my ($gene_supercontig_gtf, $gene_sequence_region) = &get_gene_contig_gtf($gene_gtf, \%genome);
             
             if ($shrink_introns_flag) {
                 ($gene_supercontig_gtf, $gene_sequence_region) = &shrink_introns($gene_supercontig_gtf, $gene_sequence_region, $max_intron_length);
@@ -267,13 +279,14 @@ sub set_gtf_scaffold_name {
 
 ####
 sub get_gene_contig_gtf {
-    my ($gene_gtf, $genome_fasta_file) = @_;
+    my ($gene_gtf, $genome_href) = @_;
 
     
     my ($gene_chr, $gene_lend, $gene_rend, $gene_orient) = &get_gene_span_info($gene_gtf);
     
-    
-    my $seq_region = &get_genomic_region_sequence($genome_fasta_file,
+    my $chr_seq = $genome_href->{$gene_chr} or die "Error, no sequence for chr: $gene_chr";
+
+    my $seq_region = &get_genomic_region_sequence(\$chr_seq,
                                                   $gene_chr, 
                                                   $gene_lend - $genome_flank_size, 
                                                   $gene_rend + $genome_flank_size,
@@ -292,22 +305,12 @@ sub get_gene_contig_gtf {
 
 #####
 sub get_genomic_region_sequence {
-    my ($fasta_file, $chr, $lend, $rend, $orient) = @_;
+    my ($seq_sref, $chr, $lend, $rend, $orient) = @_;
 
-    my $cmd = "samtools faidx $fasta_file $chr:$lend-$rend";
-    my $seq = `$cmd`;
-    if ($?) {
-        die "Error, cmd: $cmd died with ret $?";
-    }
-    my $header;
-    ($header, $seq) = split(/\n/, $seq, 2);
-    $seq =~ s/\s//g;
-    
     my $seq_len = $rend - $lend + 1;
-    if (length($seq) != $seq_len) {
-        die "Error, didn't extract required sequence from $fasta_file, $chr, $lend, $rend, instead got seq of length " . length($seq);
-    }
     
+    my $seq = substr($$seq_sref, $lend-1, $seq_len);
+        
     if ($orient eq '-') {
         $seq = &reverse_complement($seq);
     }
@@ -336,6 +339,9 @@ sub extract_gene_gtfs {
         if (/gene_id \"([^\"]+)\"/) {
             $gene_id = $1;
         }
+        else {
+            die "Error, no gene ID for $_";
+        }
         if (/gene_name \"([^\"]+)\"/) {
             $gene_name = $1;
             
@@ -343,23 +349,26 @@ sub extract_gene_gtfs {
                 $line =~ s/$gene_id/$gene_name\.$gene_id/;
             }
         }
-
+        else {
+            $gene_name = $gene_id;
+        }
+        
         my @x = split(/\t/, $line);
         my $chr = $x[0];
         my $lend = $x[3];
         my $rend = $x[4];
         my $orient = $x[6];
         
+        
+        ## ensure gene id is unique, since same genes are found on diff chrX and chrY, etc., and gene names arent always unique.
+        $gene_id = join("::", $chr, $gene_id, $gene_name) . "::"; # last one ensures we can parse later on and get the last field.
+        
+
         my $orig_info = "$chr,$lend,$rend,$orient";
         $line .= " orig_coord_info \"$orig_info\";\n";
         
         $gene_to_gtf{$gene_id} .= $line;
-            
-        
-        if ($gene_name && $gene_name ne $gene_id) {
-            $gene_to_gtf{$gene_name} .= $line;
-        }
-        
+                
     }
     close $fh;
 
