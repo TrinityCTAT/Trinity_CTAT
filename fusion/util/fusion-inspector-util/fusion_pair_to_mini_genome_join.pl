@@ -85,7 +85,6 @@ main: {
     my @chim_pairs;
 
 
-    my %gene_to_gtf = &extract_gene_gtfs($gtf_file);
     
   parse_fusion_candidates: {
       
@@ -114,7 +113,26 @@ main: {
           close $fh;
       }
     }
+
     
+    my %genes_want;
+    {
+        foreach my $chim_pair (@chim_pairs) {
+            foreach my $gene (split(/--/, $chim_pair)) {
+                $genes_want{$gene} = 1;
+                my @parts = split(/-/, $gene);
+                if (scalar @parts > 1) {
+                    foreach my $part (@parts) {
+                        $genes_want{$part} = 1;
+                    }
+                }
+            }
+        }
+    }
+    
+    my %gene_to_gtf = &extract_gene_gtfs($gtf_file, \%genes_want);
+    
+        
     ## split readthru transcripts into their separate parts
     my @tmp_chim_pairs;
     foreach my $chim_pair (@chim_pairs) {
@@ -222,7 +240,7 @@ main: {
     
     close $out_genome_ofh;
     close $out_gtf_ofh;
-    
+
     exit(0);
     
 
@@ -431,13 +449,15 @@ sub get_genomic_region_sequence {
 
 ####
 sub extract_gene_gtfs {
-    my ($gtf_file) = @_;
+    my ($gtf_file, $gene_want_href) = @_;
 
     my %gene_to_gtf;
 
     open (my $fh, $gtf_file) or die "Error, cannot open file $gtf_file";
     while (<$fh>) {
         chomp;
+        if (/^\#/) { next;}
+        unless (/\w/) { next; }
         my $line = $_;
         
 
@@ -448,9 +468,16 @@ sub extract_gene_gtfs {
         }
         if (/gene_name \"([^\"]+)\"/) {
             $gene_name = $1;
+            
+            if ($gene_id) {
+                $line =~ s/$gene_id/$gene_name\.$gene_id/;
+            }
         }
+
+        unless ($gene_want_href->{$gene_id} || $gene_want_href->{$gene_name}) { next; }
+
         
-        my @x = split(/\t/);
+        my @x = split(/\t/, $line);
         my $chr = $x[0];
         my $lend = $x[3];
         my $rend = $x[4];
