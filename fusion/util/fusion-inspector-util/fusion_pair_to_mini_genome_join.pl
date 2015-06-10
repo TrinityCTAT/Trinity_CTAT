@@ -150,7 +150,11 @@ main: {
                 
                 if (exists $gene_to_gtf{$tmp_left_gene}
                     &&
-                    exists $gene_to_gtf{$tmp_right_gene}) {
+                    exists $gene_to_gtf{$tmp_right_gene}
+
+                    &&
+                    $tmp_left_gene ne $tmp_right_gene
+                    ) {
                     
                     push (@pairs, "$tmp_left_gene--$tmp_right_gene");
                 }
@@ -160,7 +164,7 @@ main: {
             }
         }
         
-        if ($all_ok) {
+        if ($all_ok && @tmp_chim_pairs) {
             push (@tmp_chim_pairs, @pairs);
         }
         else {
