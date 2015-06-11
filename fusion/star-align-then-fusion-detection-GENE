@@ -35,7 +35,7 @@ main: {
     
     chdir $output_dir or die "Error, cannot cd to $output_dir";
     
-    my $pipeliner = new Pipeliner(-verbose => 1);
+    my $pipeliner = new Pipeliner(-verbose => 2);
 
     ## Run Star
     
@@ -60,7 +60,7 @@ main: {
 
     ##  assign fusion junctions to genes:
 
-    $cmd = "/home/unix/bhaas/GITHUB/STAR-Fusion/STAR-Fusion -S Chimeric.out.sam -J Chimeric.out.junction -G $FUSION_ANNOTATOR_LIB/gencode.v19.annotation.gene_contigs.gtf";
+    $cmd = "/home/unix/bhaas/GITHUB/STAR-Fusion/STAR-Fusion -S Chimeric.out.sam -J Chimeric.out.junction -G $FUSION_ANNOTATOR_LIB/gencode.v19.annotation.gene_contigs.gtf -C $FUSION_ANNOTATOR_LIB/gencode.v19.annotation.gtf.exons.cdna --verbose_level 2";
     $pipeliner->add_commands( Command->new($cmd, "star-fusion.ok") );
     
     $pipeliner->run();

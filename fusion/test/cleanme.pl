@@ -25,6 +25,7 @@ test_TrinityFusion.pl
 test_STAR-fusion.pl
 test_PRADA.pl
 test_SoapFuse.pl
+test_STAR-FGene.pl
                         );
 
 
@@ -38,6 +39,8 @@ my %keep = map { + $_ => 1 } @files_to_keep;
 `rm -rf ./trinity_out_dir` if (-d "trinity_out_dir");
 `rm -rf ./prada_outdir` if (-d "prada_outdir");
 `rm -rf ./soapfuse_outdir` if (-d "soapfuse_outdir");
+`rm -rf ./Star_FGene` if (-d "Star_FGene");
+
 
 foreach my $file (<*>) {
 	
