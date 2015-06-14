@@ -12,7 +12,7 @@ use Pipeliner;
 
 
 
-my $usage = "usage: $0 left.fq right.fq output_directory\n\n";
+my $usage = "usage: $0 left.fq [right.fq|NULL] output_directory\n\n";
 
 my $left_fq = $ARGV[0] or die $usage;
 my $right_fq = $ARGV[1] or die $usage;
@@ -26,8 +26,12 @@ my $STAR_FUSION_DIR = $ENV{STAR_FUSION_DIR} or die "Error, need env var STAR_FUS
 
 main: {
 
+    if ($right_fq eq 'NULL') {
+        $right_fq = "";
+    }
+
     $left_fq = &ensure_full_path($left_fq);
-    $right_fq = &ensure_full_path($right_fq);
+    $right_fq = &ensure_full_path($right_fq) if $right_fq;
 
     unless (-d $output_dir) {
         &process_cmd("mkdir -p $output_dir");
@@ -44,8 +48,9 @@ main: {
         . " --twopassMode Basic "
         . " --outSAMstrandField intronMotif "
         . " --outFilterIntronMotifs RemoveNoncanonicalUnannotated "
-        . " --outReadsUnmapped None --chimSegmentMin 15 "
-        . " --chimJunctionOverhangMin 15 "
+        . " --outReadsUnmapped None --chimSegmentMin 12 "
+        . " --chimJunctionOverhangMin 12 "
+        . " --alignSJDBoverhangMin 10 "
         . " --alignMatesGapMax 200000 "
         . " --alignIntronMax 200000 "
         . " --runThreadN 4"
