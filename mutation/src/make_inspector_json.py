@@ -90,9 +90,7 @@ for str_info in args_call.lstr_input_files:
 
   # Get the top number of FP by coverage
   llstr_fp.sort( key=lambda x: int( x[ c_I_TAB_RNA_COVERAGE ] ), reverse=True )
-  print llstr_fp
   llstr_fp = llstr_fp[0:c_I_NUMBER_RETURNED_CLASS_ERRORS]
-  print llstr_fp 
   # Get the top number of TP by coverage
   llstr_tp.sort( key=lambda x: int( x[ c_I_TAB_RNA_COVERAGE ] ), reverse=True )
   llstr_tp = llstr_tp[0:c_I_NUMBER_RETURNED_CLASS_ERRORS]
@@ -145,7 +143,7 @@ for str_info in args_call.lstr_input_files:
       dict_fn[ "-".join( [ "Chr"+str_temp_chr, str_temp_loc ] ) + " (" + lstr_fn[ c_I_TAB_RNA_COVERAGE ] + ")" ] = dict_temp
   dict_sample[ c_STR_INSPECTOR_FN ] = dict_fn
   dict_inspector[ str_sample_name ] = dict_sample
-  print dict_inspector
+
 # Open handle and write json object to file
 with open( args_call.str_output_file, "w" ) as hndl_output:
   hndl_output.write( json.dumps( dict_inspector, sort_keys=True, indent=2 ) )
