@@ -26,6 +26,13 @@ STR_RNA_RIGHT = "RNA_RIGHT"
 # STR_SYNTHETIC_RIGHT = "SYN_RIGHT"
 STR_SYNTHETIC_VCF = "SYN_VCF"
 
+# Keys for the JSON object that interfaces with the mutation isnpector visualization app
+STR_INSPECTOR_TP = "TP"
+STR_INSPECTOR_FP = "FP"
+STR_INSPECTOR_FN = "FN"
+STR_INSPECTOR_RNA = "RNA"
+STR_INSPECTOR_DNA = "DNA"
+
 # Paired sample file indices
 I_SYNTHETIC_VCF = 5
 I_RNA_RIGHT = 4
@@ -305,6 +312,7 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                 lstr_dna_rna_link_products = []
                 llstr_dna_rna_samples = []
                 lstr_dna_rna_symbolic_link_command = []
+                lstr_dna_rna_file_info = []
                 for dict_sample in dict_sample_study.values():
                     if not dict_sample[ STR_DNA_LEFT ]:
                         continue
@@ -316,23 +324,25 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                                  os.path.join( str_current_project_dir, str_cur_tab_sample ) + "\n" ] ) )
                     # Links
                     str_dna_rna_link_dep = self.func_convert_fastq_left_dna_vcf( dict_sample[ STR_DNA_LEFT ], args_parsed.str_file_base )
-                    str_dna_rna_link_prod = str_link_base + "_reference_dna_rna.vcf"
-                    lstr_generated_dna_vcf_snps.append( str_dna_rna_link_prod )
-                    str_dna_rna_symbolic_link_command = "ln -sf " + str_dna_rna_link_dep + " " + str_dna_rna_link_prod
+                    str_dna_rna_link_prod_ref_vcf = str_link_base + "_reference_dna_rna.vcf"
+                    lstr_generated_dna_vcf_snps.append( str_dna_rna_link_prod_ref_vcf )
+                    str_dna_rna_symbolic_link_command = "ln -sf " + str_dna_rna_link_dep + " " + str_dna_rna_link_prod_ref_vcf
                     lcmd_commands_run.append( Command.Command( str_cur_command = str_dna_rna_symbolic_link_command,
                                                      lstr_cur_dependencies = [ str_dna_rna_link_dep ],
-                                                     lstr_cur_products = [ str_dna_rna_link_prod ] ))
-                    lstr_dna_rna_link_products.append( str_dna_rna_link_prod )
+                                                     lstr_cur_products = [ str_dna_rna_link_prod_ref_vcf ] ))
+                    lstr_dna_rna_link_products.append( str_dna_rna_link_prod_ref_vcf )
 
                     str_dna_rna_link_dep = self.func_convert_fastq_left_rna_vcf( dict_sample[ STR_RNA_LEFT ],str_current_project_dir )
-                    str_dna_rna_link_prod = str_link_base + "_dna_rna.vcf"
-                    lstr_generated_rna_vcf_snps.append( str_dna_rna_link_prod )
-                    str_dna_rna_symbolic_link_command = "ln -sf " + str_dna_rna_link_dep + " " + str_dna_rna_link_prod
+                    str_dna_rna_link_prod_vcf = str_link_base + "_dna_rna.vcf"
+                    lstr_generated_rna_vcf_snps.append( str_dna_rna_link_prod_vcf )
+                    str_dna_rna_symbolic_link_command = "ln -sf " + str_dna_rna_link_dep + " " + str_dna_rna_link_prod_vcf
                     lcmd_commands_run.append( Command.Command( str_cur_command = str_dna_rna_symbolic_link_command,
                                                      lstr_cur_dependencies = [ str_dna_rna_link_dep ],
-                                                     lstr_cur_products = [str_dna_rna_link_prod] ))
-                    lstr_dna_rna_link_products.append( str_dna_rna_link_prod )
+                                                     lstr_cur_products = [str_dna_rna_link_prod_vcf] ))
+                    lstr_dna_rna_link_products.append( str_dna_rna_link_prod_vcf )
 
+                    # Samtools and GATK pipelines are different and so are treated differently here.
+                    # Depth files are found in different locations.
                     if "samtools" in str_dna_rna_tab_run_conf_file.lower():
                         str_dna_rna_link_dep = self.func_convert_fastq_dna_depth_samtools( dict_sample[ STR_DNA_LEFT ], args_parsed.str_file_base )
                         str_dna_rna_link_prod = str_link_base + "_reference_dna_rna_samtools.depth"
@@ -371,6 +381,13 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                     lstr_dna_rna_tab_products.append( str_cur_tab_file )
                     lstr_generated_dna_rna_tab.append( str_cur_tab_file )
 
+                    # Add file info for the inspector's json object
+                    # test_sample,test_rna.bam,test_dna.bam,test_rna.vcf,test_dna.vcf,test_comparison.tab
+                    lstr_dna_rna_file_info.append( ",".join( [ str_cur_tab_sample, 
+                                                           self.func_convert_fastq_left_rna_bam( str_cur_tab_sample, args_parsed.str_file_base ),
+                                                           self.func_convert_fastq_left_dna_bam( str_cur_tab_sample, args_parsed.str_file_base ),
+                                                           str_dna_rna_link_prod_vcf, str_dna_rna_link_prod_ref_vcf, str_cur_tab_file ] ) )
+
                 # If there are samples to run make tab files.
                 if len( llstr_dna_rna_samples ) > 0:
                     if not args_parsed.f_Test:
@@ -408,76 +425,86 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                 lstr_syn_link_products = []
                 llstr_synthetic_samples = []
                 lstr_syn_symbolic_link_command = []
+                lstr_syn_file_info = []
                 for dict_sample in dict_sample_study.values():
                     if not dict_sample[ STR_SYNTHETIC_VCF ]:
                         continue
+
                     str_cur_tab_sample = os.path.splitext( os.path.basename( dict_sample[ STR_RNA_LEFT ] ) )[0]
                     str_link_base = os.path.join( str_current_project_dir, "samples", str_cur_tab_sample, "reads." + str_cur_tab_sample )
                     str_cur_tab_file = self.func_convert_fastq_syn_rna_tab( dict_sample[ STR_RNA_LEFT ], str_current_project_dir )
                     llstr_synthetic_samples.append( "\t".join( [ str_cur_tab_sample,
                                                                  os.path.join( str_current_project_dir, str_cur_tab_sample ), 
                                                                  os.path.join( str_current_project_dir, str_cur_tab_sample ) + "\n" ] ) )
-                    # Links
+                    # Link VCF files
                     str_syn_link_dep = dict_sample[ STR_SYNTHETIC_VCF ]
-                    str_syn_link_prod = str_link_base + "_reference_syn.vcf"
-                    str_syn_link_cmd = "ln -sf " + str_syn_link_dep + " " + str_syn_link_prod
-                    lstr_syn_link_products.append( str_syn_link_prod )
+                    str_syn_link_prod_ref_vcf = str_link_base + "_reference_syn.vcf"
+                    str_syn_link_cmd = "ln -sf " + str_syn_link_dep + " " + str_syn_link_prod_ref_vcf
+                    lstr_syn_link_products.append( str_syn_link_prod_ref_vcf )
                     cmd_syn_links = Command.Command( str_cur_command = str_syn_link_cmd,
                                                      lstr_cur_dependencies = [ str_syn_link_dep ],
-                                                     lstr_cur_products = [ str_syn_link_prod ])
+                                                     lstr_cur_products = [ str_syn_link_prod_ref_vcf ])
                     lcmd_commands_run.append( cmd_syn_links )
 
                     str_syn_link_dep = self.func_convert_fastq_left_rna_vcf( dict_sample[ STR_RNA_LEFT ],str_current_project_dir )
-                    str_syn_link_prod = str_link_base + "_syn.vcf"
-                    str_syn_link_cmd = "ln -sf " + str_syn_link_dep + " " + str_syn_link_prod
-                    lstr_syn_link_products.append( str_syn_link_prod )
+                    str_syn_link_prod_vcf = str_link_base + "_syn.vcf"
+                    str_syn_link_cmd = "ln -sf " + str_syn_link_dep + " " + str_syn_link_prod_vcf
+                    lstr_syn_link_products.append( str_syn_link_prod_vcf )
                     cmd_syn_links = Command.Command( str_cur_command = str_syn_link_cmd,
                                                      lstr_cur_dependencies = [ str_syn_link_dep ],
-                                                     lstr_cur_products = [ str_syn_link_prod ])
+                                                     lstr_cur_products = [ str_syn_link_prod_vcf ])
                     lcmd_commands_run.append( cmd_syn_links )
 
-
+                    # Link depth files (samtools)
                     if "samtools" in str_call_run_conf.lower():
                         str_syn_link_dep = self.func_convert_fastq_rna_depth_samtools( dict_sample[ STR_RNA_LEFT ], args_parsed.str_file_base )
-                        str_syn_link_prod = str_link_base + "_reference_syn.depth"
-                        str_syn_link_cmd = "ln -sf " + str_syn_link_dep + " " + str_syn_link_prod
-                        lstr_syn_link_products.append( str_syn_link_prod )
+                        str_syn_link_prod_ref_depth = str_link_base + "_reference_syn.depth"
+                        str_syn_link_cmd = "ln -sf " + str_syn_link_dep + " " + str_syn_link_prod_ref_depth
+                        lstr_syn_link_products.append( str_syn_link_prod_ref_depth )
                         cmd_syn_links = Command.Command( str_cur_command = str_syn_link_cmd,
                                                      lstr_cur_dependencies = [ str_syn_link_dep ],
-                                                     lstr_cur_products = [ str_syn_link_prod ])
+                                                     lstr_cur_products = [ str_syn_link_prod_ref_depth ])
                         lcmd_commands_run.append( cmd_syn_links )
 
                         str_syn_link_dep = self.func_convert_fastq_rna_depth_samtools( dict_sample[ STR_RNA_LEFT ], args_parsed.str_file_base )
-                        str_syn_link_prod = str_link_base + "_syn.depth"
-                        str_syn_link_cmd = "ln -sf " + str_syn_link_dep + " " + str_syn_link_prod
-                        lstr_syn_link_products.append( str_syn_link_prod )
+                        str_syn_link_prod_depth = str_link_base + "_syn.depth"
+                        str_syn_link_cmd = "ln -sf " + str_syn_link_dep + " " + str_syn_link_prod_depth
+                        lstr_syn_link_products.append( str_syn_link_prod_depth )
                         cmd_syn_links = Command.Command( str_cur_command = str_syn_link_cmd,
                                                      lstr_cur_dependencies = [ str_syn_link_dep ],
-                                                     lstr_cur_products = [ str_syn_link_prod ])
+                                                     lstr_cur_products = [ str_syn_link_prod_depth ])
                         lcmd_commands_run.append( cmd_syn_links )
 
+                    # Link depth files (GATK)
                     if "gatk" in str_call_run_conf.lower():
                         str_syn_link_dep = self.func_convert_fastq_rna_depth_gatk( dict_sample[ STR_RNA_LEFT ], str_current_project_dir )
-                        str_syn_link_prod = str_link_base + "_reference_syn.depth"
-                        str_syn_link_cmd = "ln -sf " + str_syn_link_dep + " " + str_syn_link_prod
-                        lstr_syn_link_products.append( str_syn_link_prod )
+                        str_syn_link_prod_ref_depth = str_link_base + "_reference_syn.depth"
+                        str_syn_link_cmd = "ln -sf " + str_syn_link_dep + " " + str_syn_link_prod_ref_depth
+                        lstr_syn_link_products.append( str_syn_link_prod_ref_depth )
                         cmd_syn_links = Command.Command( str_cur_command = str_syn_link_cmd,
                                                      lstr_cur_dependencies = [ str_syn_link_dep ],
-                                                     lstr_cur_products = [ str_syn_link_prod ])
+                                                     lstr_cur_products = [ str_syn_link_prod_ref_depth ])
                         lcmd_commands_run.append( cmd_syn_links )
 
                         str_syn_link_dep = self.func_convert_fastq_rna_depth_gatk( dict_sample[ STR_RNA_LEFT ], str_current_project_dir )
-                        str_syn_link_prod = str_link_base + "_syn.depth"
-                        str_syn_link_cmd = "ln -sf " + str_syn_link_dep + " " + str_syn_link_prod
-                        lstr_syn_link_products.append( str_syn_link_prod )
+                        str_syn_link_prod_depth = str_link_base + "_syn.depth"
+                        str_syn_link_cmd = "ln -sf " + str_syn_link_dep + " " + str_syn_link_prod_depth
+                        lstr_syn_link_products.append( str_syn_link_prod_depth )
                         cmd_syn_links = Command.Command( str_cur_command = str_syn_link_cmd,
                                                      lstr_cur_dependencies = [ str_syn_link_dep ],
-                                                     lstr_cur_products = [ str_syn_link_prod ])
+                                                     lstr_cur_products = [ str_syn_link_prod_depth ])
                         lcmd_commands_run.append( cmd_syn_links )
 
                     # Tab dependencies
                     lstr_syn_tab_products.append( str_cur_tab_file )
                     lstr_generated_syn_rna_tab.append( str_cur_tab_file )
+
+                    # Add file info for the inspector's json object
+                    # test_sample,test_rna.bam,test_dna.bam,test_rna.vcf,test_dna.vcf,test_comparison.tab
+                    lstr_syn_file_info.append( ",".join( [ str_cur_tab_sample, 
+                                                           self.func_convert_fastq_left_rna_bam( str_cur_tab_sample, args_parsed.str_file_base ),
+                                                           self.func_convert_fastq_left_dna_bam( str_cur_tab_sample, args_parsed.str_file_base ),
+                                                           str_syn_link_prod_vcf, str_syn_link_prod_ref_vcf, str_cur_tab_file ] ) )
 
                 # If there synthetic samples to run make tab files.
                 if len( llstr_synthetic_samples ) > 0:
@@ -494,9 +521,20 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                     lcmd_commands_run.append( cmd_syn_tab )
 
                 ############################################
+                # Make json object for inspecting the comparison
                 # Make figures for validation with a study
                 ############################################
                 if len( lstr_generated_syn_rna_tab ) > 0:
+
+                    # JSON object
+                    str_syn_json_file = os.path.join( args_parsed.str_file_base, os.path.splitext( os.path.basename( str_call_run_conf ) )[ 0 ] + ".json" )
+                    str_syn_json_command = "make_inspector_json.py --output_file " + " ".join( [ "--input_files " + str_syn_file_info for str_syn_file_info in lstr_syn_file_info ] )
+                    cmd_syn_json = Command.Command( str_cur_command = str_syn_json_command,
+                                                    lstr_cur_dependencies = lstr_syn_json_file_dependencies,
+                                                    lstr_cur_products = str_syn_json_file )
+                    lcmd_commands_run.append( cmd_syn_json )
+
+                    # Validation figures
                     dict_validation_commands = self.func_validation_figure_commands( args_parsed = args_parsed, str_cur_project_dir = str_current_project_dir,
                                                                         lstr_dna_vcfs_snps = [],
                                                                         lstr_rna_vcfs_snps = [],
