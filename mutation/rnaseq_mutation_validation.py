@@ -313,6 +313,7 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                 llstr_dna_rna_samples = []
                 lstr_dna_rna_symbolic_link_command = []
                 lstr_dna_rna_file_info = []
+                lstr_dna_rna_json_file_dependencies = []
                 for dict_sample in dict_sample_study.values():
                     if not dict_sample[ STR_DNA_LEFT ]:
                         continue
@@ -384,10 +385,12 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                     # Add file info for the inspector's json object
                     # test_sample,test_rna.bam,test_dna.bam,test_rna.vcf,test_dna.vcf,test_comparison.tab
                     lstr_dna_rna_file_info.append( ",".join( [ str_cur_tab_sample, 
-                                                           self.func_convert_fastq_left_rna_bam( str_cur_tab_sample, args_parsed.str_file_base ),
-                                                           self.func_convert_fastq_left_dna_bam( str_cur_tab_sample, args_parsed.str_file_base ),
+                                                           self.func_convert_fastq_left_rna_bam( dict_sample[ STR_RNA_LEFT ], args_parsed.str_file_base ),
+                                                           self.func_convert_fastq_left_dna_bam( dict_sample[ STR_DNA_LEFT ], args_parsed.str_file_base ),
                                                            str_dna_rna_link_prod_vcf, str_dna_rna_link_prod_ref_vcf, str_cur_tab_file ] ) )
-
+                    lstr_dna_rna_json_file_dependencies.extend( [ self.func_convert_fastq_left_rna_bam( dict_sample[ STR_RNA_LEFT ], args_parsed.str_file_base ),
+                                                           self.func_convert_fastq_left_dna_bam( dict_sample[ STR_DNA_LEFT ], args_parsed.str_file_base ),
+                                                           str_dna_rna_link_prod_vcf, str_dna_rna_link_prod_ref_vcf, str_cur_tab_file ] )
                 # If there are samples to run make tab files.
                 if len( llstr_dna_rna_samples ) > 0:
                     if not args_parsed.f_Test:
@@ -406,6 +409,27 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                 # Make figures for validation with a study
                 ############################################
                 if len( lstr_generated_dna_rna_tab ) > 0:
+
+#                    print "JSON INFO AREA FOR REAL DATA"
+#                    print lstr_dna_rna_file_info
+
+                    # JSON object
+                    str_dna_rna_file_base = os.path.splitext( os.path.basename( str_call_run_conf ) )[ 0 ]
+                    str_dna_rna_json_file = os.path.join( args_parsed.str_file_base, str_dna_rna_file_base, str_dna_rna_file_base + ".json" )
+                    str_dna_rna_json_command = "make_inspector_json.py --output_file " + str_dna_rna_json_file + " " + " ".join( [ "--input_files " + str_dna_rna_file_info for str_dna_rna_file_info in lstr_dna_rna_file_info ] )
+                    cmd_dna_rna_json = Command.Command( str_cur_command = str_dna_rna_json_command,
+                                                    lstr_cur_dependencies = lstr_dna_rna_json_file_dependencies,
+                                                    lstr_cur_products = str_dna_rna_json_file )
+                    lcmd_commands_run.append( cmd_dna_rna_json )
+
+#                    print "COMMAND"
+#                    print str_dna_rna_json_command
+#                    print "DEPENDENCIES"
+#                    print lstr_dna_rna_json_file_dependencies
+#                    print "PRODUCTS"
+#                    print str_dna_rna_json_file
+
+                    # Figures
                     dict_validation_commands = self.func_validation_figure_commands( args_parsed = args_parsed, str_cur_project_dir = str_current_project_dir,
                                                                         lstr_dna_vcfs_snps = lstr_generated_dna_vcf_snps,
                                                                         lstr_rna_vcfs_snps = lstr_generated_rna_vcf_snps,
@@ -526,13 +550,24 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                 ############################################
                 if len( lstr_generated_syn_rna_tab ) > 0:
 
+#                    print "JSON INFO AREA FOR SYN DATA"
+#                    print lstr_syn_file_info
+
                     # JSON object
-                    str_syn_json_file = os.path.join( args_parsed.str_file_base, os.path.splitext( os.path.basename( str_call_run_conf ) )[ 0 ] + ".json" )
-                    str_syn_json_command = "make_inspector_json.py --output_file " + " ".join( [ "--input_files " + str_syn_file_info for str_syn_file_info in lstr_syn_file_info ] )
+                    str_syn_file_base = os.path.splitext( os.path.basename( str_call_run_conf ) )[ 0 ]
+                    str_syn_json_file = os.path.join( args_parsed.str_file_base, str_syn_file_base, str_syn_file_base + ".json" )
+                    str_syn_json_command = "make_inspector_json.py --output_file " + str_syn_json_file + " " + " ".join( [ "--input_files " + str_syn_file_info for str_syn_file_info in lstr_syn_file_info ] )
                     cmd_syn_json = Command.Command( str_cur_command = str_syn_json_command,
                                                     lstr_cur_dependencies = lstr_syn_json_file_dependencies,
                                                     lstr_cur_products = str_syn_json_file )
                     lcmd_commands_run.append( cmd_syn_json )
+
+#                    print "COMMAND"
+#                    print str_syn_json_command
+#                    print "DEPENDENCIES"
+#                    print lstr_syn_json_file_dependencies
+#                    print "PRODUCTS"
+#                    print str_syn_json_file
 
                     # Validation figures
                     dict_validation_commands = self.func_validation_figure_commands( args_parsed = args_parsed, str_cur_project_dir = str_current_project_dir,
