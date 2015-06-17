@@ -836,6 +836,7 @@ def func_do_variant_filtering_bcftools( args_call, str_variants_file, lstr_depen
     # Filtered variants file
     str_standard_variants_file = os.path.join( os.path.splitext( str_variants_file )[ 0 ] + "_initial_filtering_variants.vcf" )
     str_filtered_variants_file = os.path.join( os.path.splitext( str_variants_file )[ 0 ] + "_filtered_variants.vcf" )
+    str_filtered_variants_index_file = str_filtered_variants_file + ".tbi"
 
     # Filter variants 
     str_filter_command = "bcftools filter --output-type v --output " + str_filtered_variants_file + " -sLowQual -g 3 -G 10 -e \"%QUAL<10 || (RPB<0.1 && %QUAL<15) || (AC<2 && %QUAL<15)\" " + str_variants_file
@@ -851,7 +852,13 @@ def func_do_variant_filtering_bcftools( args_call, str_variants_file, lstr_depen
 #                                             lstr_cur_products = [ str_filtered_variants_file ] )
 #    cmd_secondary_filters.func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER )
 
-    return { INDEX_CMD : [ cmd_variant_filtration ], INDEX_FILE : str_filtered_variants_file }
+    # Create index for the VCF file
+    str_cmd_index_vcf = " ".join( [ "tabix -f", str_filtered_variants_file ] )
+    cmd_index_vcf = Command.Command( str_cur_command = str_cmd_index_vcf,
+                                     lstr_cur_dependencies = [ str_filtered_variants_file ],
+                                     lstr_cur_products = [ str_filtered_variants_index_file ] )
+
+    return { INDEX_CMD : [ cmd_variant_filtration, cmd_index_vcf ], INDEX_FILE : str_filtered_variants_file }
 
 
 def func_do_variant_filtering_gatk( args_call, str_variants_file, lstr_dependencies, logr_cur ):
@@ -868,6 +875,7 @@ def func_do_variant_filtering_gatk( args_call, str_variants_file, lstr_dependenc
     """
     # Filtered variants file
     str_filtered_variants_file = os.path.join( os.path.splitext( str_variants_file )[0] + "_filtered_variants.vcf" )
+    str_filtered_variants_index_file = str_filtered_variants_file + ".tbi"
     # Filter variants
     str_filter_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T VariantFiltration -R", args_call.str_genome_fa, "-V", str_variants_file, "-window 35",
                          "-cluster 3 -filterName FS -filter \"FS > 30.0\" -filterName QD","-filter \"QD < 2.0\" --out", str_filtered_variants_file ] )
@@ -875,7 +883,14 @@ def func_do_variant_filtering_gatk( args_call, str_variants_file, lstr_dependenc
                                                lstr_cur_dependencies = [ args_call.str_genome_fa ] + lstr_dependencies,
                                                lstr_cur_products = [ str_filtered_variants_file ] )
     cmd_variant_filteration.func_set_dependency_clean_level( [ str_variants_file ], Command.CLEAN_NEVER )
-    return { INDEX_CMD : [ cmd_variant_filteration ], INDEX_FILE : str_filtered_variants_file }
+
+    # Create index for the VCF file
+    str_cmd_index_vcf = " ".join( [ "tabix -f", str_filtered_variants_index_file ] )
+    cmd_index_vcf = Command.Command( str_cur_command = str_cmd_index_vcf,
+                                     lstr_cur_dependencies = [ str_filtered_variants_file ],
+                                     lstr_cur_products = [ str_filtered_variants_index_file ] )
+
+    return { INDEX_CMD : [ cmd_variant_filteration, cmd_index_vcf ], INDEX_FILE : str_filtered_variants_file }
 
 
 def func_do_variant_filtering_none( args_call, str_variants_file, lstr_dependencies, logr_cur ):
@@ -922,12 +937,20 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file ):
                                                lstr_cur_products = [ str_cancer_mutations_unfiltered ] ) )
         # Filter on cancer annotations
         str_cancer_mutations_filtered = os.path.splitext( str_variants_file )[ 0 ] + "_cancer_filtered.vcf"
+        str_cancer_mutations_filtered_index = str_cancer_mutations_filtered + ".tbi"
         str_cancer_filter_command = " ".join( [ "grep","-e","[^#|COSMIC\_ID]", str_cancer_mutations_unfiltered,">", str_cancer_mutations_filtered ] ) 
         cmd_cancer_filter = Command.Command( str_cur_command = str_cancer_filter_command,
                                                lstr_cur_dependencies = [ str_cancer_mutations_unfiltered ],
                                                lstr_cur_products = [ str_cancer_mutations_filtered ] )
         cmd_cancer_filter.func_set_dependency_clean_level( [ str_cancer_mutations_filtered ], Command.CLEAN_NEVER )
         lcmd_cancer_filter.append( cmd_cancer_filter )
+
+        # Create index for the VCF file
+        str_cmd_index_vcf = " ".join( [ "tabix -f", str_cancer_mutations_filtered ] )
+        cmd_index_vcf = Command.Command( str_cur_command = str_cmd_index_vcf,
+                                     lstr_cur_dependencies = [ str_cancer_mutations_filtered ],
+                                     lstr_cur_products = [ str_cancer_mutations_filtered_index ] )
+        lcmd_cancer_filter.append( cmd_index_vcf )
 
     return { INDEX_CMD : lcmd_cancer_filter, INDEX_FILE : str_cancer_mutations_filtered }
 
