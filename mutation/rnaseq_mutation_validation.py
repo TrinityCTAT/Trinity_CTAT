@@ -324,6 +324,7 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                                  os.path.join( str_current_project_dir, str_cur_tab_sample ), 
                                                                  os.path.join( str_current_project_dir, str_cur_tab_sample ) + "\n" ] ) )
                     # Links
+                    # DNA VCF
                     str_dna_rna_link_dep = self.func_convert_fastq_left_dna_vcf( dict_sample[ STR_DNA_LEFT ], args_parsed.str_file_base )
                     str_dna_rna_link_prod_ref_vcf = str_link_base + "_reference_dna_rna.vcf"
                     lstr_generated_dna_vcf_snps.append( str_dna_rna_link_prod_ref_vcf )
@@ -332,6 +333,11 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                      lstr_cur_dependencies = [ str_dna_rna_link_dep ],
                                                      lstr_cur_products = [ str_dna_rna_link_prod_ref_vcf ] ))
                     lstr_dna_rna_link_products.append( str_dna_rna_link_prod_ref_vcf )
+                    str_dna_rna_link_prod_ref_tbi = str_link_base + "_reference_dna_rna.vcf.tbi"
+                    str_dna_rna_index_symbolic_link_command = "ln -sf " + str_dna_rna_link_dep + ".tbi" + " " + str_dna_rna_link_prod_ref_tbi
+                    lcmd_commands_run.append( Command.Command( str_cur_command = str_dna_rna_index_symbolic_link_command,
+                                                     lstr_cur_dependencies = [ str_dna_rna_link_dep + ".tbi" ],
+                                                     lstr_cur_products = [ str_dna_rna_link_prod_ref_tbi ] ))
 
                     str_dna_rna_link_dep = self.func_convert_fastq_left_rna_vcf( dict_sample[ STR_RNA_LEFT ],str_current_project_dir )
                     str_dna_rna_link_prod_vcf = str_link_base + "_dna_rna.vcf"
@@ -341,6 +347,11 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                      lstr_cur_dependencies = [ str_dna_rna_link_dep ],
                                                      lstr_cur_products = [str_dna_rna_link_prod_vcf] ))
                     lstr_dna_rna_link_products.append( str_dna_rna_link_prod_vcf )
+                    str_dna_rna_link_prod_tbi = str_link_base + "_dna_rna.vcf.tbi"
+                    str_dna_rna_index_symbolic_link_command = "ln -sf " + str_dna_rna_link_dep + ".tbi" + " " + str_dna_rna_link_prod_tbi
+                    lcmd_commands_run.append( Command.Command( str_cur_command = str_dna_rna_index_symbolic_link_command,
+                                                     lstr_cur_dependencies = [ str_dna_rna_link_dep + ".tbi" ],
+                                                     lstr_cur_products = [str_dna_rna_link_prod_tbi] ))
 
                     # Samtools and GATK pipelines are different and so are treated differently here.
                     # Depth files are found in different locations.
@@ -465,19 +476,27 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                     str_syn_link_prod_ref_vcf = str_link_base + "_reference_syn.vcf"
                     str_syn_link_cmd = "ln -sf " + str_syn_link_dep + " " + str_syn_link_prod_ref_vcf
                     lstr_syn_link_products.append( str_syn_link_prod_ref_vcf )
-                    cmd_syn_links = Command.Command( str_cur_command = str_syn_link_cmd,
+                    lcmd_command_run.append( Command.Command( str_cur_command = str_syn_link_cmd,
                                                      lstr_cur_dependencies = [ str_syn_link_dep ],
-                                                     lstr_cur_products = [ str_syn_link_prod_ref_vcf ])
-                    lcmd_commands_run.append( cmd_syn_links )
+                                                     lstr_cur_products = [ str_syn_link_prod_ref_vcf ] ) )
+                    str_syn_link_prod_ref_tbi = str_link_base + "_reference_syn.vcf.tbi"
+                    str_syn_index_link_cmd = "ln -sf " + str_syn_link_dep + ".tbi" + " " + str_syn_link_prod_ref_tbi
+                    lcmd_commands_run.append( Command.Command( str_cur_command = str_syn_index_link_cmd,
+                                                     lstr_cur_dependencies = [ str_syn_link_dep + ".tbi" ],
+                                                     lstr_cur_products = [ str_syn_link_prod_ref_tbi ] ) )
 
                     str_syn_link_dep = self.func_convert_fastq_left_rna_vcf( dict_sample[ STR_RNA_LEFT ],str_current_project_dir )
                     str_syn_link_prod_vcf = str_link_base + "_syn.vcf"
                     str_syn_link_cmd = "ln -sf " + str_syn_link_dep + " " + str_syn_link_prod_vcf
                     lstr_syn_link_products.append( str_syn_link_prod_vcf )
-                    cmd_syn_links = Command.Command( str_cur_command = str_syn_link_cmd,
+                    lcmd_commands_run.append( Command.Command( str_cur_command = str_syn_link_cmd,
                                                      lstr_cur_dependencies = [ str_syn_link_dep ],
-                                                     lstr_cur_products = [ str_syn_link_prod_vcf ])
-                    lcmd_commands_run.append( cmd_syn_links )
+                                                     lstr_cur_products = [ str_syn_link_prod_vcf ] ) )
+                    str_syn_link_prod_tbi = str_link_base + "_syn.vcf.tbi"
+                    str_syn_index_link_cmd = "ln -sf " + str_syn_link_dep + ".tbi " + str_syn_link_prod_tbi
+                    lcmd_commands_run.append( Command.Command( str_cur_command = str_syn_index_link_cmd,
+                                                     lstr_cur_dependencies = [ str_syn_link_dep + ".tbi" ],
+                                                     lstr_cur_products = [ str_syn_link_prod_tbi ] ) )
 
                     # Link depth files (samtools)
                     if "samtools" in str_call_run_conf.lower():
