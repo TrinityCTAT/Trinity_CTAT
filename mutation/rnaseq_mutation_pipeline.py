@@ -406,18 +406,18 @@ def func_do_recalibration_gatk( args_call, str_align_file, str_unique_id, str_pr
 
     # Files
     str_dedupped_bam = os.path.join( str_tmp_dir, "dedupped.bam" )
-    str_dedupped_bai = os.path.join( str_tmp_dir, "dedupped.bai" )
+    str_dedupped_bai = os.path.join( str_tmp_dir, "dedupped.bam.bai" )
     str_intervals = os.path.join( str_tmp_dir, "forIndelRealigner.intervals" )
     str_qc_metrics = os.path.join( str_tmp_dir, "mark_duplicates_qc_metrics.txt" )
     str_realigned_bam = os.path.join( str_tmp_dir, "realigned.bam" )
-    str_realigned_bai = os.path.join( str_tmp_dir, "realigned.bai" )
+    str_realigned_bai = os.path.join( str_tmp_dir, "realigned.bam.bai" )
     str_recalibrated_alignment_file = os.path.join( str_tmp_dir, "recal_table.table" )
     str_recalibrated_bam = os.path.join( str_tmp_dir, "recalibrated.bam" )
-    str_recalibrated_bai = os.path.join( str_tmp_dir, "recalibrated.bai" )
+    str_recalibrated_bai = os.path.join( str_tmp_dir, "recalibrated.bam.bai" )
     str_recalibration_plots_pdf = os.path.join( str_tmp_dir, "recalibration.pdf" )
     str_sorted_bam = os.path.join( str_tmp_dir, "sorted.bam" )
     str_split_bam = os.path.join( str_tmp_dir, "split.bam" )
-    str_split_bai = os.path.join( str_tmp_dir, "split.bai" )
+    str_split_bai = os.path.join( str_tmp_dir, "split.bam.bai" )
     # This is the file that is returned, could be many of the files below depending on the settings
     # This is dynamically set and different parts of this pipeline segment are activated.
     str_return_bam = ""
@@ -599,14 +599,14 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
     str_intervals = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "religner.intervals" ] ) )
     str_raw_vcf = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "variants.vcf" ] ) )
     str_realigned_bam = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.realigned.bam" ] ) )
-    str_realigned_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.realigned.bai" ] ) )
+    str_realigned_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.realigned.bam.bai" ] ) )
     str_recal_plot = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal.pdf" ] ) )
     str_recal_snp_bam = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal_snp.bam" ] ) )
-    str_recal_snp_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal_snp.bai" ] ) )
+    str_recal_snp_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal_snp.bam.bai" ] ) )
     str_recal_table = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal.table" ] ) )
     str_recal_table_2 = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal_2.table" ] ) )
     str_replace_bam = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.bam" ] ) )
-    str_replace_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.bai" ] ) )
+    str_replace_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.bam.bai" ] ) )
 
     # DNA-seq best practices
     # java -jar MarkDuplicates.jar I=input.sam O=output.bam
@@ -817,11 +817,11 @@ def func_do_variant_filtering_bcftools( args_call, str_variants_file, lstr_depen
                                             lstr_cur_products = [ str_standard_variants_file ] )
 
     # Filter out clusters of SNPs
-    str_custom_filter_command = " ".join( [ "filter_vcf.py", "--in", str_standard_variants_file, str_filtered_variants_file ] )
-    cmd_secondary_filters = Command.Command( str_cur_command = str_custom_filter_command,
-                                             lstr_cur_dependencies = [ str_standard_variants_file ],
-                                             lstr_cur_products = [ str_filtered_variants_file ] )
-    cmd_secondary_filters.func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER )
+#    str_custom_filter_command = " ".join( [ "filter_vcf.py", "--in", str_standard_variants_file, str_filtered_variants_file ] )
+#    cmd_secondary_filters = Command.Command( str_cur_command = str_custom_filter_command,
+#                                             lstr_cur_dependencies = [ str_standard_variants_file ],
+#                                             lstr_cur_products = [ str_filtered_variants_file ] )
+#    cmd_secondary_filters.func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER )
 
     return { INDEX_CMD : [ cmd_variant_filtration ], INDEX_FILE : str_filtered_variants_file }
 
@@ -865,17 +865,15 @@ def func_do_variant_filtering_none( args_call, str_variants_file, lstr_dependenc
     return { INDEX_CMD : [], INDEX_FILE : "" }
 
 
-def func_do_variant_filtering_cancer( args_call, str_variants_file, lstr_dependencies, logr_cur ):
+def func_do_variant_filtering_cancer( args_call, str_variants_file ):
     """
-    Creates the commands for the hard filtering and annotation intended for cancer projects.
+    Creates the commands for COMSIC annotation and filtration based on COSMIC annotation.
     * args_call : Arguments for the pipeline
                 : Dict
-    * str_variants_file : Path to file to be filtered
+    * str_variants_file : Path to file to be annotated and filtered
                         : String path
-    * lstr_dependencies : List of file paths of dependencies from any previously running commands.
-                        : List of strings
-    * logr_cur : Pipeline logger
-               : Logger
+
+    * return : List of commands
     """
 
     # Pull out and annotate Coding Cancer Mutations
@@ -883,16 +881,16 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, lstr_depende
     # If the VCF does not have an annotation in COSMIC then it is dropped
     # GENE, COSMIC_ID, TISSUE, TUMOR, FATHMM, SOMATIC
     lcmd_cancer_filter = []
-    if args_parsed.str_cosmic_coding_vcf:
+    if args_call.str_cosmic_coding_vcf:
 
         # Annotate cancer variants
         str_cancer_mutations_unfiltered = os.path.splitext( str_variants_file )[ 0 ] + "_cancer_unfiltered.vcf"
         str_cancer_annotation_command = " ".join( [ "bcftools", "annotate", "--output_type", "v",
-                                                    "--annotations", args_parsed.str_cosmic_coding_vcf,
+                                                    "--annotations", args_call.str_cosmic_coding_vcf,
                                                     "--columns", "INFO/GENE,INFO/COSMIC_ID,INFO/TISSUE,INFO/TUMOR,INFO/FATHMM,INFO/SOMATIC",
                                                     "--output", str_cancer_mutations_unfiltered, str_variants_file ] )
-        lcmd_commands.append( Command.Command( str_cur_command = str_cancer_annotation_command,
-                                               lstr_cur_dependencies = [ args_parsed.str_cosmic_coding_vcf, str_variants_file ],
+        lcmd_cancer_filter.append( Command.Command( str_cur_command = str_cancer_annotation_command,
+                                               lstr_cur_dependencies = [ args_call.str_cosmic_coding_vcf, str_variants_file ],
                                                lstr_cur_products = [ str_cancer_mutations_unfiltered ] ) )
         # Filter on cancer annotations
         str_cancer_mutations_filtered = os.path.splitext( str_variants_file )[ 0 ] + "_cancer_filtered.vcf"
@@ -901,7 +899,7 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, lstr_depende
                                                lstr_cur_dependencies = [ str_cancer_mutations_unfiltered ],
                                                lstr_cur_products = [ str_cancer_mutations_filtered ] )
         cmd_cancer_filter.func_set_dependency_clean_level( [ str_cancer_mutations_filtered ], Command.CLEAN_NEVER )
-        lcmd_command_filter.append( cmd_cancer_filter )
+        lcmd_cancer_filter.append( cmd_cancer_filter )
 
     return { INDEX_CMD : lcmd_cancer_filter, INDEX_FILE : str_cancer_mutations_filtered }
 
@@ -1094,6 +1092,9 @@ def run( args_call, f_do_index = False ):
         cmd_summarize_annotate.f_stop_update_at_flags = True
         lcmd_commands.append( cmd_summarize_annotate )
 
+        # Cancer annotation (COSMIC)
+        if args_call.str_cosmic_coding_vcf:
+            lcmd_commands.extend( func_do_variant_filtering_cancer( args_call=args_call, str_variants_file=str_annotated_vcf_file )[ INDEX_CMD ] )
 
     # Run commands including variant calling
     if not pline_cur.func_run_commands( lcmd_commands = lcmd_commands, 
