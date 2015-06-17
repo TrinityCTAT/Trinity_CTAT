@@ -110,8 +110,8 @@ for str_info in args_call.lstr_input_files:
     for str_alt_base in lstr_alt:
       dict_temp = { "Chr": str_temp_chr, "Loc": str_temp_loc,
                     "Cov": lstr_fp[ c_I_TAB_RNA_COVERAGE ], "Ref": lstr_fp[ c_I_TAB_RNA_REF ],
-                    "Alt": str_alt_base, "Strand: +" }
-      dict_fp[ "-".join( [ "Chr"+str_temp_chr, str_temp_loc ] ) + " (" + lstr_fp[ c_I_TAB_RNA_COVERAGE ] + ")" ] = dict_temp
+                    "Alt": str_alt_base, "Strand": "+" }
+      dict_fp[ "-".join( [ "Chr"+str_temp_chr, str_temp_loc ] ) + " (" + str( lstr_fp[ c_I_TAB_RNA_COVERAGE ] ) + ")" ] = dict_temp
   dict_sample[ c_STR_INSPECTOR_FP ] = dict_fp
   # TP
   dict_tp = {}
@@ -124,8 +124,8 @@ for str_info in args_call.lstr_input_files:
     for str_alt_base in lstr_alt:
       dict_temp = { "Chr": str_temp_chr, "Loc": str_temp_loc,
                     "Cov": lstr_tp[ c_I_TAB_RNA_COVERAGE ], "Ref": lstr_tp[ c_I_TAB_RNA_REF ],
-                    "Alt": str_alt_base, "Strand: +" }
-      dict_tp[ "-".join( [ "Chr"+str_temp_chr, str_temp_loc ] ) + " (" + lstr_tp[ c_I_TAB_RNA_COVERAGE ] + ")" ] = dict_temp
+                    "Alt": str_alt_base, "Strand": "+" }
+      dict_tp[ "-".join( [ "Chr"+str_temp_chr, str_temp_loc ] ) + " (" + str( lstr_tp[ c_I_TAB_RNA_COVERAGE ] ) + ")" ] = dict_temp
   dict_sample[ c_STR_INSPECTOR_TP ] = dict_tp
   # FN
   dict_fn = {}
@@ -138,8 +138,8 @@ for str_info in args_call.lstr_input_files:
     for str_alt_base in lstr_alt:
       dict_temp = { "Chr": str_temp_chr, "Loc": str_temp_loc,
                     "Cov": lstr_fn[ c_I_TAB_RNA_COVERAGE ], "Ref": lstr_fn[ c_I_TAB_RNA_REF ],
-                    "Alt": str_alt_base, "Strand: +" }
-      dict_fn[ "-".join( [ "Chr"+str_temp_chr, str_temp_loc ] ) + " (" + lstr_fn[ c_I_TAB_RNA_COVERAGE ] + ")" ] = dict_temp
+                    "Alt": str_alt_base, "Strand": "+" }
+      dict_fn[ "-".join( [ "Chr"+str_temp_chr, str_temp_loc ] ) + " (" + str( lstr_fn[ c_I_TAB_DNA_COVERAGE ] ) + ")" ] = dict_temp
   dict_sample[ c_STR_INSPECTOR_FN ] = dict_fn
   dict_inspector[ str_sample_name ] = dict_sample
 
