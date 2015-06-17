@@ -90,6 +90,7 @@ def func_do_star_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
     str_index_dir_2 = os.path.join( args_call.str_file_base, STR_INDEX_2 )
     str_star_output_sam = os.path.join( str_align_dir_2, "Aligned.out.sam" )
     str_star_output_bam = os.path.join( str_align_dir_2, "Aligned.out.bam" )
+    str_star_output_bai = os.path.join( str_align_dir_2, "Aligned.out.bam.bai" )
 
     # Commands to build and return
     lcmd_commands = []
@@ -159,6 +160,11 @@ def func_do_star_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
         lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools view -b -S -o", str_star_output_bam, str_star_output_sam ] ),
                                                lstr_cur_dependencies = [ str_star_output_sam ],
                                                lstr_cur_products = [ str_star_output_bam ] ) )
+
+        # Create bai
+        lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools index", str_star_output_bam, str_star_output_bai ] ),
+                              lstr_cur_dependencies = [ str_star_output_bam ],
+                              lstr_cur_products = [ str_star_output_bai ] ) )
 
     return { INDEX_CMD : lcmd_commands, INDEX_FILE : str_star_output_bam, INDEX_FOLDER : str_align_dir_2 }
 
@@ -252,13 +258,17 @@ def func_do_gsnp_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
 
     STR_INDEX = "_".join( [ "gsnap_index", str_unique_id ] )
     STR_ALIGN = "_".join( [ "gsnap_align", str_unique_id ] )
-    STR_BAM_FILE = "gsnap_align.sam"
+    STR_SAM_FILE_NAME = "gsnap_align.sam"
+    STR_BAM_FILE_NAME = "gsnap_align.bam"
+    STR_BAI_FILE_NAME = "gsnap_align.bam.bai"
     STR_IIT_STORE = "iit_store"
     STR_SPLICESITES = "gtf_splicesites"
     str_index_dir = os.path.join( args_call.str_file_base, STR_INDEX )
     str_genome_name = os.path.splitext( os.path.basename( args_call.str_genome_fa ) )[0]
     str_align_dir = os.path.join( args_call.str_file_base, STR_ALIGN )
-    str_output_file = os.path.join( str_align_dir, STR_BAM_FILE)
+    str_sam_file = os.path.join( str_align_dir, STR_SAM_FILE_NAME )
+    str_bai_file = os.path.join( str_align_dir, STR_BAI_FILE_NAME )
+    str_output_file = os.path.join( str_align_dir, STR_BAM_FILE_NAME)
     #TODO update, is sanger appropriate for all others?
     str_quality_protocol = "illumina" if args_call.str_sequencing_platform == STR_ILLUMINA else "sanger"
 
@@ -310,12 +320,24 @@ def func_do_gsnp_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
                                                                     "-B 5 -a paired -N 1 -m 4 -M 1 -E 4 -n 100 --format=sam",
                                                                     "--gmap-mode=pairsearch,terminal,improve -O --quality-protocol="+str_quality_protocol,
                                                                     "-s", os.path.basename( str_splicesites_iit_file ),
-                                                                    str_unzip_left, str_unzip_right, ">", "gsnap_align.sam" ] ),
+                                                                    str_unzip_left, str_unzip_right, ">", STR_SAM_FILE_NAME ] ),
                                        lstr_cur_dependencies = [ os.path.join( str_index_dir, str_genome_name ), 
                                                                 args_call.str_sample_file_left_fq,
                                                                 args_call.str_sample_file_right_fq ],
                                        lstr_cur_products = [ os.path.join( "..", "..", str_align_dir ) ] ),
                                Command.Command( str_cur_command = " ".join( [ "cd", os.path.join( "..", ".." ) ] ) ) ] )
+
+        # BAM to SAM
+        # java -jar SortSam.jar I=Input.sam O=output.bam SO=coordinate
+        cmd_bwa_bam = Command.Command( str_cur_command = "".join( [ "java -jar SortSam.jar SO=coordinate I=", str_sam_file, " O=", str_output_file ] ),
+                                            lstr_cur_dependencies = [ str_sam_file ],
+                                            lstr_cur_products = [ str_output_file ] )
+        lcmd_commands.extend( [ cmd_bwa_sam, cmd_bwa_bam ] )
+        # Create bai
+        lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools index", str_output_file, str_bai_file ] ),
+                          lstr_cur_dependencies = [ str_output_file ],
+                          lstr_cur_products = [ str_bai_file ] ) )
+
     return { INDEX_CMD : lcmd_commands, INDEX_FILE : str_output_file , INDEX_FOLDER : str_align_dir }
 
 
@@ -341,6 +363,7 @@ def func_do_BWA_alignment( args_call, str_unique_id, pline_cur, f_index_only = F
     str_left_file_key = os.path.basename( os.path.splitext( args.str_sample_file_left_fq )[ 0 ] )
     str_sam = os.path.join( args_call.str_file_base, ".".join( [ str_left_file_key, "sam" ] ) )
     str_bam = os.path.join( args_call.str_file_base, ".".join( [ str_left_file_key, "bam" ] ) )
+    str_bam = str_bam + ".bai"
     
     lcmd_dna_mapping_commands = []
     
@@ -373,7 +396,12 @@ def func_do_BWA_alignment( args_call, str_unique_id, pline_cur, f_index_only = F
                                             lstr_cur_dependencies = [ str_sam ],
                                             lstr_cur_products = [ str_bam ] )
     lcmd_dna_mapping_commands.extend( [ cmd_bwa_sam, cmd_bwa_bam ] )
-                                      
+
+    # Create bai
+    lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools index", str_bam, str_bai ] ),
+                          lstr_cur_dependencies = [ str_bam ],
+                          lstr_cur_products = [ str_bai ] ) )
+                                  
     return { INDEX_CMD: lcmd_dna_mapping_commands, INDEX_FILE: str_bam, INDEX_FOLDER:args_call.str_file_base }
 
 
@@ -508,7 +536,7 @@ def func_do_rnaseq_caller_gatk( args_call, str_input_bam, str_unique_id, str_pro
 
     # Files 
     str_variants_file = os.path.join( str_project_dir, "variants.vcf" )
-    str_input_bai = ".".join( [ os.path.splitext( str_input_bam )[ 0 ], "bai" ] )
+    str_input_bai = str_input_bam + ".bai"
 
     # Create depth file
     if args_call.f_calculate_base_coverage:
