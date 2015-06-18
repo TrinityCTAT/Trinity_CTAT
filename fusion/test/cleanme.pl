@@ -41,7 +41,7 @@ my %keep = map { + $_ => 1 } @files_to_keep;
 `rm -rf ./soapfuse_outdir` if (-d "soapfuse_outdir");
 `rm -rf ./Star_FGene` if (-d "Star_FGene");
 `rm -rf ./_STAR*`;
-`rm -rf ./__save/`;
+
 
 foreach my $file (<*>) {
 	
