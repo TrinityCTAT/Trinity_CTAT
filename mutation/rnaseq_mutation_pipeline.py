@@ -90,7 +90,8 @@ def func_do_star_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
     str_index_dir_2 = os.path.join( args_call.str_file_base, STR_INDEX_2 )
     str_star_output_sam = os.path.join( str_align_dir_2, "Aligned.out.sam" )
     str_star_output_bam = os.path.join( str_align_dir_2, "Aligned.out.bam" )
-    str_star_output_bai = os.path.join( str_align_dir_2, "Aligned.out.bam.bai" )
+    str_star_output_bai = os.path.join( str_align_dir_2, "Aligned.sorted.bam.bai" )
+    str_star_sorted_bam = os.path.join( str_align_dir_2, "Aligned.sorted.bam" )
 
     # Commands to build and return
     lcmd_commands = []
@@ -161,9 +162,14 @@ def func_do_star_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
                                                lstr_cur_dependencies = [ str_star_output_sam ],
                                                lstr_cur_products = [ str_star_output_bam ] ) )
 
+        # Sort coordinate order
+        lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools sort -O bam -T temp -o", str_star_sorted_bam, str_star_output_bam ] ),
+                                               lstr_cur_dependencies = [ str_star_output_bam ],
+                                               lstr_cur_products = [ str_star_sorted_bam ] ) )
+
         # Create bai
-        lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools index", str_star_output_bam, str_star_output_bai ] ),
-                              lstr_cur_dependencies = [ str_star_output_bam ],
+        lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools index", str_star_sorted_bam ] ),
+                              lstr_cur_dependencies = [ str_star_sorted_bam ],
                               lstr_cur_products = [ str_star_output_bai ] ) )
 
     return { INDEX_CMD : lcmd_commands, INDEX_FILE : str_star_output_bam, INDEX_FOLDER : str_align_dir_2 }
@@ -334,7 +340,7 @@ def func_do_gsnp_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
                                             lstr_cur_products = [ str_output_file ] )
         lcmd_commands.extend( [ cmd_bwa_sam, cmd_bwa_bam ] )
         # Create bai
-        lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools index", str_output_file, str_bai_file ] ),
+        lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools index", str_output_file ] ),
                           lstr_cur_dependencies = [ str_output_file ],
                           lstr_cur_products = [ str_bai_file ] ) )
 
@@ -398,7 +404,7 @@ def func_do_BWA_alignment( args_call, str_unique_id, pline_cur, f_index_only = F
     lcmd_dna_mapping_commands.extend( [ cmd_bwa_sam, cmd_bwa_bam ] )
 
     # Create bai
-    lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools index", str_bam, str_bai ] ),
+    lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools index", str_bam ] ),
                           lstr_cur_dependencies = [ str_bam ],
                           lstr_cur_products = [ str_bai ] ) )
                                   
@@ -781,7 +787,7 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
         str_bam_sorted_index = ".".join( [ os.path.splitext( str_bam_sorted )[ 0 ], "bai" ] )
     else:
         lcmd_samtools_variants_commands.extend( [ 
-                            Command.Command( str_cur_command = " ".join( [ "samtools sort", str_bam, os.path.splitext( str_bam_sorted )[0] ] ),
+                            Command.Command( str_cur_command = " ".join( [ "samtools sort -O bam -T temp -o", str_bam_sorted, str_bam ] ),
                                             lstr_cur_dependencies = [ str_bam ],
                                             lstr_cur_products = [ str_bam_sorted ] ),
                             Command.Command( str_cur_command = " ".join( [ "samtools index", str_bam_sorted ] ),
@@ -910,7 +916,8 @@ def func_do_variant_filtering_none( args_call, str_variants_file, lstr_dependenc
 
 def func_do_variant_filtering_cancer( args_call, str_variants_file ):
     """
-    Creates the commands for COMSIC annotation and filtration based on COSMIC annotation.
+
+
     * args_call : Arguments for the pipeline
                 : Dict
     * str_variants_file : Path to file to be annotated and filtered
@@ -919,6 +926,9 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file ):
     * return : List of commands
     """
 
+    # File to filter (may be annotated with cosmic or not so the name changes
+    str_vcf_to_filter = str_variants_file
+
     # Pull out and annotate Coding Cancer Mutations
     # Adding the following annotations from COSMIC 
     # If the VCF does not have an annotation in COSMIC then it is dropped
@@ -926,31 +936,42 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file ):
     lcmd_cancer_filter = []
     if args_call.str_cosmic_coding_vcf:
 
-        # Annotate cancer variants
+        # Annotate cancer variants with COSMIC
         str_cancer_mutations_unfiltered = os.path.splitext( str_variants_file )[ 0 ] + "_cancer_unfiltered.vcf"
-        str_cancer_annotation_command = " ".join( [ "bcftools", "annotate", "--output_type", "v",
+        str_cancer_annotation_command = " ".join( [ "bcftools", "annotate", "--output-type", "v",
                                                     "--annotations", args_call.str_cosmic_coding_vcf,
                                                     "--columns", "INFO/GENE,INFO/COSMIC_ID,INFO/TISSUE,INFO/TUMOR,INFO/FATHMM,INFO/SOMATIC",
                                                     "--output", str_cancer_mutations_unfiltered, str_variants_file ] )
         lcmd_cancer_filter.append( Command.Command( str_cur_command = str_cancer_annotation_command,
                                                lstr_cur_dependencies = [ args_call.str_cosmic_coding_vcf, str_variants_file ],
                                                lstr_cur_products = [ str_cancer_mutations_unfiltered ] ) )
-        # Filter on cancer annotations
-        str_cancer_mutations_filtered = os.path.splitext( str_variants_file )[ 0 ] + "_cancer_filtered.vcf"
-        str_cancer_mutations_filtered_index = str_cancer_mutations_filtered + ".tbi"
-        str_cancer_filter_command = " ".join( [ "grep","-e","[^#|COSMIC\_ID]", str_cancer_mutations_unfiltered,">", str_cancer_mutations_filtered ] ) 
-        cmd_cancer_filter = Command.Command( str_cur_command = str_cancer_filter_command,
-                                               lstr_cur_dependencies = [ str_cancer_mutations_unfiltered ],
-                                               lstr_cur_products = [ str_cancer_mutations_filtered ] )
-        cmd_cancer_filter.func_set_dependency_clean_level( [ str_cancer_mutations_filtered ], Command.CLEAN_NEVER )
-        lcmd_cancer_filter.append( cmd_cancer_filter )
+        str_vcf_to_filter = str_cancer_mutations_unfiltered
 
-        # Create index for the VCF file
-        str_cmd_index_vcf = " ".join( [ "tabix -f", str_cancer_mutations_filtered ] )
-        cmd_index_vcf = Command.Command( str_cur_command = str_cmd_index_vcf,
-                                     lstr_cur_dependencies = [ str_cancer_mutations_filtered ],
-                                     lstr_cur_products = [ str_cancer_mutations_filtered_index ] )
-        lcmd_cancer_filter.append( cmd_index_vcf )
+    # If the variants file is not bgzip, zip it
+    # If the tbi does not exist tabix it
+
+    # Filter out common unless they have a COSMIC ID
+    str_cancer_mutations_filtered = os.path.splitext( str_variants_file )[ 0 ] + "_cancer_filtered.vcf"
+    str_cancer_filter_command = " ".join( [ "remove_common_keeping_cosmic.py", str_vcf_to_filter, str_cancer_mutations_filtered ] ) 
+    cmd_cancer_filter = Command.Command( str_cur_command = str_cancer_filter_command,
+                                         lstr_cur_dependencies = [ str_vcf_to_filter ],
+                                         lstr_cur_products = [ str_cancer_mutations_filtered ] )
+    lcmd_cancer_filter.append( cmd_cancer_filter )
+
+    # Annotate non-common with CRAVAT
+    ## Send service call
+    ## Wait until success or failure
+    ## Copy zip file to location and unzip the file
+    ## Annotate VCF file with TAB data.
+
+    # Filter based on CRAVAT
+
+    # Create index for the VCF file
+#    str_cmd_index_vcf = " ".join( [ "tabix -f", str_cancer_mutations_filtered ] )
+#    cmd_index_vcf = Command.Command( str_cur_command = str_cmd_index_vcf,
+#                                     lstr_cur_dependencies = [ str_cancer_mutations_filtered ],
+#                                     lstr_cur_products = [ str_cancer_mutations_filtered_index ] )
+#    lcmd_cancer_filter.append( cmd_index_vcf )
 
     return { INDEX_CMD : lcmd_cancer_filter, INDEX_FILE : str_cancer_mutations_filtered }
 
@@ -1143,9 +1164,8 @@ def run( args_call, f_do_index = False ):
         cmd_summarize_annotate.f_stop_update_at_flags = True
         lcmd_commands.append( cmd_summarize_annotate )
 
-        # Cancer annotation (COSMIC)
-        if args_call.str_cosmic_coding_vcf:
-            lcmd_commands.extend( func_do_variant_filtering_cancer( args_call=args_call, str_variants_file=str_annotated_vcf_file )[ INDEX_CMD ] )
+        # Perform cancer filtering
+        lcmd_commands.extend( func_do_variant_filtering_cancer( args_call=args_call, str_variants_file=str_annotated_vcf_file )[ INDEX_CMD ] )
 
     # Run commands including variant calling
     if not pline_cur.func_run_commands( lcmd_commands = lcmd_commands, 
