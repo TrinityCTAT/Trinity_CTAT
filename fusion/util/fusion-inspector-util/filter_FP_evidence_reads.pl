@@ -35,6 +35,8 @@ my $usage = <<__EOUSAGE__;
 #
 #  --CPU <int>                    multithreading for trimmomatic (default: $CPU)
 #
+#  --quality_trim                 quality trim the evidence reads
+#
 ###############################################################################################
 
 
@@ -48,6 +50,7 @@ my $cdna_fa;
 my $fusion_summary;
 my $help_flag;
 my $tmpdir = cwd();
+my $DO_QUALITY_TRIMMING;
 
 &GetOptions ( 'h' => \$help_flag,
               
@@ -58,6 +61,8 @@ my $tmpdir = cwd();
     
               'tmpdir=s' => \$tmpdir,
               'CPU=i' => \$CPU,
+       
+              'quality_trim' => \$DO_QUALITY_TRIMMING,
               
     );
 
@@ -100,10 +105,19 @@ main: {
         ## examine junction reads
         
         ## get the reads
-        my $pre_Qtrimmed_reads = "$junc_reads_fq.pre_Qtrimmed";
-        &extract_junction_reads(\%junction_reads, $left_fq, $right_fq, $pre_Qtrimmed_reads);
         
-        &quality_trim_junc_reads(\%junction_reads, $pre_Qtrimmed_reads, $junc_reads_fq);
+        if ($DO_QUALITY_TRIMMING) {
+            
+            my $pre_Qtrimmed_reads = "$junc_reads_fq.pre_Qtrimmed";
+            
+            &extract_junction_reads(\%junction_reads, $left_fq, $right_fq, $pre_Qtrimmed_reads);
+            
+            &quality_trim_junc_reads(\%junction_reads, $pre_Qtrimmed_reads, $junc_reads_fq);
+        }
+        else {
+            &extract_junction_reads(\%junction_reads, $left_fq, $right_fq, $junc_reads_fq);
+        }
+        
         
         ## align the reads to the cdna fasta file
         my $junc_reads_sam = "$junc_reads_fq.sam";
@@ -146,16 +160,25 @@ main: {
         my $span_reads_left_fq = "$tmpdir/tmp.span_reads.left.fq";
         my $span_reads_right_fq = "$tmpdir/tmp.span_reads.right.fq";
         
-        my $pre_Qtrimmed_left_fq = "$span_reads_left_fq.preQtrimmed.fq";
-        my $pre_Qtrimmed_right_fq = "$span_reads_right_fq.preQtrimmed.fq";
-        
-        &extract_spanning_reads(\%spanning_frags, $left_fq, $pre_Qtrimmed_left_fq);
-        &extract_spanning_reads(\%spanning_frags, $right_fq, $pre_Qtrimmed_right_fq);
-        
-        &quality_trim_spanning_reads(\%spanning_frags, 
-                                     $pre_Qtrimmed_left_fq, $pre_Qtrimmed_right_fq, 
-                                     $span_reads_left_fq, $span_reads_right_fq);
-        
+
+        if ($DO_QUALITY_TRIMMING) {
+            
+            my $pre_Qtrimmed_left_fq = "$span_reads_left_fq.preQtrimmed.fq";
+            my $pre_Qtrimmed_right_fq = "$span_reads_right_fq.preQtrimmed.fq";
+            
+            &extract_spanning_reads(\%spanning_frags, $left_fq, $pre_Qtrimmed_left_fq);
+            &extract_spanning_reads(\%spanning_frags, $right_fq, $pre_Qtrimmed_right_fq);
+            
+            &quality_trim_spanning_reads(\%spanning_frags, 
+                                         $pre_Qtrimmed_left_fq, $pre_Qtrimmed_right_fq, 
+                                         $span_reads_left_fq, $span_reads_right_fq);
+        }
+        else {
+            
+            &extract_spanning_reads(\%spanning_frags, $left_fq, $span_reads_left_fq);
+            &extract_spanning_reads(\%spanning_frags, $right_fq, $span_reads_right_fq);
+            
+        }
         
         ## align reads, identify those that actually align as proper pairs.
         my $span_frags_sam = "$tmpdir/tmp.span_reads.sam";
