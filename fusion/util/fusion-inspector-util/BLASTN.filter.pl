@@ -33,6 +33,8 @@ my $usage = <<__EOUSAGE__;
 #
 # Optional: 
 #
+#  --trans_fasta <string>         transcripts fasta file (default: $cdna_fasta_file)
+#
 #  -E <float>                     E-value threshold for blast searches (default: $Evalue)
 #
 #  --tmpdir <string>              file for temporary files (default: $tmpdir)
@@ -52,6 +54,8 @@ my $fusion_preds_file;
 &GetOptions ( 'h' => \$help_flag, 
               
               'fusion_preds=s' => \$fusion_preds_file,
+              
+              'trans_fasta=s' => \$cdna_fasta_file,
               
               'E=f' => \$Evalue,
               'tmpdir=s' => \$tmpdir,
@@ -211,7 +215,7 @@ sub examine_seq_similarity {
     &process_cmd($cmd);
     
     my $blast_out = "$tmpdir/$$.blastn";
-    $cmd = "blastn -db $fileB -query $fileA -evalue $Evalue -outfmt 6 -max_target_seqs 1 > $blast_out 2>/dev/null";
+    $cmd = "blastn -db $fileB -query $fileA -evalue $Evalue -outfmt 6 -lcase_masking  -max_target_seqs 1 > $blast_out 2>/dev/null";
     &process_cmd($cmd);
 
     my @blast_hits;
