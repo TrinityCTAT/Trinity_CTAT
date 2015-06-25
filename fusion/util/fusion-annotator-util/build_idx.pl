@@ -16,17 +16,18 @@ main: {
     { 
         # blast hits
         print STDERR "-parsing blast hits\n";
-        open (my $fh, "gunzip -c blastn.gene_pairs.gz | ") or die $!;
+        open (my $fh, "blastn.gene_pairs") or die $!;
         while (<$fh>) {
             chomp;
-            my ($geneA, $geneB) = split(/\s+/);
+            my ($geneA, $geneB, $per_id, $Evalue) = split(/\s+/);
             if ($geneA eq $geneB) { next; }
-            $fusion_to_annots{"$geneA--$geneB"}->{"BLASTMATCH"} = 1;
-            $fusion_to_annots{"$geneB--$geneA"}->{"BLASTMATCH"} = 1;
+            my $token = "$geneA,$geneB,pID:$per_id,E:$Evalue";
+            $fusion_to_annots{"$geneA--$geneB"}->{"BLASTMATCH"} = $token;
+            $fusion_to_annots{"$geneB--$geneA"}->{"BLASTMATCH"} = $token;
         }
         close $fh;
     }
-
+    
 
     {
         print STDERR "-parsing prot clusters\n";
@@ -112,6 +113,7 @@ main: {
             chomp;
             my @x = split(/\t/);
             my $fusion = shift @x;
+            $fusion =~ s/__/--/;
             
             my @fusion_annots;
             for (my $i = 0; $i <= 12; $i++) {
