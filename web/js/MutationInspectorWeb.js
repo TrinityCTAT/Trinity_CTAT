@@ -205,7 +205,7 @@ function moveToSNP( location, SNPInfo ){
 
   // Update the location information
   snpLocation.innerHTML = "<b>SNP Location:</b> " + getChrLocation( location );
-  snpCoverage.innerHTML = "<b>SNP Coverage:</b> " + getChrCoverage( location );
+  snpCoverage.innerHTML = "<b>SNP Coverage:</b> " + SNPInfo[ "Cov_dna" ] + " (DNA) " + SNPInfo[ "Cov" ] + " (RNA)";
   snpRef.innerHTML = "<b>Ref:</b> " + SNPInfo[ "Ref" ];
   snpAlt.innerHTML = "<b>Alt:</b> " + SNPInfo[ "Alt" ];
 
