@@ -16,6 +16,7 @@ c_STR_INSPECTOR_RNA_VCF = "RNA_VCF"
 c_STR_INSPECTOR_DNA_VCF = "DNA_VCF"
 c_I_NUMBER_RETURNED_CLASS_ERRORS = 10
 c_STR_NO_CALL = "NA"
+
 # Constants for tab files
 c_I_TAB_DNA_LOCATION = 0
 c_I_TAB_DNA_REF = 1
@@ -25,6 +26,17 @@ c_I_TAB_RNA_LOCATION = 4
 c_I_TAB_RNA_REF = 5
 c_I_TAB_RNA_CALL = 6
 c_I_TAB_RNA_COVERAGE = 7
+c_I_MIN_COVERAGE = 10
+
+def func_make_weighted_coverage( str_RNA_coverage, str_DNA_coverage ):
+  # Ad hoc waiting for coverage weight coverage by both amount of coverage and balance of coverage 
+  # ( prefering balanced maginitude of covarege between DNA and RNA )
+  i_RNA_coverage = int( str_RNA_coverage ) * 1.0
+  i_DNA_coverage = int( str_DNA_coverage ) * 1.0
+  i_max = max( i_RNA_coverage, i_DNA_coverage )
+  i_min = min( i_RNA_coverage, i_DNA_coverage )
+  return ( 1 - ( ( i_max - i_min ) /  i_max ) ) * ( i_RNA_coverage + i_DNA_coverage )
+#  return ( 1 - abs( max( min( 0, i_RNA_coverage / i_DNA_coverage ), 2 ) - 1 ) ) * ( i_RNA_coverage + i_DNA_coverage )
 
 # Parse arguments
 prsr_arguments = argparse.ArgumentParser( prog = "make_inspector_json.py", description = "Creates the json object needed to view a RNA-Seq mutation validation comparison run.", formatter_class = argparse.ArgumentDefaultsHelpFormatter )
@@ -42,10 +54,10 @@ for str_info in args_call.lstr_input_files:
   str_sample_name, str_rna_bam, str_dna_bam, str_rna_vcf, str_dna_vcf, str_tab = str_info.split(",")
 
   # Check to make sure the files exist.
-  for str_file in [ str_rna_bam, str_dna_bam, str_rna_vcf, str_dna_vcf, str_tab ]:
-    if not os.path.exists( str_file ):
-      print( "Error. The input file " + str_file + " does not exist. Skipping sample " + str_sample_name + "." )
-      continue
+#  for str_file in [ str_rna_bam, str_dna_bam, str_rna_vcf, str_dna_vcf, str_tab ]:
+#    if not os.path.exists( str_file ):
+#      print( "Error. The input file " + str_file + " does not exist. Skipping sample " + str_sample_name + "." )
+#      continue
 
   # Add sample and file names
   dict_sample = {}
@@ -55,8 +67,11 @@ for str_info in args_call.lstr_input_files:
   dict_sample[ c_STR_INSPECTOR_RNA_VCF ] = str_rna_vcf
 
   # Read in the VCF file
+  llstr_tp_total = []
   llstr_tp = []
+  llstr_fp_total = []
   llstr_fp = []
+  llstr_fn_total = []
   llstr_fn = []
   # Open tab file
   with open( str_tab, "r" ) as  hndl_tab:
@@ -66,38 +81,55 @@ for str_info in args_call.lstr_input_files:
       if lstr_tokens[0][0] == "#":
         continue
 
-      # Change NA coverage to 0 coverage
+       # Skip NA coverage in either set
+ #     # Change NA coverage to 0 coverage
       if lstr_tokens[ c_I_TAB_RNA_COVERAGE ].lower() == "na":
-        lstr_tokens[ c_I_TAB_RNA_COVERAGE ] = 0
+        continue
+#        lstr_tokens[ c_I_TAB_RNA_COVERAGE ] = 0
       if lstr_tokens[ c_I_TAB_DNA_COVERAGE ].lower() == "na":
-        lstr_tokens[ c_I_TAB_DNA_COVERAGE ] = 0
+        continue
+#        lstr_tokens[ c_I_TAB_DNA_COVERAGE ] = 0
+
+      # Skip under a certain coverage in either DNA or RNA Coverage
+      if int( lstr_tokens[ c_I_TAB_RNA_COVERAGE ] ) < ( c_I_MIN_COVERAGE + 1 ):
+        continue
+      if int( lstr_tokens[ c_I_TAB_DNA_COVERAGE ] ) < ( c_I_MIN_COVERAGE + 1 ):
+        continue
 
       # Sort into error classes.
       STR_DNA_CALL = lstr_tokens[ c_I_TAB_DNA_CALL ]
       STR_RNA_CALL = lstr_tokens[ c_I_TAB_RNA_CALL ]
 
+      # Append potential variants
       if STR_DNA_CALL == c_STR_NO_CALL:
         # FP
         if not STR_RNA_CALL == c_STR_NO_CALL:
-          llstr_fp.append( lstr_tokens )
+          llstr_fp_total.append( lstr_tokens )
       # FN
       elif STR_RNA_CALL == c_STR_NO_CALL:
-        llstr_fn.append( lstr_tokens )
+        llstr_fn_total.append( lstr_tokens )
       # TP
       else:
-        llstr_tp.append( lstr_tokens )
+        llstr_tp_total.append( lstr_tokens )
 
+  # Highest coverage no balance
+  # Highest coverage with balance
   # Get the top number of FP by coverage
-  llstr_fp.sort( key=lambda x: int( x[ c_I_TAB_RNA_COVERAGE ] ), reverse=True )
-  llstr_fp = llstr_fp[0:c_I_NUMBER_RETURNED_CLASS_ERRORS]
+  llstr_fp_total.sort( key=lambda x: int( x[ c_I_TAB_RNA_COVERAGE ] ), reverse=True )
+  llstr_fp = llstr_fp_total[0:c_I_NUMBER_RETURNED_CLASS_ERRORS]
+  llstr_fp_total.sort( key=lambda x: func_make_weighted_coverage(x[ c_I_TAB_RNA_COVERAGE ], x[ c_I_TAB_DNA_COVERAGE ] ), reverse=True )
+  llstr_fp.extend( llstr_fp_total[ 0:c_I_NUMBER_RETURNED_CLASS_ERRORS ] )
   # Get the top number of TP by coverage
-  llstr_tp.sort( key=lambda x: int( x[ c_I_TAB_RNA_COVERAGE ] ), reverse=True )
-  llstr_tp = llstr_tp[0:c_I_NUMBER_RETURNED_CLASS_ERRORS]
- 
+  llstr_tp_total.sort( key=lambda x: int( x[ c_I_TAB_RNA_COVERAGE ] ), reverse=True )
+  llstr_tp = llstr_tp_total[0:c_I_NUMBER_RETURNED_CLASS_ERRORS]
+  llstr_tp_total.sort( key=lambda x: func_make_weighted_coverage(x[ c_I_TAB_RNA_COVERAGE ], x[ c_I_TAB_DNA_COVERAGE ] ), reverse=True )
+  llstr_tp.extend( llstr_tp_total[ 0:c_I_NUMBER_RETURNED_CLASS_ERRORS ] )
   # Get the top number of FN by coverage
-  llstr_fn.sort( key=lambda x: int( x[ c_I_TAB_DNA_COVERAGE ] ), reverse=True )
-  llstr_fn = llstr_fn[0:c_I_NUMBER_RETURNED_CLASS_ERRORS]
- 
+  llstr_fn_total.sort( key=lambda x: int( x[ c_I_TAB_DNA_COVERAGE ] ), reverse=True )
+  llstr_fn = llstr_fn_total[0:c_I_NUMBER_RETURNED_CLASS_ERRORS]
+  llstr_fn_total.sort( key=lambda x: func_make_weighted_coverage(x[ c_I_TAB_RNA_COVERAGE ], x[ c_I_TAB_DNA_COVERAGE ] ), reverse=True )
+  llstr_fn.extend( llstr_fn_total[0:c_I_NUMBER_RETURNED_CLASS_ERRORS] )
+
   # Add error class info
   # FP
   dict_fp = {}
@@ -108,7 +140,7 @@ for str_info in args_call.lstr_input_files:
     str_temp_chr = lstr_temp_chr_loc[ 0 ][ 3: ] if ( len( lstr_temp_chr_loc[ 0 ] ) > 3 ) and ( lstr_temp_chr_loc[0][ 0:3 ].lower() == "chr" ) else lstr_temp_chr_loc[ 0 ]
     str_temp_loc = lstr_temp_chr_loc[ 1 ]
     for str_alt_base in lstr_alt:
-      dict_temp = { "Chr": str_temp_chr, "Loc": str_temp_loc,
+      dict_temp = { "Chr": str_temp_chr, "Loc": str_temp_loc, "Cov_dna": lstr_fp[ c_I_TAB_DNA_COVERAGE ],
                     "Cov": lstr_fp[ c_I_TAB_RNA_COVERAGE ], "Ref": lstr_fp[ c_I_TAB_RNA_REF ],
                     "Alt": str_alt_base, "Strand": "+" }
       dict_fp[ "-".join( [ "Chr"+str_temp_chr, str_temp_loc ] ) + " (" + str( lstr_fp[ c_I_TAB_RNA_COVERAGE ] ) + ")" ] = dict_temp
@@ -122,7 +154,7 @@ for str_info in args_call.lstr_input_files:
     str_temp_chr = lstr_temp_chr_loc[ 0 ][ 3: ] if ( len( lstr_temp_chr_loc[ 0 ] ) > 3 ) and ( lstr_temp_chr_loc[0][ 0:3 ].lower() == "chr" ) else lstr_temp_chr_loc[ 0 ]
     str_temp_loc = lstr_temp_chr_loc[ 1 ]
     for str_alt_base in lstr_alt:
-      dict_temp = { "Chr": str_temp_chr, "Loc": str_temp_loc,
+      dict_temp = { "Chr": str_temp_chr, "Loc": str_temp_loc, "Cov_dna": lstr_tp[ c_I_TAB_DNA_COVERAGE ],
                     "Cov": lstr_tp[ c_I_TAB_RNA_COVERAGE ], "Ref": lstr_tp[ c_I_TAB_RNA_REF ],
                     "Alt": str_alt_base, "Strand": "+" }
       dict_tp[ "-".join( [ "Chr"+str_temp_chr, str_temp_loc ] ) + " (" + str( lstr_tp[ c_I_TAB_RNA_COVERAGE ] ) + ")" ] = dict_temp
@@ -136,7 +168,7 @@ for str_info in args_call.lstr_input_files:
     str_temp_chr = lstr_temp_chr_loc[ 0 ][ 3: ] if ( len( lstr_temp_chr_loc[ 0 ] ) > 3 ) and ( lstr_temp_chr_loc[0][ 0:3 ].lower() == "chr" ) else lstr_temp_chr_loc[ 0 ]
     str_temp_loc = lstr_temp_chr_loc[ 1 ]
     for str_alt_base in lstr_alt:
-      dict_temp = { "Chr": str_temp_chr, "Loc": str_temp_loc,
+      dict_temp = { "Chr": str_temp_chr, "Loc": str_temp_loc, "Cov_dna": lstr_fn[ c_I_TAB_DNA_COVERAGE ],
                     "Cov": lstr_fn[ c_I_TAB_RNA_COVERAGE ], "Ref": lstr_fn[ c_I_TAB_RNA_REF ],
                     "Alt": str_alt_base, "Strand": "+" }
       dict_fn[ "-".join( [ "Chr"+str_temp_chr, str_temp_loc ] ) + " (" + str( lstr_fn[ c_I_TAB_DNA_COVERAGE ] ) + ")" ] = dict_temp
