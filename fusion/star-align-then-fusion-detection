@@ -54,6 +54,7 @@ main: {
         . " --alignSJDBoverhangMin 10 "   
         . " --alignMatesGapMax 200000 "
         . " --alignIntronMax 200000 "
+        . " --chimSegmentReadGapMax parameter 3 "
         . " --runThreadN 4"
         . " --outSAMtype BAM SortedByCoordinate ";
     
@@ -66,7 +67,7 @@ main: {
 
     ##  assign fusion junctions to genes:
 
-    $cmd = "/home/unix/bhaas/GITHUB/STAR-Fusion/STAR-Fusion -S Chimeric.out.sam -J Chimeric.out.junction -G $FUSION_ANNOTATOR_LIB/gencode.v19.annotation.gtf.exons -C $FUSION_ANNOTATOR_LIB/gencode.v19.annotation.gtf.exons.cdna";
+    $cmd = "/home/unix/bhaas/GITHUB/STAR-Fusion/STAR-Fusion -S Chimeric.out.sam -J Chimeric.out.junction --verbose_level 2";
     $pipeliner->add_commands( Command->new($cmd, "star-fusion.ok") );
     
     $pipeliner->run();

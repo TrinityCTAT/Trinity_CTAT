@@ -7,18 +7,19 @@ use FindBin;
 use lib ("$FindBin::Bin/../../PerlLib");
 use Fasta_reader;
 use Getopt::Long qw(:config posix_default no_ignore_case bundling pass_through);                                                 
-use TiedHash;
+
+
+
+####
+# All this mainly does is to reformat the fusion inspector predictions output so that we can filter it using the STAR-Fusion.filter script.
+# However, also filtering out those non-consensus splice types having less than 10 junction reads supporting them.
+####
+
 
 ######################################################
-# note, I'm borrowing this from our STAR-Fusion.filter
-######################################################
 
-my $FUSION_ANNOTATOR_LIB = $ENV{FUSION_ANNOTATOR_LIB} or die "Error, require env var for FUSION_ANNOTATOR_LIB";
+my $STAR_FUSION_DIR = $ENV{STAR_FUSION_DIR} or die "Error, need env var for STAR_FUSION_DIR";
 
-my $cdna_fasta_file = "$FUSION_ANNOTATOR_LIB/gencode.v19.annotation.gtf.exons.cdna";
-
-my $Evalue = 1e-3;
-my $tmpdir = "/tmp";
 
 my $usage = <<__EOUSAGE__;
 
@@ -30,14 +31,10 @@ my $usage = <<__EOUSAGE__;
 #                                 Required formatting is:  
 #                                 geneA--geneB (tab) score (tab) ... rest
 #
+#    --min_novel_junction_support <int>    default: 10  (minimum of 10 junction reads required if breakpoint
+#                                                        lacks involvement of only reference junctions)
 #
-# Optional: 
-#
-#  --trans_fasta <string>         transcripts fasta file (default: $cdna_fasta_file)
-#
-#  -E <float>                     E-value threshold for blast searches (default: $Evalue)
-#
-#  --tmpdir <string>              file for temporary files (default: $tmpdir)
+#    --min_alt_pct_junction <float>        default: 10.0  (10% of the dominant isoform junction support)
 #
 ########################################################################  
 
@@ -50,15 +47,16 @@ my $help_flag;
 
 my $fusion_preds_file;
 
+my $min_novel_junction_support = 10;
+my $min_alt_pct_junction = 10.0;
+
 
 &GetOptions ( 'h' => \$help_flag, 
               
               'fusion_preds=s' => \$fusion_preds_file,
               
-              'trans_fasta=s' => \$cdna_fasta_file,
-              
-              'E=f' => \$Evalue,
-              'tmpdir=s' => \$tmpdir,
+              'min_novel_junction_support=i' => \$min_novel_junction_support,
+              'min_alt_pct_junction=f' => \$min_alt_pct_junction,
     );
 
 
@@ -66,172 +64,81 @@ if ($help_flag) {
     die $usage;
 }
 
-unless ($fusion_preds_file && $cdna_fasta_file) {
+unless ($fusion_preds_file) {
     die $usage;
 }
-
-my $ref_cdna_idx_file = "$cdna_fasta_file.idx";
-unless (-s $ref_cdna_idx_file) {
-    die "Error, cannot find indexed fasta file: $cdna_fasta_file.idx; be sure to build an index - see docs.\n";
-}
-
-
-my $CDNA_IDX = new TiedHash({ use => $ref_cdna_idx_file });
 
 
 main: {
 
-    unless (-d $tmpdir) {
-        mkdir $tmpdir or die "Error, cannot mkdir $tmpdir";
-    }
+    my $star_fusion_fmt_file = "$fusion_preds_file.starFfmt";
+    open (my $ofh, ">$star_fusion_fmt_file") or die  "Error, cannot write to $star_fusion_fmt_file";
     
-
-    my $filter_info_file = "$fusion_preds_file.filt_info";
-    open (my $ofh, ">$filter_info_file") or die "Error, cannot write to $filter_info_file";
     
     my @fusions;
     open (my $fh, $fusion_preds_file) or die "Error, cannot open file $fusion_preds_file";
     my $header = <$fh>;
+    
+    
+    
+    my @fusions;
+
     while (<$fh>) {
         if (/^\#/) { 
             next; 
         }
         chomp;
         my $line = $_;
-        my @x = split(/\t/);
 
-        my $geneA = $x[0];
-        my $geneB = $x[2];
-        my $J = $x[5];
-        my $S = $x[6];
-        
+        my ($geneA, $chr_brkpt_A, $geneB, $chr_brkpt_B, $splice_type, $junction_count, $spanning_count, $num_left_contrary_reads, $num_right_contrary_reads, $TAF_left, $TAF_right, $fusion_annotations) = split(/\t/);
+
         my $fusion_name = "$geneA--$geneB";
         
-        my $score = sqrt($J**2 + $S**2);
+        my @data = ($fusion_name, $junction_count, $spanning_count, $splice_type, $geneA, $chr_brkpt_A, $geneB, $chr_brkpt_B, $num_left_contrary_reads, $TAF_left, $num_right_contrary_reads, $TAF_right, $fusion_annotations);
         
-        push (@fusions, { fusion_name => $fusion_name,
-                          geneA => $geneA,
-                          geneB => $geneB,
-                          score => $score, 
-                          line => $line,
-              } );
+        push (@fusions, [@data]);
+
+        #print $ofh join("\t", 
         
     }
-    close $fh;
-
-    print $ofh $header;
-    print $header;
     
-    @fusions = reverse sort {$a->{score} <=> $b->{score} } @fusions;
+
+    ## filter and print
+    print $ofh join("\t", "#fusion_name", "junction_count", "spanning_count", "splice_type", "geneA", "chr_brktp_A", "geneB", "chr_brktp_B", "num_left_contrary", "num_right_contrary", "TAF_left", "TAF_right", "fusion_annotations") . "\n";
+
+    @fusions = reverse sort {$a->[1]<=>$b->[1]} @fusions;
 
 
-    my %AtoB;
-    my %BtoA;
-    
+    my %dominant_junction_support;
+
     foreach my $fusion (@fusions) {
         
-        my ($geneA, $geneB) = ($fusion->{geneA}, $fusion->{geneB});
-
-        my @blast_info = &examine_seq_similarity($geneA, $geneB);
-        if (@blast_info) {
-            push (@blast_info, "SEQ_SIMILAR_PAIR");
+        my $fusion_name = $fusion->[0];
+        my $splice_type = $fusion->[3];
+        my $junction_support = $fusion->[1];
+        if ($splice_type eq 'INCL_NON_REF_SPLICE' && $junction_support < $min_novel_junction_support) {
+            next;
+        }
+        if (! exists $dominant_junction_support{$fusion_name}) {
+            $dominant_junction_support{$fusion_name} = $junction_support;
         }
         else {
-        
-            my $altB_aref = $AtoB{$geneA};
-            if ($altB_aref) {
-                foreach my $altB (@$altB_aref) {
-                    my @blast = &examine_seq_similarity($geneB, $altB);
-                    if (@blast) {
-                        push (@blast, "ALREADY_SELECTED:$geneA--$altB");
-                        push (@blast_info, @blast);
-                    }
-                }
-            }
-            my $altA_aref = $BtoA{$geneB};
-            if ($altA_aref) {
-                foreach my $altA (@$altA_aref) {
-                    my @blast = &examine_seq_similarity($altA, $geneA);
-                    if (@blast) {
-                        push (@blast, "ALREADY_SELECTED:$altA--$geneB");
-                        push (@blast_info, @blast);
-                    }
-                }
+            if ($junction_support < $dominant_junction_support{$fusion_name} * $min_alt_pct_junction/100) {
+                next;
             }
         }
-        
-        my $line = $fusion->{line};
-        
-        if (@blast_info) {
-            $line ="#$line"; # comment out the line in the filtered file... an aesthetic.
-        }
-        print $ofh "$line\t" . join("\t", @blast_info) . "\n";
 
-        unless (@blast_info) {
-            print "$line\n";
-            push (@{$AtoB{$geneA}}, $geneB);
-            push (@{$BtoA{$geneB}}, $geneA);
-        }
-        
+        print $ofh join("\t", @$fusion) . "\n";
     }
-
+            
+    close $fh;
     close $ofh;
-    
-    exit(0);
-}
 
-
-####
-sub examine_seq_similarity {
-    my ($geneA, $geneB) = @_;
-
-    print STDERR "-testing $geneA vs. $geneB\n";
+    ## now do the homology filter
     
-    my $fileA = "$tmpdir/$$.gA.fa";
-    my $fileB = "$tmpdir/$$.gB.fa";
-        
-    {
-        # write file A
-        open (my $ofh, ">$fileA") or die "Error, cannot write to $fileA";
-        my $cdna_seqs = $CDNA_IDX->get_value($geneA) or confess "Error, no sequences found for gene: $geneA";
-        print $ofh $cdna_seqs;
-        close $ofh;
-    }
-        
-    
-    {
-        # write file B
-        open (my $ofh, ">$fileB") or die "Error, cannot write to file $fileB";
-        my $cdna_seqs = $CDNA_IDX->get_value($geneB) or confess "Error, no sequences found for gene: $geneB";
-        print $ofh $cdna_seqs;
-        close $ofh;
-    }
-
-    #print STDERR "do it? ... ";
-    #my $response = <STDIN>;
-    
-    ## blast them:
-    my $cmd = "makeblastdb -in $fileB -dbtype nucl 2>/dev/null 1>&2";
-    &process_cmd($cmd);
-    
-    my $blast_out = "$tmpdir/$$.blastn";
-    $cmd = "blastn -db $fileB -query $fileA -evalue $Evalue -outfmt 6 -lcase_masking  -max_target_seqs 1 > $blast_out 2>/dev/null";
+    my $cmd = "$STAR_FUSION_DIR/util/STAR-Fusion.filter --fusion_preds $star_fusion_fmt_file";
     &process_cmd($cmd);
 
-    my @blast_hits;
-    if (-s $blast_out) {
-        open (my $fh, $blast_out) or die "Error, cannot open file $blast_out";
-        while (<$fh>) {
-            chomp;
-            my @x = split(/\t/);
-            my $blast_line = join("^", @x);
-            $blast_line =~ s/\s+//g;
-            push (@blast_hits, $blast_line);
-        }
-    }
-    
-
-    return(@blast_hits);
 }
 
 

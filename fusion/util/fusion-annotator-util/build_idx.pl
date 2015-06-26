@@ -21,9 +21,9 @@ main: {
             chomp;
             my ($geneA, $geneB, $per_id, $Evalue) = split(/\s+/);
             if ($geneA eq $geneB) { next; }
-            my $token = "$geneA,$geneB,pID:$per_id,E:$Evalue";
-            $fusion_to_annots{"$geneA--$geneB"}->{"BLASTMATCH"} = $token;
-            $fusion_to_annots{"$geneB--$geneA"}->{"BLASTMATCH"} = $token;
+            my $token = "{$geneA|$geneB|pID:$per_id|E:$Evalue}";
+            $fusion_to_annots{"$geneA--$geneB"}->{"BLASTMATCH:$token"} = 1;
+            $fusion_to_annots{"$geneB--$geneA"}->{"BLASTMATCH:$token"} = 1;
         }
         close $fh;
     }

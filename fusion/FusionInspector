@@ -21,13 +21,19 @@ import sciedpiper.ParentScript as ParentScript
 
 UTILDIR = os.sep.join([os.path.dirname(__file__), "util/fusion-inspector-util"])
 
-TRINITY_HOME = os.environ["TRINITY_HOME"]
-if not TRINITY_HOME:
+
+if not os.environ.has_key('TRINITY_HOME'):
     print >> sys.stderr, "Error, need TRINITY_HOME environmental variable set and pointing to Trinity installation directory"
     sys.exit(2)
+TRINITY_HOME = os.environ["TRINITY_HOME"]
 
 
+if not os.environ.has_key('STAR_FUSION_DIR'):
+    print >> sys.stderr, "Error, need STAR_FUSION_DIR env var set to STAR-Fusion installation directory"
+    sys.exit(3)
 
+
+    
 class FusionInspector( ParentScript.ParentScript ):
     
     def func_update_arguments(self, arg_raw ):
