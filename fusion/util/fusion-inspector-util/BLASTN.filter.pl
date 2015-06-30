@@ -27,14 +27,7 @@ my $usage = <<__EOUSAGE__;
 #
 # Required:
 #
-#  --fusion_preds <string>        preliminary fusion predictions
-#                                 Required formatting is:  
-#                                 geneA--geneB (tab) score (tab) ... rest
-#
-#    --min_novel_junction_support <int>    default: 10  (minimum of 10 junction reads required if breakpoint
-#                                                        lacks involvement of only reference junctions)
-#
-#    --min_alt_pct_junction <float>        default: 10.0  (10% of the dominant isoform junction support)
+#  --fusion_preds <string>        preliminary fusion prediction (file: finspector.fusion_preds.coalesced.summary)s
 #
 ########################################################################  
 
@@ -47,16 +40,12 @@ my $help_flag;
 
 my $fusion_preds_file;
 
-my $min_novel_junction_support = 10;
-my $min_alt_pct_junction = 10.0;
 
 
 &GetOptions ( 'h' => \$help_flag, 
               
               'fusion_preds=s' => \$fusion_preds_file,
               
-              'min_novel_junction_support=i' => \$min_novel_junction_support,
-              'min_alt_pct_junction=f' => \$min_alt_pct_junction,
     );
 
 
@@ -69,6 +58,44 @@ unless ($fusion_preds_file) {
 }
 
 
+=incoming
+
+0       #geneA
+1       local_brkpt_A
+2       chr_brkpt_A
+3       geneB
+4       local_brkpt_B
+5       chr_brkpt_B
+6       splice_type
+7       junction_count
+8       spanning_count
+9       junction_reads
+10      spanning_reads
+11      num_left_contrary_reads
+12      left_contrary_reads
+13      num_right_contrary_reads
+14      right_contrary_reads
+15      TAF_left
+16      TAF_right
+17      fusion_annotations
+
+but want:
+
+0       #fusion_name
+1       JunctionReads
+2       SpanningFrags
+3       Splice_type
+4       LeftGene
+5       LeftBreakpoint
+6       RightGene
+7       RightBreakpoint
+8       JunctionReads
+9       SpanningFrags
+
+
+=cut
+
+
 main: {
 
     my $star_fusion_fmt_file = "$fusion_preds_file.starFfmt";
@@ -79,9 +106,7 @@ main: {
     open (my $fh, $fusion_preds_file) or die "Error, cannot open file $fusion_preds_file";
     my $header = <$fh>;
     
-    
-    
-    my @fusions;
+    print $ofh join("\t", "#fusion_name", "JunctionReads", "SpanningFrags", "Splice_type", "LeftGene", "LeftBreakpoint", "RightGene", "RightBreakpoint", "JunctionReads", "SpanningFrags") . "\n";
 
     while (<$fh>) {
         if (/^\#/) { 
@@ -90,47 +115,13 @@ main: {
         chomp;
         my $line = $_;
 
-        my ($geneA, $chr_brkpt_A, $geneB, $chr_brkpt_B, $splice_type, $junction_count, $spanning_count, $num_left_contrary_reads, $num_right_contrary_reads, $TAF_left, $TAF_right, $fusion_annotations) = split(/\t/);
-
+        my ($geneA, $local_chr_brkpt_A, $chr_brkpt_A, $geneB, $local_chr_brkpt_B, $chr_brkpt_B, $splice_type, $junction_count, $spanning_count, $junction_reads, $spanning_reads, $num_left_contrary_reads, $left_contrary_reads, $num_right_contrary_reads, $right_contrary_reads, $TAF_left, $TAF_right, $fusion_annotations) = split(/\t/);
+        
         my $fusion_name = "$geneA--$geneB";
         
-        my @data = ($fusion_name, $junction_count, $spanning_count, $splice_type, $geneA, $chr_brkpt_A, $geneB, $chr_brkpt_B, $num_left_contrary_reads, $TAF_left, $num_right_contrary_reads, $TAF_right, $fusion_annotations);
-        
-        push (@fusions, [@data]);
-
-        #print $ofh join("\t", 
-        
+        print $ofh join("\t", $fusion_name, $junction_count, $spanning_count, $splice_type, $geneA, $chr_brkpt_A, $geneB, $chr_brkpt_B, $junction_reads, $spanning_reads) . "\n";
     }
     
-
-    ## filter and print
-    print $ofh join("\t", "#fusion_name", "junction_count", "spanning_count", "splice_type", "geneA", "chr_brktp_A", "geneB", "chr_brktp_B", "num_left_contrary", "num_right_contrary", "TAF_left", "TAF_right", "fusion_annotations") . "\n";
-
-    @fusions = reverse sort {$a->[1]<=>$b->[1]} @fusions;
-
-
-    my %dominant_junction_support;
-
-    foreach my $fusion (@fusions) {
-        
-        my $fusion_name = $fusion->[0];
-        my $splice_type = $fusion->[3];
-        my $junction_support = $fusion->[1];
-        if ($splice_type eq 'INCL_NON_REF_SPLICE' && $junction_support < $min_novel_junction_support) {
-            next;
-        }
-        if (! exists $dominant_junction_support{$fusion_name}) {
-            $dominant_junction_support{$fusion_name} = $junction_support;
-        }
-        else {
-            if ($junction_support < $dominant_junction_support{$fusion_name} * $min_alt_pct_junction/100) {
-                next;
-            }
-        }
-
-        print $ofh join("\t", @$fusion) . "\n";
-    }
-            
     close $fh;
     close $ofh;
 
