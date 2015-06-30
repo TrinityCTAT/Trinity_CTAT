@@ -29,6 +29,8 @@ my $usage = <<__EOUSAGE__;
 #
 #  --fusion_preds <string>        preliminary fusion prediction (file: finspector.fusion_preds.coalesced.summary)s
 #
+#  --out_prefix <string>          output prefix for STAR-Fusion.filter  (adds .final and .final.abridged as outputs)
+#
 ########################################################################  
 
 
@@ -39,13 +41,13 @@ __EOUSAGE__
 my $help_flag;
 
 my $fusion_preds_file;
-
+my $out_prefix;
 
 
 &GetOptions ( 'h' => \$help_flag, 
               
               'fusion_preds=s' => \$fusion_preds_file,
-              
+              'out_prefix=s' => \$out_prefix,
     );
 
 
@@ -127,7 +129,7 @@ main: {
 
     ## now do the homology filter
     
-    my $cmd = "$STAR_FUSION_DIR/util/STAR-Fusion.filter --fusion_preds $star_fusion_fmt_file";
+    my $cmd = "$STAR_FUSION_DIR/util/STAR-Fusion.filter --fusion_preds $star_fusion_fmt_file  --out_prefix $out_prefix";
     &process_cmd($cmd);
 
 }
