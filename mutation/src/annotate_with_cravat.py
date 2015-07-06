@@ -108,12 +108,12 @@ def func_request_cravat_service( str_vcf_path, str_classifier, f_hg_18, str_emai
   Request a job to occur with CRAVAT.
   """
 
-  # Read in file into a string
-  str_initial_vcf = func_vcf_to_cravat_mutations( str_vcf_path )
-  if not str_initial_vcf:
-    print " ".join( [ "annotate_with_cravat::Error did not read VCF file.",
-                      "Path =" + str( str_vcf_path ) + "." ] )
-    return( None )
+#  # Read in file into a string
+#  str_initial_vcf = func_vcf_to_cravat_mutations( str_vcf_path )
+#  if not str_initial_vcf:
+#    print " ".join( [ "annotate_with_cravat::Error did not read VCF file.",
+#                      "Path =" + str( str_vcf_path ) + "." ] )
+#    return( None )
 
   # Encode request info
   pyld_request = { "chasmclassifier": str( str_classifier ),
@@ -123,11 +123,10 @@ def func_request_cravat_service( str_vcf_path, str_classifier, f_hg_18, str_emai
                    "analyses": "CHASM;SnvGet",
                    "functionalannotation": "on",
                    "analysistype": "driver",
-                   "email": str_email,
-                   "mutations": str_initial_vcf }
+                   "email": str_email }
 
   # Send file over to service
-  response_cravat = requests.get( "http://www.cravat.us/rest/service/submit", params=pyld_request )
+  response_cravat = requests.post( "http://www.cravat.us/rest/service/submit", files={"inputfile": open( str_vcf_path )}, data=pyld_request )
   json_response = response_cravat.json()
   # Get return (job id)
   return json_response.get( str_response_job_id, None )
