@@ -38,6 +38,9 @@ args_call = prsr_arguments.parse_args()
 def func_check_job( str_json_id ):
   """
   Uses the CRAVAT status web service to check if a job is complete.
+
+  * str_json_id : CRAVAT job id.
+                : string
   """
 
   # Send file over to service
@@ -47,6 +50,11 @@ def func_check_job( str_json_id ):
 def func_download_cravat_result( str_cravat_url, str_download_location ):
   """
   Using the download URL from CRAVAT, downloads to the given location.
+
+  * str_cravat_url : Url provided by CRAVAT fro results download.
+                   : string
+  * str_download_location : Path (including file name) to write the download.
+                          : string
   """
 
   # Download Cravat result
@@ -60,6 +68,13 @@ def func_download_cravat_result( str_cravat_url, str_download_location ):
 def func_get_cravat_response( str_json_id, i_max_attempts, i_wait ):
   """
   Checks CRAVAT for a period of time until the success, failure, or time out are given for a job id.
+
+  *  str_json_id : CRAVAT job id.
+                 : string
+  * i_max_attempts : Max times to check CRAVAT for job completion.
+                   : int
+  * i_wait : Time in seconds to wait between checking CRAVAT for job completion.
+           : int
   """
 
   for x_attempt in xrange( i_max_attempts ):
@@ -83,37 +98,20 @@ def func_get_cravat_response( str_json_id, i_max_attempts, i_wait ):
                     "Success =" + str( str_success ) + "." ] )
   return( None )
 
-def func_vcf_to_cravat_mutations( str_path ):
-  """
-  Read in a VCF file and reduce it in size for CRAVAT
-  """
-
-  # Read in file into a string
-  lstr_reduced_vcf = [ str_cravat_header ]
-  str_sample = os.path.basename( str_path )
-  i_counter = 0
-  with open( str_path, "rb" ) as hndl_in:
-    for str_line in hndl_in:
-      if str_line[ 0 ] == str_vcf_comment:
-        continue
-    lstr_cur_line = str_line.split( c_VCF_delimiter )
-    lstr_reduced_vcf.append( "\t".join( [ str( i_counter ), lstr_cur_line[ i_vcf_chr ], lstr_cur_line[ i_vcf_position ],
-                                          "+", lstr_cur_line[ i_vcf_ref ], lstr_cur_line[ i_vcf_alt ] ] ) )
-    i_counter = i_counter + 1
-
-  return "\n".join( lstr_reduced_vcf )
 
 def func_request_cravat_service( str_vcf_path, str_classifier, f_hg_18, str_email ):
   """
   Request a job to occur with CRAVAT.
-  """
 
-#  # Read in file into a string
-#  str_initial_vcf = func_vcf_to_cravat_mutations( str_vcf_path )
-#  if not str_initial_vcf:
-#    print " ".join( [ "annotate_with_cravat::Error did not read VCF file.",
-#                      "Path =" + str( str_vcf_path ) + "." ] )
-#    return( None )
+  * str_vcf_path : Path to VCF file of mutations to submit.
+                 : string
+  * str_classifier : Tissue type being analyzed (see http://www.cravat.us/help.jsp).
+                   : string
+  * f_hg_18 : True indictes HG18 / False indicates HG19.
+            : boolean
+  * str_email : Email of user (errors will be sent by email).
+              : string
+  """
 
   # Encode request info
   pyld_request = { "chasmclassifier": str( str_classifier ),
@@ -131,7 +129,6 @@ def func_request_cravat_service( str_vcf_path, str_classifier, f_hg_18, str_emai
   # Get return (job id)
   return json_response.get( str_response_job_id, None )
 
-# Runs
 # Request CRAVAT service
 str_job_id = func_request_cravat_service( args_call.str_input_file,
                                           args_call.str_classifier,
