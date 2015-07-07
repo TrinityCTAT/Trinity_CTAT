@@ -49,6 +49,10 @@ LSTR_VARIANT_FILTERING_CHOICES = [ STR_FILTERING_BCFTOOLS, STR_FILTERING_GATK, S
 # It is not intended to be ran on biological samples for studies.
 STR_DNASEQ_VALIDATION = "DNASEQ"
 
+# CRAVAT related
+I_CRAVAT_ATTEMPTS = 100
+I_CRAVAT_WAIT = 10
+STR_CRAVAT_CLASSIFIER_DEFAULT = "Other"
 
 def func_do_star_alignment( args_call, str_unique_id, pline_cur, f_index_only = False ):
     """
@@ -948,15 +952,16 @@ def func_do_variant_filtering_none( args_call, str_variants_file, lstr_dependenc
     return { INDEX_CMD : [], INDEX_FILE : "" }
 
 
-def func_do_variant_filtering_cancer( args_call, str_variants_file ):
+def func_do_variant_filtering_cancer( args_call, str_variants_file, f_is_hg_18 ):
     """
-
+    
 
     * args_call : Arguments for the pipeline
                 : Dict
     * str_variants_file : Path to file to be annotated and filtered
                         : String path
-
+    * f_is_hg_18 : Indicates if the reference is Hg18, Hg19, or something else (in which CRAVAT will not run)
+                 : True (HG18), False (HG19), None (CRAVAT will not run)
     * return : List of commands
     """
 
@@ -965,6 +970,10 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file ):
 
     # File to filter (may be annotated with cosmic or not so the name changes
     str_vcf_to_filter = str_variants_file
+
+    # Files created
+    str_cancer_mutations_unfiltered = os.path.splitext( str_variants_file )[ 0 ] + "_cosmic.vcf.gz"
+    str_cancer_mutations_filtered = os.path.splitext( str_variants_file )[ 0 ] + "_cancer_filtered.vcf"
 
     # Index and bgzip vcf
     dict_tbi = func_tabix( str_vcf_to_filter )
@@ -976,9 +985,7 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file ):
     # If the VCF does not have an annotation in COSMIC then it is dropped
     # GENE, COSMIC_ID, TISSUE, TUMOR, FATHMM, SOMATIC
     if args_call.str_cosmic_coding_vcf:
-
         # Annotate cancer variants with COSMIC
-        str_cancer_mutations_unfiltered = os.path.splitext( str_variants_file )[ 0 ] + "_cosmic.vcf.gz"
         str_cancer_annotation_command = " ".join( [ "bcftools", "annotate", "--output-type", "z",
                                                     "--annotations", args_call.str_cosmic_coding_vcf,
                                                     "--columns", "INFO/GENE,INFO/COSMIC_ID,INFO/TISSUE,INFO/TUMOR,INFO/FATHMM,INFO/SOMATIC",
@@ -989,7 +996,6 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file ):
         str_vcf_to_filter = str_cancer_mutations_unfiltered
 
     # Filter out common unless they have a COSMIC ID
-    str_cancer_mutations_filtered = os.path.splitext( str_variants_file )[ 0 ] + "_cancer_filtered.vcf"
     str_cancer_filter_command = " ".join( [ "remove_common_keeping_cosmic.py", str_vcf_to_filter, str_cancer_mutations_filtered ] ) 
     cmd_cancer_filter = Command.Command( str_cur_command = str_cancer_filter_command,
                                          lstr_cur_dependencies = [ str_vcf_to_filter ],
@@ -997,15 +1003,15 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file ):
     lcmd_cancer_filter.append( cmd_cancer_filter )
 
     # Annotate non-common with CRAVAT
-    str_vcf_to_send = ""
-    with open( str_cancer_mutation_filtered, "r" ) as hndl_web_vcf:
-      str_vcf_to_send = hndl_web_vcf.read()
-    ## Send service call
-    str_vcf_to_send = urllib.urlencode( str_vcf_to_send )
-    ## Get back job info
-    ## Wait until success or failure
-    
-    ## Copy zip file to location and unzip the file
+    if not f_is_hg_18 is None:
+      str_cravat_cmd = " ".join([ "annotate_with_cravat.py", "--classifier", args_call.str_cravat_classifier, "--is_hg18", f_is_hg_18, 
+                                  "--email", args_call.str_email_contact, "--max_attempts", I_CRAVAT_ATTEMPTS, 
+                                  "--wait", I_CRAVAT_WAIT, str_cancer_mutations_filtered,   ])
+      cmd_cravat = Command.Command( str_cur_command = str_cravat_cmd,
+                                  lstr_cur_dependencies = [ str_cancer_mutations_filtered ],
+                                  lstr_cur_products = [] )
+      lcmd_cancer_filter.append( cmd_cravat )
+
     ## Annotate VCF file with TAB data.
 
     # Filter based on CRAVAT
@@ -1204,7 +1210,14 @@ def run( args_call, f_do_index = False ):
         lcmd_commands.append( cmd_summarize_annotate )
 
         # Perform cancer filtering
-        # lcmd_commands.extend( func_do_variant_filtering_cancer( args_call=args_call, str_variants_file=str_annotated_vcf_file )[ INDEX_CMD ] )
+        f_cravat_hg18 = None
+        if args_call.str_email_contact is None or ( not args_call.str_hg_19 and not args_call.str_hg_18 ):
+          pline_cur.logr_logger.warning( "CRAVAT analysis will not be ran. Please make sure to provide an email and indicate if hg18 or hg19 is being used." )
+        elif args_call.str_hg_18:
+          f_cravat_hg18 = True
+        elif args_call.str_hg_19:
+          f_cravat_hg18 = False
+        lcmd_commands.extend( func_do_variant_filtering_cancer( args_call=args_call, str_variants_file=str_annotated_vcf_file, f_is_hg_18=f_cravat_hg18 )[ INDEX_CMD ] )
 
     # Run commands including variant calling
     if not pline_cur.func_run_commands( lcmd_commands = lcmd_commands, 
@@ -1250,35 +1263,56 @@ if __name__ == "__main__":
         
     # Parse arguments
     prsr_arguments = argparse.ArgumentParser( prog = "rnaseq_mutation_pipeline.py", description = "Variant calling using RNASeq NGS sequencing", formatter_class = argparse.ArgumentDefaultsHelpFormatter )
-    prsr_arguments.add_argument( "-a", "--realign", dest = "f_stop_optional_realignment", default = False, action = "store_true", help = "Turns off optional indel realignment step." )
-    prsr_arguments.add_argument( "-b", "--bsub_queue", metavar = "BSUB_Queue", dest = "str_bsub_queue", default = None, help = "If given, each command will sequentially be ran on this queue with bsub." )
-    prsr_arguments.add_argument( "--bam", metavar = "bam_file", dest = "str_bam_file", default = None, help = "Sample file in the form of a bam, if this is given NO alignment will be performed; the alignment mode command line will be ignored; let and right sample files will be ignored. Normal pipeline processing will pick up directly after alignment in the pipeline with the supplied bam." )
-    prsr_arguments.add_argument( "-c", "--clean", dest = "f_clean", default = False, action="store_true", help = "Turns on (true) or off (false) cleaning of intermediary product files." ) 
-    prsr_arguments.add_argument( "--copy", metavar = "Copy_location", dest = "lstr_copy", default = None, action="append", help="Paths to copy the output directory after the pipeline is completed. Output directory must be specified; can be used more than once for multiple copy locations.")
-    prsr_arguments.add_argument( "--compress", dest = "str_compress", default = "none", choices = Pipeline.LSTR_COMPRESSION_HANDLING_CHOICES, help = "Turns on compression of products and intermediary files made by the pipeline. Valid choices include:" + str( Pipeline.LSTR_COMPRESSION_HANDLING_CHOICES ) )
-    prsr_arguments.add_argument( "--cosmic_vcf", metavar="cosmic_reference_vcf", dest="str_cosmic_coding_vcf", default=None, action="store", help="Coding Cosmic Mutation VCF annotated with Phenotype Information." )
-    prsr_arguments.add_argument( "-d", "--alignment_mode", metavar = "Alignment_mode", dest = "str_alignment_mode", default = STR_ALIGN_STAR, choices = LSTR_ALIGN_CHOICES, help = "Specifies the alignment and indexing algorithm to use." )
-    prsr_arguments.add_argument( "--base_depth", dest = "f_calculate_base_coverage", default = False, action = "store_true", help = "Calculates the base coverage per base." )
-    prsr_arguments.add_argument( "-e", "--variant_call_mode", metavar = "Call_mode", dest = "str_variant_call_mode", default = STR_VARIANT_GATK, choices = LSTR_VARIANT_CALLING_CHOICES, help = "Specifies the variant calling method to use." )
-    prsr_arguments.add_argument( "--variant_filtering_mode", metavar = "Filter_mode", dest = "str_variant_filter_mode", default = STR_FILTERING_DEFAULT, choices = LSTR_VARIANT_FILTERING_CHOICES, help = "Specifies the variant filtering method." )
-    prsr_arguments.add_argument( "-f", "--reference", metavar = "Reference_genome", dest = "str_genome_fa", required = True, help = "Path to the reference genome to use in the analysis pipeline." )
-    prsr_arguments.add_argument( "-g", "--log", metavar = "Optional_logging_file", dest = "str_log_file", default = None, help = "Optional log file, if not given logging will be to the standard out." )
-    prsr_arguments.add_argument( "-i", "--index", metavar = "Use_premade_index", dest = "str_initial_index", default = None, help = "The initial index is made only from the reference genome and can be shared. If premade, supply a path here to the index directory so that it is not rebuilt for every alignment. Please provide the full path." )
-    prsr_arguments.add_argument( "-j", "--recalibrate_sam", dest = "f_recalibrate_sam", default = True, action="store_false", help = "If used, turns off gatk recalibration of bam files before samtools variant calling." ) 
-    prsr_arguments.add_argument( "-k", "--gtf", metavar = "Reference GTF", dest = "str_gtf_file_path", default = None, help = "GTF file for reference genome.")
+
     prsr_arguments.add_argument( "-l", "--left", metavar = "Left_sample_file", dest = "str_sample_file_left_fq", required = False, help = "Path to one of the two paired RNAseq samples ( left )" )
-    prsr_arguments.add_argument( "-m", "--max_bsub_memory", metavar = "Max_BSUB_Mem", dest = "str_max_memory", default = "8", help = "The max amount of memory in GB requested when running bsub commands." )
-    prsr_arguments.add_argument( "--move", metavar = "Move_location", dest = "str_move_dir", default = None, help = "The path where to move the output directory after the pipeline ends. Can be used with the copy argument if both copying to one location(s) and moving to another is needed. Must specify output directory." )
-    prsr_arguments.add_argument( "-n", "--threads", metavar = "Process_threads", dest = "i_number_threads", type = int, default = 1, help = "The number of threads to use for multi-threaded steps." )
     prsr_arguments.add_argument( "-o", "--out_dir", metavar = "Output_directory", dest = "str_file_base", default = None, help = "The output directory where results will be placed. If not given a directory will be created from sample names and placed with the samples." )
-    prsr_arguments.add_argument( "-p", "--plot", dest = "f_optional_recalibration_plot", default = True, action = "store_false", help = "Turns off plotting recalibration of alignments." )
     prsr_arguments.add_argument( "-r", "--right", metavar = "Right_sample_file", dest = "str_sample_file_right_fq", required = False, help = "Path to one of the two paired RNAseq samples ( right )" )
     prsr_arguments.add_argument( "-s", "--sequencing_platform", metavar = "Sequencing Platform", dest = "str_sequencing_platform", default = "ILLUMINA", choices = LSTR_SEQ_CHOICES, help = "The sequencing platform used to generate the samples choices include " + " ".join( LSTR_SEQ_CHOICES ) + "." )
-    prsr_arguments.add_argument( "-t", "--test", dest = "f_Test", default = False, action = "store_true", help = "Will check the environment and display commands line but not run.")
-    prsr_arguments.add_argument( "-u", "--update_command", dest = "str_update_classpath", default = None, help = "Allows a class path to be added to the jars. eg. 'command.jar:/APPEND/THIS/PATH/To/JAR,java.jar:/Append/Path'")
-    prsr_arguments.add_argument( "--validate_dnaseq", dest = "f_validate_by_dnaseq", default = False, action = "store_true", help = "Used for development only. Should not be used with biological samples.")
+
+    # Logistical pipeline associated
+    args_group_pipeline = prsr_arguments.add_argument_group( "General Pipeline", "Associated in general pipeline behavior." )
+    args_group_pipeline.add_argument( "-b", "--bsub_queue", metavar = "BSUB_Queue", dest = "str_bsub_queue", default = None, help = "If given, each command will sequentially be ran on this queue with bsub." )
+    args_group_pipeline.add_argument( "--bam", metavar = "bam_file", dest = "str_bam_file", default = None, help = "Sample file in the form of a bam, if this is given NO alignment will be performed; the alignment mode command line will be ignored; let and right sample files will be ignored. Normal pipeline processing will pick up directly after alignment in the pipeline with the supplied bam." )
+    args_group_pipeline.add_argument( "-c", "--clean", dest = "f_clean", default = False, action="store_true", help = "Turns on (true) or off (false) cleaning of intermediary product files." ) 
+    args_group_pipeline.add_argument( "--copy", metavar = "Copy_location", dest = "lstr_copy", default = None, action="append", help="Paths to copy the output directory after the pipeline is completed. Output directory must be specified; can be used more than once for multiple copy locations.")
+    args_group_pipeline.add_argument( "--compress", dest = "str_compress", default = "none", choices = Pipeline.LSTR_COMPRESSION_HANDLING_CHOICES, help = "Turns on compression of products and intermediary files made by the pipeline. Valid choices include:" + str( Pipeline.LSTR_COMPRESSION_HANDLING_CHOICES ) )
+    args_group_pipeline.add_argument( "-g", "--log", metavar = "Optional_logging_file", dest = "str_log_file", default = None, help = "Optional log file, if not given logging will be to the standard out." )
+    args_group_pipeline.add_argument( "-m", "--max_bsub_memory", metavar = "Max_BSUB_Mem", dest = "str_max_memory", default = "8", help = "The max amount of memory in GB requested when running bsub commands." )
+    args_group_pipeline.add_argument( "--move", metavar = "Move_location", dest = "str_move_dir", default = None, help = "The path where to move the output directory after the pipeline ends. Can be used with the copy argument if both copying to one location(s) and moving to another is needed. Must specify output directory." )
+    args_group_pipeline.add_argument( "-n", "--threads", metavar = "Process_threads", dest = "i_number_threads", type = int, default = 1, help = "The number of threads to use for multi-threaded steps." )
+    args_group_pipeline.add_argument( "-t", "--test", dest = "f_Test", default = False, action = "store_true", help = "Will check the environment and display commands line but not run.")
+    args_group_pipeline.add_argument( "-u", "--update_command", dest = "str_update_classpath", default = None, help = "Allows a class path to be added to the jars. eg. 'command.jar:/APPEND/THIS/PATH/To/JAR,java.jar:/Append/Path'")
+
+    # Run modes
+    args_group_run = prsr_arguments.add_argument_group( "Run Mode", "Associated in running different modes of the pipeline." )
+    args_group_run.add_argument( "-d", "--alignment_mode", metavar = "Alignment_mode", dest = "str_alignment_mode", default = STR_ALIGN_STAR, choices = LSTR_ALIGN_CHOICES, help = "Specifies the alignment and indexing algorithm to use." )
+    args_group_run.add_argument( "-e", "--variant_call_mode", metavar = "Call_mode", dest = "str_variant_call_mode", default = STR_VARIANT_GATK, choices = LSTR_VARIANT_CALLING_CHOICES, help = "Specifies the variant calling method to use." )
+    args_group_run.add_argument( "--variant_filtering_mode", metavar = "Filter_mode", dest = "str_variant_filter_mode", default = STR_FILTERING_DEFAULT, choices = LSTR_VARIANT_FILTERING_CHOICES, help = "Specifies the variant filtering method." )
+    args_group_run.add_argument( "--base_depth", dest = "f_calculate_base_coverage", default = False, action = "store_true", help = "Calculates the base coverage per base." )
+    args_group_run.add_argument( "-i", "--index", metavar = "Use_premade_index", dest = "str_initial_index", default = None, help = "The initial index is made only from the reference genome and can be shared. If premade, supply a path here to the index directory so that it is not rebuilt for every alignment. Please provide the full path." )
+    args_group_run.add_argument( "--validate_dnaseq", dest = "f_validate_by_dnaseq", default = False, action = "store_true", help = "Used for development only. Should not be used with biological samples.")
+    args_group_run.add_argument( "-y", "--star_memory", metavar = "Star_memory", dest = "str_star_memory_limit", default = None, help = "Memory limit for star index. This should be used to increase memory if needed. Reducing memory consumption should be performed with the STAR Limited mod." )
+
+    # GATK associated
+    args_group_gatk = prsr_arguments.add_argument_group( "GATK", "Associated with or controlling GATK tools." )
+    args_group_gatk.add_argument( "-a", "--realign", dest = "f_stop_optional_realignment", default = False, action = "store_true", help = "Turns off optional indel realignment step." )
+    args_group_gatk.add_argument( "-j", "--recalibrate_sam", dest = "f_recalibrate_sam", default = True, action="store_false", help = "If used, turns off gatk recalibration of bam files before samtools variant calling." ) 
+    args_group_gatk.add_argument( "-p", "--plot", dest = "f_optional_recalibration_plot", default = True, action = "store_false", help = "Turns off plotting recalibration of alignments." )
+
+    # Resources
+    args_group_resources = prsr_arguments.add_argument_group( "Resources", "Associated with resources for the pipelines." )
+    prsr_arguments.add_argument( "--cosmic_vcf", metavar="cosmic_reference_vcf", dest="str_cosmic_coding_vcf", default=None, action="store", help="Coding Cosmic Mutation VCF annotated with Phenotype Information." )
+    prsr_arguments.add_argument( "-f", "--reference", metavar = "Reference_genome", dest = "str_genome_fa", required = True, help = "Path to the reference genome to use in the analysis pipeline." )
+    prsr_arguments.add_argument( "-k", "--gtf", metavar = "Reference GTF", dest = "str_gtf_file_path", default = None, help = "GTF file for reference genome.")
     prsr_arguments.add_argument( "-w", "--vcf", metavar = "Variant_calling_file_for_the_reference_genome", dest = "str_vcf_file", default = None, help = "Variant calling file for the reference genome.")
-    prsr_arguments.add_argument( "-y", "--star_memory", metavar = "Star_memory", dest = "str_star_memory_limit", default = None, help = "Memory limit for star index. This should be used to increase memory if needed. Reducing memory consumption should be performed with the STAR Limited mod." )
+
+    # Cravat associated
+    args_group_cravat = prsr_arguments.add_argument_group( "CRAVAT", "Associated with CRAVAT prioritization of variant calls." )
+    args_group_cravat.add_argument( "--tissue_type", metavar = "tissue", dest = "str_cravat_classifier", default = STR_CRAVAT_CLASSIFIER_DEFAULT, help = "Tissue type (used in CRAVAT variant prioritation). Supported classifiers can be found at http://www.cravat.us/help.jsp )" )
+    args_group_cravat.add_argument( "--email", metavar = "email_contact", dest = "str_email_contact", default = None, help = "Email used to notify of errors associated with cravat." )
+    args_group_cravat.add_argument( "--is_hg19", metavar = "is_Hg19", dest = "str_hg_19", default = None, help = "Indicates that Hg19 is being used." )
+    args_group_cravat.add_argument( "--is_hg18", metavar = "is_Hg18", dest = "str_hg_18", default = None, help = "Indicates that Hg18 is being used." )
+    
     args = prsr_arguments.parse_args()
     
     run( args )
