@@ -157,22 +157,23 @@ def func_do_star_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
                                                                 args_call.str_sample_file_right_fq ],
                                             lstr_cur_products = [ str_align_dir_2 ] ),
                             Command.Command( str_cur_command = " ".join( [ "cd", os.path.join( "..", ".." ) ] ) ) ] )
+
         # SAM to BAM
         lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools view -b -S -o", str_star_output_bam, str_star_output_sam ] ),
                                                lstr_cur_dependencies = [ str_star_output_sam ],
                                                lstr_cur_products = [ str_star_output_bam ] ) )
-
+ 
         # Sort coordinate order
         lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools sort -O bam -T temp -o", str_star_sorted_bam, str_star_output_bam ] ),
                                                lstr_cur_dependencies = [ str_star_output_bam ],
                                                lstr_cur_products = [ str_star_sorted_bam ] ) )
-
+ 
         # Create bai
         lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools index", str_star_sorted_bam ] ),
                               lstr_cur_dependencies = [ str_star_sorted_bam ],
                               lstr_cur_products = [ str_star_output_bai ] ) )
 
-    return { INDEX_CMD : lcmd_commands, INDEX_FILE : str_star_output_bam, INDEX_FOLDER : str_align_dir_2 }
+    return { INDEX_CMD : lcmd_commands, INDEX_FILE : str_star_sorted_bam, INDEX_FOLDER : str_align_dir_2 }
 
 
 def func_do_top_hat_alignment( args_call, str_unique_id, pline_cur, f_index_only = False ):
@@ -240,6 +241,9 @@ def func_do_top_hat_alignment( args_call, str_unique_id, pline_cur, f_index_only
                                                                 args_call.str_sample_file_left_fq,
                                                                 args_call.str_sample_file_right_fq ],
                                        lstr_cur_products = [ str_align_dir ] ) ] )
+
+    # TODO SORT and Index bam? SHould we take take tophat out?
+
     return { INDEX_CMD : lcmd_commands, INDEX_FILE : str_output_file , INDEX_FOLDER : str_align_dir }
     
 
@@ -266,7 +270,8 @@ def func_do_gsnp_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
     STR_ALIGN = "_".join( [ "gsnap_align", str_unique_id ] )
     STR_SAM_FILE_NAME = "gsnap_align.sam"
     STR_BAM_FILE_NAME = "gsnap_align.bam"
-    STR_BAI_FILE_NAME = "gsnap_align.bam.bai"
+    STR_BAI_FILE_NAME = "gsnap_align.sorted.bam.bai"
+    STR_BAM_SORTED_FILE_NAME = "gsnap_align.sorted.bam"
     STR_IIT_STORE = "iit_store"
     STR_SPLICESITES = "gtf_splicesites"
     str_index_dir = os.path.join( args_call.str_file_base, STR_INDEX )
@@ -275,6 +280,7 @@ def func_do_gsnp_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
     str_sam_file = os.path.join( str_align_dir, STR_SAM_FILE_NAME )
     str_bai_file = os.path.join( str_align_dir, STR_BAI_FILE_NAME )
     str_output_file = os.path.join( str_align_dir, STR_BAM_FILE_NAME)
+    str_star_sorted_bam = os.path.join( str_align_dir, STR_BAM_SORTED_FILE_NAME )
     #TODO update, is sanger appropriate for all others?
     str_quality_protocol = "illumina" if args_call.str_sequencing_platform == STR_ILLUMINA else "sanger"
 
@@ -335,16 +341,32 @@ def func_do_gsnp_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
 
         # BAM to SAM
         # java -jar SortSam.jar I=Input.sam O=output.bam SO=coordinate
-        cmd_bwa_bam = Command.Command( str_cur_command = "".join( [ "java -jar SortSam.jar SO=coordinate I=", str_sam_file, " O=", str_output_file ] ),
-                                            lstr_cur_dependencies = [ str_sam_file ],
-                                            lstr_cur_products = [ str_output_file ] )
-        lcmd_commands.extend( [ cmd_bwa_sam, cmd_bwa_bam ] )
+        #cmd_bwa_bam = Command.Command( str_cur_command = "".join( [ "java -jar SortSam.jar SO=coordinate I=", str_sam_file, " O=", str_output_file ] ),
+        #                                    lstr_cur_dependencies = [ str_sam_file ],
+        #                                    lstr_cur_products = [ str_output_file ] )
+        #lcmd_commands.extend( [ cmd_bwa_sam, cmd_bwa_bam ] )
         # Create bai
-        lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools index", str_output_file ] ),
-                          lstr_cur_dependencies = [ str_output_file ],
-                          lstr_cur_products = [ str_bai_file ] ) )
+        #lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools index", str_output_file ] ),
+        #                  lstr_cur_dependencies = [ str_output_file ],
+        #                  lstr_cur_products = [ str_bai_file ] ) )
 
-    return { INDEX_CMD : lcmd_commands, INDEX_FILE : str_output_file , INDEX_FOLDER : str_align_dir }
+        # SAM to BAM
+        lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools view -b -S -o", str_output_file, str_sam_file ] ),
+                                               lstr_cur_dependencies = [ str_sam_file ],
+                                               lstr_cur_products = [ str_output_file ] ) )
+ 
+        # Sort coordinate order
+        lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools sort -O bam -T temp -o", str_star_sorted_bam, str_output_file ] ),
+                                               lstr_cur_dependencies = [ str_output_file ],
+                                               lstr_cur_products = [ str_star_sorted_bam ] ) )
+ 
+        # Create bai
+        lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools index", str_star_sorted_bam ] ),
+                              lstr_cur_dependencies = [ str_star_sorted_bam ],
+                              lstr_cur_products = [ str_bai_file ] ) )
+
+
+    return { INDEX_CMD : lcmd_commands, INDEX_FILE : str_star_sorted_bam , INDEX_FOLDER : str_align_dir }
 
 
 def func_do_BWA_alignment( args_call, str_unique_id, pline_cur, f_index_only = False ):
@@ -369,7 +391,8 @@ def func_do_BWA_alignment( args_call, str_unique_id, pline_cur, f_index_only = F
     str_left_file_key = os.path.basename( os.path.splitext( args.str_sample_file_left_fq )[ 0 ] )
     str_sam = os.path.join( args_call.str_file_base, ".".join( [ str_left_file_key, "sam" ] ) )
     str_bam = os.path.join( args_call.str_file_base, ".".join( [ str_left_file_key, "bam" ] ) )
-    str_bam = str_bam + ".bai"
+    str_star_sorted_bam = os.path.join( args_call.str_file_base, ".".join( [ str_left_file_key, "sorted", "bam" ] ) )
+    str_bai = str_star_sorted_bam + ".bai"
     
     lcmd_dna_mapping_commands = []
     
@@ -396,18 +419,35 @@ def func_do_BWA_alignment( args_call, str_unique_id, pline_cur, f_index_only = F
                                                                args.str_genome_fa, " ", args.str_sample_file_left_fq, " ", args.str_sample_file_right_fq, " > ", str_sam ] ),
                                             lstr_cur_dependencies = [ args.str_genome_fa, args.str_sample_file_left_fq, args.str_sample_file_right_fq ],
                                             lstr_cur_products = [ str_sam ] )
+    lcmd_dna_mapping_commands.append( cmd_bwa_sam )
     
-    # java -jar SortSam.jar I=Input.sam O=output.bam SO=coordinate
-    cmd_bwa_bam = Command.Command( str_cur_command = "".join( [ "java -jar SortSam.jar SO=coordinate I=", str_sam, " O=", str_bam ] ),
-                                            lstr_cur_dependencies = [ str_sam ],
-                                            lstr_cur_products = [ str_bam ] )
-    lcmd_dna_mapping_commands.extend( [ cmd_bwa_sam, cmd_bwa_bam ] )
+#    # java -jar SortSam.jar I=Input.sam O=output.bam SO=coordinate
+#    cmd_bwa_bam = Command.Command( str_cur_command = "".join( [ "java -jar SortSam.jar SO=coordinate I=", str_sam, " O=", str_bam ] ),
+#                                            lstr_cur_dependencies = [ str_sam ],
+#                                            lstr_cur_products = [ str_bam ] )
+#    lcmd_dna_mapping_commands.extend( [ cmd_bwa_sam, cmd_bwa_bam ] )
+#
+#    # Create bai
+#    lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools index", str_bam ] ),
+#                          lstr_cur_dependencies = [ str_bam ],
+#                          lstr_cur_products = [ str_bai ] ) )
 
+    # SAM to BAM
+    lcmd_dna_mapping_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools view -b -S -o", str_bam, str_sam ] ),
+                                           lstr_cur_dependencies = [ str_sam ],
+                                           lstr_cur_products = [ str_bam ] ) )
+ 
+    # Sort coordinate order
+    lcmd_dna_mapping_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools sort -O bam -T temp -o", str_star_sorted_bam, str_bam ] ),
+                                           lstr_cur_dependencies = [ str_bam ],
+                                           lstr_cur_products = [ str_star_sorted_bam ] ) )
+ 
     # Create bai
-    lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools index", str_bam ] ),
-                          lstr_cur_dependencies = [ str_bam ],
-                          lstr_cur_products = [ str_bai ] ) )
-                                  
+    lcmd_dna_mapping_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools index", str_star_sorted_bam ] ),
+                                           lstr_cur_dependencies = [ str_star_sorted_bam ],
+                                           lstr_cur_products = [ str_bai ] ) )
+
+
     return { INDEX_CMD: lcmd_dna_mapping_commands, INDEX_FILE: str_bam, INDEX_FOLDER:args_call.str_file_base }
 
 
@@ -827,7 +867,7 @@ def func_do_variant_calling_none( args_call, str_align_file, str_unique_id, str_
 
 def func_do_variant_filtering_bcftools( args_call, str_variants_file, lstr_dependencies, logr_cur ):
     """
-    Creates the commands for the bcftools hard filtering.
+    Creates the commands for the bcftools hard filtering and custom variant cluster filtering.
     
     * args_call : Arguments for the pipeline
                 : Dict
@@ -845,26 +885,23 @@ def func_do_variant_filtering_bcftools( args_call, str_variants_file, lstr_depen
     str_filtered_variants_index_file = str_filtered_variants_file + ".tbi"
 
     # Filter variants 
-    str_filter_command = "bcftools filter --output-type v --output " + str_filtered_variants_file + " -sLowQual -g 3 -G 10 -e \"%QUAL<10 || (RPB<0.1 && %QUAL<15) || (AC<2 && %QUAL<15)\" " + str_variants_file
+    str_filter_command = "bcftools filter --output-type v --output " + str_standard_variants_file + " -sLowQual -g 3 -G 10 -e \"%QUAL<10 || (RPB<0.1 && %QUAL<15) || (AC<2 && %QUAL<15)\" " + str_variants_file
 
     cmd_variant_filtration = Command.Command( str_cur_command = str_filter_command,
                                             lstr_cur_dependencies = [ args_call.str_genome_fa ] + lstr_dependencies,
                                             lstr_cur_products = [ str_standard_variants_file ] )
 
     # Filter out clusters of SNPs
-#    str_custom_filter_command = " ".join( [ "filter_vcf.py", "--in", str_standard_variants_file, str_filtered_variants_file ] )
-#    cmd_secondary_filters = Command.Command( str_cur_command = str_custom_filter_command,
-#                                             lstr_cur_dependencies = [ str_standard_variants_file ],
-#                                             lstr_cur_products = [ str_filtered_variants_file ] )
-#    cmd_secondary_filters.func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER )
+    str_custom_filter_command = " ".join( [ "filter_variant_clusters.py", "--window 35 --cluster 3", str_standard_variants_file, str_filtered_variants_file ] )
+    cmd_secondary_filters = Command.Command( str_cur_command = str_custom_filter_command,
+                                             lstr_cur_dependencies = [ str_standard_variants_file ],
+                                             lstr_cur_products = [ str_filtered_variants_file ] )
+    cmd_secondary_filters.func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER )
 
     # Create index for the VCF file
-    str_cmd_index_vcf = " ".join( [ "tabix -f", str_filtered_variants_file ] )
-    cmd_index_vcf = Command.Command( str_cur_command = str_cmd_index_vcf,
-                                     lstr_cur_dependencies = [ str_filtered_variants_file ],
-                                     lstr_cur_products = [ str_filtered_variants_index_file ] )
+    dict_tbi = func_tabix( str_filtered_variants_file )
 
-    return { INDEX_CMD : [ cmd_variant_filtration, cmd_index_vcf ], INDEX_FILE : str_filtered_variants_file }
+    return { INDEX_CMD : [ cmd_variant_filtration ] + dict_tbi[ INDEX_CMD ], INDEX_FILE : dict_tbi[ INDEX_FILE ] }
 
 
 def func_do_variant_filtering_gatk( args_call, str_variants_file, lstr_dependencies, logr_cur ):
@@ -891,12 +928,9 @@ def func_do_variant_filtering_gatk( args_call, str_variants_file, lstr_dependenc
     cmd_variant_filteration.func_set_dependency_clean_level( [ str_variants_file ], Command.CLEAN_NEVER )
 
     # Create index for the VCF file
-    str_cmd_index_vcf = " ".join( [ "tabix -f", str_filtered_variants_index_file ] )
-    cmd_index_vcf = Command.Command( str_cur_command = str_cmd_index_vcf,
-                                     lstr_cur_dependencies = [ str_filtered_variants_file ],
-                                     lstr_cur_products = [ str_filtered_variants_index_file ] )
+    dict_tbi = func_tabix( str_filtered_variants_file )
 
-    return { INDEX_CMD : [ cmd_variant_filteration, cmd_index_vcf ], INDEX_FILE : str_filtered_variants_file }
+    return { INDEX_CMD : [ cmd_variant_filteration ] + dict_tbi[ INDEX_CMD ], INDEX_FILE : dict_tbi[ INDEX_FILE ] }
 
 
 def func_do_variant_filtering_none( args_call, str_variants_file, lstr_dependencies, logr_cur ):
@@ -926,19 +960,26 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file ):
     * return : List of commands
     """
 
+    # Commands for cancer filtering
+    lcmd_cancer_filter = []
+
     # File to filter (may be annotated with cosmic or not so the name changes
     str_vcf_to_filter = str_variants_file
+
+    # Index and bgzip vcf
+    dict_tbi = func_tabix( str_vcf_to_filter )
+    lcmd_cancer_filter.extend( dict_tbi[ INDEX_CMD ] )
+    str_vcf_to_filter = dict_tbi[ INDEX_FILE ]
 
     # Pull out and annotate Coding Cancer Mutations
     # Adding the following annotations from COSMIC 
     # If the VCF does not have an annotation in COSMIC then it is dropped
     # GENE, COSMIC_ID, TISSUE, TUMOR, FATHMM, SOMATIC
-    lcmd_cancer_filter = []
     if args_call.str_cosmic_coding_vcf:
 
         # Annotate cancer variants with COSMIC
-        str_cancer_mutations_unfiltered = os.path.splitext( str_variants_file )[ 0 ] + "_cancer_unfiltered.vcf"
-        str_cancer_annotation_command = " ".join( [ "bcftools", "annotate", "--output-type", "v",
+        str_cancer_mutations_unfiltered = os.path.splitext( str_variants_file )[ 0 ] + "_cosmic.vcf.gz"
+        str_cancer_annotation_command = " ".join( [ "bcftools", "annotate", "--output-type", "z",
                                                     "--annotations", args_call.str_cosmic_coding_vcf,
                                                     "--columns", "INFO/GENE,INFO/COSMIC_ID,INFO/TISSUE,INFO/TUMOR,INFO/FATHMM,INFO/SOMATIC",
                                                     "--output", str_cancer_mutations_unfiltered, str_variants_file ] )
@@ -946,9 +987,6 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file ):
                                                lstr_cur_dependencies = [ args_call.str_cosmic_coding_vcf, str_variants_file ],
                                                lstr_cur_products = [ str_cancer_mutations_unfiltered ] ) )
         str_vcf_to_filter = str_cancer_mutations_unfiltered
-
-    # If the variants file is not bgzip, zip it
-    # If the tbi does not exist tabix it
 
     # Filter out common unless they have a COSMIC ID
     str_cancer_mutations_filtered = os.path.splitext( str_variants_file )[ 0 ] + "_cancer_filtered.vcf"
@@ -959,20 +997,21 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file ):
     lcmd_cancer_filter.append( cmd_cancer_filter )
 
     # Annotate non-common with CRAVAT
+    str_vcf_to_send = ""
+    with open( str_cancer_mutation_filtered, "r" ) as hndl_web_vcf:
+      str_vcf_to_send = hndl_web_vcf.read()
     ## Send service call
+    str_vcf_to_send = urllib.urlencode( str_vcf_to_send )
+    ## Get back job info
     ## Wait until success or failure
+    
     ## Copy zip file to location and unzip the file
     ## Annotate VCF file with TAB data.
 
     # Filter based on CRAVAT
 
     # Create index for the VCF file
-#    str_cmd_index_vcf = " ".join( [ "tabix -f", str_cancer_mutations_filtered ] )
-#    cmd_index_vcf = Command.Command( str_cur_command = str_cmd_index_vcf,
-#                                     lstr_cur_dependencies = [ str_cancer_mutations_filtered ],
-#                                     lstr_cur_products = [ str_cancer_mutations_filtered_index ] )
-#    lcmd_cancer_filter.append( cmd_index_vcf )
-
+    # tabix
     return { INDEX_CMD : lcmd_cancer_filter, INDEX_FILE : str_cancer_mutations_filtered }
 
 
@@ -1165,7 +1204,7 @@ def run( args_call, f_do_index = False ):
         lcmd_commands.append( cmd_summarize_annotate )
 
         # Perform cancer filtering
-        lcmd_commands.extend( func_do_variant_filtering_cancer( args_call=args_call, str_variants_file=str_annotated_vcf_file )[ INDEX_CMD ] )
+        # lcmd_commands.extend( func_do_variant_filtering_cancer( args_call=args_call, str_variants_file=str_annotated_vcf_file )[ INDEX_CMD ] )
 
     # Run commands including variant calling
     if not pline_cur.func_run_commands( lcmd_commands = lcmd_commands, 
@@ -1176,6 +1215,33 @@ def run( args_call, f_do_index = False ):
                                         f_clean = args_call.f_clean ):
         exit( 5 )
     exit( 0 )
+
+
+def func_tabix( str_vcf ):
+  """ Creates a tbi (vcf index) for the given vcf file.
+      If it is not gzipped, the file is gzipped.
+      The gzip and tbi files are made with the vcf file.
+  """
+  
+  # Check extension
+  if not os.path.splitext( str_vcf ) == ".gz":
+    
+    # GZ files
+    str_gz = str_vcf + ".gz"
+    str_cmd_gz = " ".join( [ "bgzip -c ", str_vcf, ">", str_gz ] )
+    cmd_gz = Command.Command( str_cur_command = str_cmd_gz,
+                                     lstr_cur_dependencies = [ str_vcf ],
+                                     lstr_cur_products = [ str_gz ] )
+    str_vcf = str_gz
+
+  if not os.path.exists( str_vcf + ".tbi" ):
+    # Create index for the VCF file
+    str_tbi = str_vcf + ".tbi"
+    str_cmd_index_vcf = " ".join( [ "tabix -f", str_vcf ] )
+    cmd_index_vcf = Command.Command( str_cur_command = str_cmd_index_vcf,
+                                     lstr_cur_dependencies = [ str_vcf ],
+                                     lstr_cur_products = [ str_tbi ] )
+  return( { INDEX_CMD: [ cmd_gz, cmd_index_vcf ], INDEX_FILE: str_vcf } )
 
 
 if __name__ == "__main__":
