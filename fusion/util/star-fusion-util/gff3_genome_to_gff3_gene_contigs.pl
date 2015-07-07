@@ -30,7 +30,7 @@ my $usage = <<__EOUSAGE__;
 #
 #  --shrink_introns
 #
-#  --max_intron_length <int>        default: max_intron_length  (only when --shrink_introns used)
+#  --max_intron_length <int>        default: $max_intron_length  (only when --shrink_introns used)
 #
 #  --genome_flank <int>             amt. of genomic sequence to extract flanking each gene (default: $genome_flank_size)
 #
