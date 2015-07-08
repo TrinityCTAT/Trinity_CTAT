@@ -995,8 +995,8 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, f_is_hg_18 )
                                                lstr_cur_products = [ str_cancer_mutations_unfiltered ] ) )
         str_vcf_to_filter = str_cancer_mutations_unfiltered
 
-    # Filter out common unless they have a COSMIC ID
-    str_cancer_filter_command = " ".join( [ "remove_common_keeping_cosmic.py", str_vcf_to_filter, str_cancer_mutations_filtered ] ) 
+    # Filter variant before CRAVAT
+    str_cancer_filter_command = " ".join( [ "filter_vcf_for_cancer.py", str_vcf_to_filter, str_cancer_mutations_filtered ] ) 
     cmd_cancer_filter = Command.Command( str_cur_command = str_cancer_filter_command,
                                          lstr_cur_dependencies = [ str_vcf_to_filter ],
                                          lstr_cur_products = [ str_cancer_mutations_filtered ] )
