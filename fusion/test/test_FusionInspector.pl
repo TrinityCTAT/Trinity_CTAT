@@ -22,7 +22,7 @@ main: {
     ## FusionInspector #
     ####################
     
-    my $cmd = "$INSTALL_DIR/FusionInspector --fusions test_fusions.list,test_fusions.list2,test_fusions.list3 --gtf $FUSION_ANNOTATOR_LIB/gencode.v19.rna_seq_pipeline.gtf --genome_fa $FUSION_ANNOTATOR_LIB/Hg19.fa --cdna_fa $FUSION_ANNOTATOR_LIB/gencode.v19.annotation.gtf.gff3.cdna --left_fq $left_fq --right $right_fq --out_dir Fusion_Inspector/ --out_prefix fi_test --align_utils STAR ";
+    my $cmd = "$INSTALL_DIR/FusionInspector --fusions test_fusions.list,test_fusions.list2,test_fusions.list3 --gtf $FUSION_ANNOTATOR_LIB/gencode.v19.rna_seq_pipeline.gtf --genome_fa $FUSION_ANNOTATOR_LIB/Hg19.fa --cdna_fa $FUSION_ANNOTATOR_LIB/gencode.v19.annotation.gtf.gff3.cdna --left_fq $left_fq --right $right_fq --out_dir Fusion_Inspector/ --out_prefix fi_test --align_utils HISAT ";
     
     if (@ARGV) {
         $cmd .= " --include_Trinity"

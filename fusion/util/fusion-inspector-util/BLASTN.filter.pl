@@ -93,7 +93,7 @@ but want:
 7       RightBreakpoint
 8       JunctionReads
 9       SpanningFrags
-
+10      annotations\tTrinityGG\t....
 
 =cut
 
@@ -108,7 +108,7 @@ main: {
     open (my $fh, $fusion_preds_file) or die "Error, cannot open file $fusion_preds_file";
     my $header = <$fh>;
     
-    print $ofh join("\t", "#fusion_name", "JunctionReads", "SpanningFrags", "Splice_type", "LeftGene", "LeftBreakpoint", "RightGene", "RightBreakpoint", "JunctionReads", "SpanningFrags") . "\n";
+    print $ofh join("\t", "#fusion_name", "JunctionReads", "SpanningFrags", "Splice_type", "LeftGene", "LeftBreakpoint", "RightGene", "RightBreakpoint", "JunctionReads", "SpanningFrags", "Annotations", "TrinityGG") . "\n";
 
     while (<$fh>) {
         if (/^\#/) { 
@@ -117,16 +117,16 @@ main: {
         chomp;
         my $line = $_;
 
-        my ($geneA, $local_chr_brkpt_A, $chr_brkpt_A, $geneB, $local_chr_brkpt_B, $chr_brkpt_B, $splice_type, $junction_count, $spanning_count, $junction_reads, $spanning_reads, $num_left_contrary_reads, $left_contrary_reads, $num_right_contrary_reads, $right_contrary_reads, $TAF_left, $TAF_right, $fusion_annotations) = split(/\t/);
+        my ($geneA, $local_chr_brkpt_A, $chr_brkpt_A, $geneB, $local_chr_brkpt_B, $chr_brkpt_B, $splice_type, $junction_count, $spanning_count, $junction_reads, $spanning_reads, $num_left_contrary_reads, $left_contrary_reads, $num_right_contrary_reads, $right_contrary_reads, $TAF_left, $TAF_right, @rest) = split(/\t/);
         
         my $fusion_name = "$geneA--$geneB";
         
-        print $ofh join("\t", $fusion_name, $junction_count, $spanning_count, $splice_type, $geneA, $chr_brkpt_A, $geneB, $chr_brkpt_B, $junction_reads, $spanning_reads) . "\n";
+        print $ofh join("\t", $fusion_name, $junction_count, $spanning_count, $splice_type, $geneA, $chr_brkpt_A, $geneB, $chr_brkpt_B, $junction_reads, $spanning_reads, @rest) . "\n";
     }
     
     close $fh;
     close $ofh;
-
+    
     ## now do the homology filter
     
     my $cmd = "$STAR_FUSION_DIR/util/STAR-Fusion.filter --fusion_preds $star_fusion_fmt_file  --out_prefix $out_prefix";
