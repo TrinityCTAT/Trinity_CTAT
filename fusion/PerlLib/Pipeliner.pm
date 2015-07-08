@@ -19,16 +19,30 @@ my $VERBOSE = 0;
 
 ####
 sub ensure_full_path {
-    my ($path) = @_;
+    my ($path, $ADD_GZ_FIFO_FLAG) = @_;
 
     unless ($path =~ m|^/|) {
         $path = cwd() . "/$path";
     }
 
+    if ($ADD_GZ_FIFO_FLAG && $path =~ /\.gz$/) {
+        $path = "<(zcat $path)";
+    }
+    
     return($path);
 }
 
+####
+sub process_cmd {
+    my ($cmd) = @_;
 
+    print STDERR "CMD: $cmd\n";
+    my $ret = system($cmd);
+    if ($ret) {
+        die "Error, CMD: $cmd died with ret $ret";
+    }
+    return;
+}
 
 
 ################
