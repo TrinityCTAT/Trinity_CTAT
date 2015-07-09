@@ -7,9 +7,15 @@ use lib ("$FindBin::Bin/../../PerlLib");
 use FusionAnnotator;
 
 
-my $usage = "\n\n\tusage: $0 fusion_preds.txt\n\n";
+my $usage = "\n\n\tusage: $0 fusion_preds.txt [max_neighbor_dist=100000]\n\n";
 
 my $fusion_preds = $ARGV[0] or die $usage;
+my $max_neighbor_dist = $ARGV[1];
+
+if ($max_neighbor_dist) {
+    &FusionAnnotator::set_max_neighbor_dist($max_neighbor_dist);
+}
+
 
 main: {
 
