@@ -965,6 +965,10 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, f_is_hg_18 )
     * return : List of commands
     """
 
+    # TODO
+    # ClinVAR, CADD for annotation?
+    # TODO, Do all COMIC IDs represent pathogenic mutations, if not remove non-pathogenic variants with COSMIC IDS
+
     # Commands for cancer filtering
     lcmd_cancer_filter = []
 
@@ -972,9 +976,15 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, f_is_hg_18 )
     str_vcf_to_filter = str_variants_file
 
     # Files created
-    str_cancer_mutations_unfiltered = os.path.splitext( str_variants_file )[ 0 ] + "_cosmic.vcf.gz"
-    str_cancer_mutations_filtered = os.path.splitext( str_variants_file )[ 0 ] + "_cancer_filtered.vcf"
-
+    str_vcf_base = os.path.splitext( str_variants_file )[ 0 ]
+    str_cancer_mutations_unfiltered = str_vcf_base + "_cosmic.vcf.gz"
+    str_cancer_mutations_filtered = str_vcf_base + "_cosmic_filtered.vcf"
+    str_cravat_annotated_vcf = str_vcf_base + "_cravate_annotated.vcf"
+    str_cravat_filtered_vcf = str_vcf_base + "_cravat_filtered.vcf"
+    str_cancer_tab = str_vcf_base + "_cancer.tab"
+    str_cravat_result_dir = str_vcf_base + "_cravat_annotations.gz" 
+    str_cravat_detail = str_vcf_base + "_cravat_annotations.gz"
+    
     # Index and bgzip vcf
     dict_tbi = func_tabix( str_vcf_to_filter )
     lcmd_cancer_filter.extend( dict_tbi[ INDEX_CMD ] )
@@ -1004,17 +1014,42 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, f_is_hg_18 )
 
     # Annotate non-common with CRAVAT
     if not f_is_hg_18 is None:
-      str_cravat_cmd = " ".join([ "annotate_with_cravat.py", "--classifier", args_call.str_cravat_classifier, "--is_hg18", f_is_hg_18, 
-                                  "--email", args_call.str_email_contact, "--max_attempts", I_CRAVAT_ATTEMPTS, 
-                                  "--wait", I_CRAVAT_WAIT, str_cancer_mutations_filtered,   ])
+      str_cravat_cmd = " ".join([ "annotate_with_cravat.py", "--classifier", args_call.str_cravat_classifier ] + [ "--is_hg18" ] if f_is_hg_18 else [] +
+                                  [ "--email", args_call.str_email_contact, "--max_attempts", I_CRAVAT_ATTEMPTS, 
+                                  "--wait", I_CRAVAT_WAIT, str_cancer_mutations_filtered, str_cravat_result_dir ])
       cmd_cravat = Command.Command( str_cur_command = str_cravat_cmd,
                                   lstr_cur_dependencies = [ str_cancer_mutations_filtered ],
-                                  lstr_cur_products = [] )
+                                  lstr_cur_products = [ str_cravat_result_dir ] )
       lcmd_cancer_filter.append( cmd_cravat )
 
-    ## Annotate VCF file with TAB data.
+      ## Unzip
+      str_unzip_cravat_cmd = " ".join( ["unzip", "-d", str_extracted_cravat_dir, str_cravat_result_dir ] )
+      cmd _unzip_cravat = Command.Command( str_cur_command = str_unzip_cravat_cmd,
+                                           lstr_cur_dependencies = [ str_cravat_result_dir ],
+                                           lstr_cur_products = [ str_cravat_detail] )
 
-    # Filter based on CRAVAT
+      ## Annotate and VCF file with TAB data.
+      str_cmd_annotate_with_cravat = " ".join( [ "bcftools", "annotate", "--annotations", str_cravat_detail, "--columns", "VEST,CRAVAT", "--output", str_cravat_annotated_vcf, str_cancer_mutations_filtered ] )
+      cmd_annotate_with_cravat = Command.Command( str_cur_command = str_cmd_annotate_with_cravat,
+                                                  lstr_cur_dependencies = [ str_cravat_detail, str_cancer_mutations_filtered ],
+                                                  lstr_cur_products = [  str_cravat_annotated_vcf ] ) 
+
+      # Filter based on CRAVAT
+      str_cmd_filter_cravat_vcf = " ".join( [ "bcftools", "filter", "--include", "CRAVAT < " + STR_FDR_CUTTOFF + " || VEST < " + STR_FDR_CUTTOFF, "--output", str_cravat_filtered_vcf, str_cravat_annotated_vcf ] )
+      cmd_annotate_with_cravat = Command.Command( str_cur_command = str_cmd_filter_cravat_vcf,
+                                                  lstr_cur_dependencies = [ str_cravat_annotated_vcf ],
+                                                  lstr_cur_products = [  str_cravat_filtered_vcf ] ) 
+
+      # Convert filtered VCF file to tab file.
+      str_cmd_make_cravat_tab = " ".join( [ "java -jar GenomeAnalysisTK.jar", "-R", args_call.str_genome_fa, "-T", "VariantsToTable", "-V", str_cravat_filtered_vcf, 
+                                            "-F", "CHROM", "-F", "POS", "-F", "REF", "-F", "ALT", "-F", "GENE",
+                                            "-F", "CHASM", "-F", "DP", "-F", "QUAL", "-F", "MQ", "-F", "COMMON",
+                                            "-F", "SAO", "-F", "NSF", "-F", "NSM", "-F", "NSN", "-F", "TUMOR", "-F", "TISSUE",
+                                            "-F", "COSMIC_ID", "-F", "KGPROD", "-F", "RS", "-F", "PMC", "-F", "CRAVAT", "-F", "VEST",
+                                            "--allowMissingData", "-o", str_cancer_tab ] )
+      cmd_annotate_with_cravat = Command.Command( str_cur_command = str_cmd_make_cravat_tab,
+                                                  lstr_cur_dependencies = [ str_cravat_filtered_vcf ],
+                                                  lstr_cur_products = [ str_cancer_tab ] ) 
 
     # Create index for the VCF file
     # tabix
@@ -1189,7 +1224,8 @@ def run( args_call, f_do_index = False ):
 
         # Add commands to annotate and summarize files
         # This is a sciedpiper script and needs to get all the default parameters to be consistent with the parent script.
-        str_annotated_vcf_file = os.path.join( os.path.dirname( dict_ret_variant_calling[ INDEX_FILE ] ), "variants_annotated.vcf" )
+        str_annotated_vcf_file = os.path.join( os.path.dirname( dict_ret_variant_calling[ INDEX_FILE ] ),
+                                 "variants_annotated_pre_rna_edit.vcf" if args_call.f_remove_rna_editing else "variants_annotated.vcf" )
         str_annotate_cmd = "python summarize_annotate_vcf.py --dbsnp " + args_call.str_vcf_file
 # keep cleaning off for the summarize script
 #        if args_call.f_clean:
@@ -1198,6 +1234,10 @@ def run( args_call, f_do_index = False ):
             str_annotate_cmd = str_annotate_cmd + " --log " + os.path.splitext( args_call.str_log_file )[0] + "_ann.log"
         if args_call.i_number_threads > 1:
             str_annotate_cmd = str_annotate_cmd + " --threads " + str( args_call.i_number_threads )
+        if args_call.str_darned_data:
+            str_annotate_cmd = str_annotate_cmd + " --darned " + args_call.str_darned_data
+        if args_call.str_radar_data:
+            str_annotate_cmd = str_annotate_cmd + " --radar " + args_call.str_radar_data
         if args_call.f_Test:
             str_annotate_cmd = str_annotate_cmd + " --test"
         if args_call.str_update_classpath:
@@ -1209,13 +1249,24 @@ def run( args_call, f_do_index = False ):
         cmd_summarize_annotate.f_stop_update_at_flags = True
         lcmd_commands.append( cmd_summarize_annotate )
 
+        # Filter RNA Editing
+        if args_call.f_remove_rna_editing:
+            str_cmd_rna_editing_filter = " ".join( [ "bcftools filter", "--exclude", "TODO" ]
+            str_rna_edit_filtered_vcf = os.path.join( os.path.dirname( dict_ret_variant_calling[ INDEX_FILE ] ), "variants_annotated.vcf" )
+            cmd_rna_editing_filter = Command.Command( str_cur_command = str_cmd_rna_editing_filter,
+                                                      lstr_cur_dependencies = [ str_annotated_vcf_file ],
+                                                      lstr_cur_products = [ str_rna_edit_filtered_vcf ] )
+            lcmd_commands.append( cmd_rna_editing_filter )
+            # Switch over the annotated VCF to this RNA-Edited annotated VCF
+            str_annotated_vcf_file = str_rna_edit_filtered_vcf
+
         # Perform cancer filtering
         f_cravat_hg18 = None
         if args_call.str_email_contact is None or ( not args_call.str_hg_19 and not args_call.str_hg_18 ):
           pline_cur.logr_logger.warning( "CRAVAT analysis will not be ran. Please make sure to provide an email and indicate if hg18 or hg19 is being used." )
-        elif args_call.str_hg_18:
+        elif args_call.f_hg_18:
           f_cravat_hg18 = True
-        elif args_call.str_hg_19:
+        elif args_call.f_hg_19:
           f_cravat_hg18 = False
         lcmd_commands.extend( func_do_variant_filtering_cancer( args_call=args_call, str_variants_file=str_annotated_vcf_file, f_is_hg_18=f_cravat_hg18 )[ INDEX_CMD ] )
 
@@ -1292,6 +1343,7 @@ if __name__ == "__main__":
     args_group_run.add_argument( "-i", "--index", metavar = "Use_premade_index", dest = "str_initial_index", default = None, help = "The initial index is made only from the reference genome and can be shared. If premade, supply a path here to the index directory so that it is not rebuilt for every alignment. Please provide the full path." )
     args_group_run.add_argument( "--validate_dnaseq", dest = "f_validate_by_dnaseq", default = False, action = "store_true", help = "Used for development only. Should not be used with biological samples.")
     args_group_run.add_argument( "-y", "--star_memory", metavar = "Star_memory", dest = "str_star_memory_limit", default = None, help = "Memory limit for star index. This should be used to increase memory if needed. Reducing memory consumption should be performed with the STAR Limited mod." )
+args_call.f_remove_rna_editing
 
     # GATK associated
     args_group_gatk = prsr_arguments.add_argument_group( "GATK", "Associated with or controlling GATK tools." )
@@ -1301,18 +1353,20 @@ if __name__ == "__main__":
 
     # Resources
     args_group_resources = prsr_arguments.add_argument_group( "Resources", "Associated with resources for the pipelines." )
-    prsr_arguments.add_argument( "--cosmic_vcf", metavar="cosmic_reference_vcf", dest="str_cosmic_coding_vcf", default=None, action="store", help="Coding Cosmic Mutation VCF annotated with Phenotype Information." )
-    prsr_arguments.add_argument( "-f", "--reference", metavar = "Reference_genome", dest = "str_genome_fa", required = True, help = "Path to the reference genome to use in the analysis pipeline." )
-    prsr_arguments.add_argument( "-k", "--gtf", metavar = "Reference GTF", dest = "str_gtf_file_path", default = None, help = "GTF file for reference genome.")
-    prsr_arguments.add_argument( "-w", "--vcf", metavar = "Variant_calling_file_for_the_reference_genome", dest = "str_vcf_file", default = None, help = "Variant calling file for the reference genome.")
+    args_group_resources.add_argument( "--cosmic_vcf", metavar="cosmic_reference_vcf", dest="str_cosmic_coding_vcf", default=None, action="store", help="Coding Cosmic Mutation VCF annotated with Phenotype Information." )
+    args_group_resources.add_argument( "-f", "--reference", metavar = "Reference_genome", dest = "str_genome_fa", required = True, help = "Path to the reference genome to use in the analysis pipeline." )
+    args_group_resources.add_argument( "-k", "--gtf", metavar = "Reference GTF", dest = "str_gtf_file_path", default = None, help = "GTF file for reference genome.")
+    args_group_resources.add_argument( "-w", "--vcf", metavar = "Variant_calling_file_for_the_reference_genome", dest = "str_vcf_file", default = None, help = "Variant calling file for the reference genome.")
+    args_group_resources.add_argument( "--darned", metavar = "Darned_data", dest = "str_darned_data", default = None, help = "Darned data for RNA editing removal, if included will be used for RNA editing removal.")
+    args_group_resources.add_argument( "--radar", metavar = "Radar_data", dest = "str_radar_data", default = None, help = "Radar data for RNA editing removal, if included will be used for RNA editing removal.")
 
     # Cravat associated
     args_group_cravat = prsr_arguments.add_argument_group( "CRAVAT", "Associated with CRAVAT prioritization of variant calls." )
     args_group_cravat.add_argument( "--tissue_type", metavar = "tissue", dest = "str_cravat_classifier", default = STR_CRAVAT_CLASSIFIER_DEFAULT, help = "Tissue type (used in CRAVAT variant prioritation). Supported classifiers can be found at http://www.cravat.us/help.jsp )" )
     args_group_cravat.add_argument( "--email", metavar = "email_contact", dest = "str_email_contact", default = None, help = "Email used to notify of errors associated with cravat." )
-    args_group_cravat.add_argument( "--is_hg19", metavar = "is_Hg19", dest = "str_hg_19", default = None, help = "Indicates that Hg19 is being used." )
-    args_group_cravat.add_argument( "--is_hg18", metavar = "is_Hg18", dest = "str_hg_18", default = None, help = "Indicates that Hg18 is being used." )
-    
+    group_hg = args_group_cravat.add_mutually_exclusive_group()
+    group_hg.add_argument( "--is_hg19", metavar = "is_Hg19", dest = "f_hg_19", default = False, help = "Indicates that Hg19 is being used." )
+    group_hg.add_argument( "--is_hg18", metavar = "is_Hg18", dest = "f_hg_18", default = False, help = "Indicates that Hg18 is being used." )
     args = prsr_arguments.parse_args()
     
     run( args )
