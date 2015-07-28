@@ -25,13 +25,14 @@ i_vcf_ref = 3
 i_vcf_alt = 4
 
 # Parse arguments
-prsr_arguments = argparse.ArgumentParser( prog = "annotate_with_cravat.py", description = "Annotate VCF file with cravat.", formatter_class = argparse.ArgumentDefaultsHelpFormatter )
-prsr_arguments.add_argument( "--classifier", dest = "str_classifier", action = "store", required=True, help = "Tissue type." )
-prsr_arguments.add_argument( "--is_hg18", dest = "f_hg_18", action = "store", help = "Indicates if Hg18 (True=Hg18; False=Hg19)." )
+prsr_arguments = argparse.ArgumentParser( prog = "annotate_with_cravat.py", description = "Retrieve annotations associated with variants in a VCF file using CRAVAT.", formatter_class = argparse.ArgumentDefaultsHelpFormatter )
+prsr_arguments.add_argument( "--analysis", dest = "str_analysis", action = "store", default="CHASM;VEST", help = "Analysis type parameter. For options see cravat.us/help.jsp" )
+prsr_arguments.add_argument( "--classifier", dest = "str_classifier", action = "store", required=True, help = "Tissue type for the classifier. For options see cravat.us/help.jsp." )
 prsr_arguments.add_argument( "--email", dest = "str_email", action = "store", required=True, help = "Email contact for job." )
+prsr_arguments.add_argument( "--is_hg18", dest = "f_hg_18", action = "store_true", default=False, help = "Indicates the reference is Hg18 (By default assumed to be Hg19)." )
 prsr_arguments.add_argument( "--max_attempts", dest = "i_max_attempts", default=100, action = "store", type=int, help = "Max attempts of querying response before timing out." )
 prsr_arguments.add_argument( "--wait", dest = "i_wait", action = "store", default=10, type=int, help = "Wait in seconds before querying the response." )
-prsr_arguments.add_argument( dest = "str_input_file", action = "store", help = "VCF file to update." )
+prsr_arguments.add_argument( dest = "str_input_file", action = "store", help = "Path to VCF file containing variants." )
 prsr_arguments.add_argument( dest = "str_output_dir", action = "store", help = "Output Zip file (please use the extension .zip) Can be opened with 'unzip'." )
 args_call = prsr_arguments.parse_args()
 
@@ -99,7 +100,7 @@ def func_get_cravat_response( str_json_id, i_max_attempts, i_wait ):
   return( None )
 
 
-def func_request_cravat_service( str_vcf_path, str_classifier, f_hg_18, str_email ):
+def func_request_cravat_service( str_vcf_path, str_analysis, str_classifier, f_hg_18, str_email ):
   """
   Request a job to occur with CRAVAT.
 
@@ -118,7 +119,7 @@ def func_request_cravat_service( str_vcf_path, str_classifier, f_hg_18, str_emai
                    "mupitinput": "on",
                    "hg18": "on" if f_hg_18 else "off",
                    "tsvreport": "on",
-                   "analyses": "CHASM;SnvGet",
+                   "analyses": str_analysis,
                    "functionalannotation": "on",
                    "analysistype": "driver",
                    "email": str_email }
@@ -129,8 +130,13 @@ def func_request_cravat_service( str_vcf_path, str_classifier, f_hg_18, str_emai
   # Get return (job id)
   return json_response.get( str_response_job_id, None )
 
+# Ensure the extention to the output directory is zip
+if not os.path.splitext( args_call.str_output_dir )[ 1 ] == ".zip":
+  args_call.str_output_dir = args_call.str_output_dir + ".zip"
+
 # Request CRAVAT service
 str_job_id = func_request_cravat_service( args_call.str_input_file,
+                                          args_call.str_analysis,
                                           args_call.str_classifier,
                                           args_call.f_hg_18,
                                           args_call.str_email )
