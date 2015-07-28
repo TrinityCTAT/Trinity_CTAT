@@ -30,9 +30,9 @@ class SummarizeAnnotateVCF( ParentScript.ParentScript ):
     args_raw.prog = "Summarize_annotate_vcf.py"
     args_raw.add_argument( "--dbsnp", metavar = "dbsnp_reference_vcf", dest = "str_dbsnp_vcf", default = None, required = True, action="store", help = "Reference dbsnp file to use for annotation." )
     args_raw.add_argument( "--output_file", metavar="output_file", dest="str_output_file", required=True, action="store", help="Final output vcf file (please include vcf as the extension." )
-    args_raw.add_argument( metavar = "sample_vcfs", dest = "lstr_sample_files", default = None, action="store", nargs="+",  help = "Sample files to combine vcfs." )
     args_raw.add_argument( "--darned", metavar = "Darned_data", dest = "str_darned", default = None, action="store", help = "The DARNED database preped for annotation to be used in annotating RNA editing." )
     args_raw.add_argument( "--radar", metavar = "Radar_data", dest = "str_radar", default = None, action="store", help = "The RADAR database preped for annotation to beused in annotating RNA editing." )
+    args_raw.add_argument( metavar = "sample_vcfs", dest = "lstr_sample_files", default = None, action="store", nargs="+",  help = "Sample files to combine vcfs." )
 
   def func_make_commands( self, args_parsed, cur_pipeline ):
     """
@@ -114,30 +114,29 @@ class SummarizeAnnotateVCF( ParentScript.ParentScript ):
     # bcftools annotate --annotations str_dbsnp_vcf -c
     # PM variant is clinicall precious (clinical and pubmed cited)
     # NSF, NSM, NSN, COMMON, SAO, KGPROD, KGVALIDATED, MUT, WTD, VLD, RS, PMC
-    str_annotate_command = " ".join( [ "bcftools", "annotate", "--output-type", "v", "--annotations", str_annotation_file, "--columns", "INFO/COMMON,INFO/PM,INFO/NSF,INFO/NSM,INFO/NSN,INFO/SAO,INFO/KGPROD,INFO/KGValidated,INFO/MUT,INFO/WTD,INFO/VLD,INFO/RS,INFO/PMC", "--output", args_parsed.str_output_file, str_combined_vcf ] )
+    str_annotate_command = " ".join( [ "bcftools", "annotate", "--output-type", "v", "--annotations", str_annotation_file, "--columns", "INFO/COMMON,INFO/PM,INFO/NSF,INFO/NSM,INFO/NSN,INFO/SAO,INFO/KGPROD,INFO/KGValidated,INFO/MUT,INFO/WTD,INFO/VLD,INFO/RS,INFO/PMC", "--output", str_dbsnp_annotated_vcf, str_combined_vcf ] )
     lcmd_commands.append( Command.Command( str_cur_command = str_annotate_command,
                                            lstr_cur_dependencies = [ str_annotation_file, str_combined_vcf ],
                                            lstr_cur_products = [ str_dbsnp_annotated_vcf ] ) )
     str_current_vcf = str_dbsnp_annotated_vcf
 
-    # DARNED annotation
-    if args_parsed.str_darned:
-        str_darned_annotated_vcf = os.path.splitext( str_current_vcf )[0] + "_darned.vcf.gz"
-        str_annotate_darned = " ".join( [ "bcftools","annotate", "--annotations", args_parsed.str_darned, "--output", args_parsed.str_output, str_dbsnp_annotated_vcf ] )
-        cmd_darned = Command.Command( str_cur_command = str_annotate_darned,
-                         lstr_cur_dependencies = [ str_current_vcf ],
-                         lstr_cur_products = [ str_darned_annotated_vcf ] )
-        lcmd_commands.append( cmd_darned )
-        str_current_vcf = str_darned_annotated_vcf
-
-    # RADAR annotation
-    if args_parsed.str_radar:
-        str_radar_annotated_vcf = os.path.splitext( str_current_vcf )[0] + "_darned.vcf.gz"
-        str_annotate_radar = " ".join( [ "bcftools", "annotate", "--annotations", args_parsed.str_radar, "--output", args_parsed.str_output_file, str_dbsnp_annoated_vcf ] )
-        cmd_annotate_radar = Command.Command( str_cur_command = str_annotate_radar,
-                         lstr_cur_dependencies = [ str_current_vcf ],
-                         lstr_cur_products = [ str_radar_annotated_vcf ] ) 
-        str_current_vcf = str_radar_annotated_vcf
+#    # DARNED annotation
+#    if args_parsed.str_darned:
+#        str_darned_annotated_vcf = os.path.splitext( str_current_vcf )[0] + "_darned.vcf.gz" if args_parsed.str_radar else args_parsed.str_output_file
+#        str_annotate_darned = " ".join( [ "bcftools","annotate", "--output-type", "v", "--columns", "CHR,POS,-,DARNED,-,-,-,-,-,-,-,-", "--annotations", args_parsed.str_darned, "--output", str_darned_annotated_vcf, str_current_vcf ] )
+#        cmd_darned = Command.Command( str_cur_command = str_annotate_darned,
+#                         lstr_cur_dependencies = [ str_current_vcf ],
+#                         lstr_cur_products = [ str_darned_annotated_vcf ] )
+#        lcmd_commands.append( cmd_darned )
+#        str_current_vcf = str_darned_annotated_vcf
+#
+#    # RADAR annotation
+#    if args_parsed.str_radar:
+#        str_annotate_radar = " ".join( [ "bcftools", "annotate", "--output-type", "v", "--columns", "CHR,POS,RADAR,-,-,-,-,-,-,-,-", "--annotations", args_parsed.str_radar, "--output", args_parsed.str_output_file, str_current_vcf ] )
+#        cmd_annotate_radar = Command.Command( str_cur_command = str_annotate_radar,
+#                         lstr_cur_dependencies = [ str_current_vcf ],
+#                         lstr_cur_products = [ args_parsed.str_output_file ] ) 
+#        str_current_vcf = args_parsed.str_output_file
 
     # Run commands
     return( lcmd_commands )
