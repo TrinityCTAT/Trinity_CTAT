@@ -53,6 +53,7 @@ STR_DNASEQ_VALIDATION = "DNASEQ"
 I_CRAVAT_ATTEMPTS = 100
 I_CRAVAT_WAIT = 10
 STR_CRAVAT_CLASSIFIER_DEFAULT = "Other"
+STR_FDR_CUTTOFF = "0.3"
 
 def func_do_star_alignment( args_call, str_unique_id, pline_cur, f_index_only = False ):
     """
@@ -805,10 +806,7 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
     # Commands to run
     lcmd_samtools_variants_commands = []
     # The bam file, stored here because the path may be changed if the optional sam -> conversion is needed.
-    str_bam = str_align_file
-    # Sorted bam file path
-    str_bam_file = os.path.split( str_bam )[1]
-    str_bam_sorted = os.path.join( str_tmp_dir, ".".join( [ os.path.splitext( str_bam_file )[0],"sorted", "bam" ] ) )
+    str_bam_sorted = str_align_file
     # Index of the sorted bam file
     str_bam_sorted_index = ".".join( [ str_bam_sorted, "bai" ] )
     # Uncompressed variant calling file
@@ -817,26 +815,29 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
     # Optional SAM to BAM
     if os.path.splitext( str_align_file )[1].lower() == ".sam":
         str_bam = ".".join( [ os.path.splitext( str_align_file )[0],"bam" ] )
+        # Sorted bam file path
+        str_bam_file = os.path.split( str_bam )[1]
+        str_bam_sorted = os.path.join( str_tmp_dir, ".".join( [ os.path.splitext( str_bam_file )[0],"sorted", "bam" ] ) )
+        str_bam_sorted_index = ".".join( [ str_bam_sorted, "bai" ] )
         lcmd_samtools_variants_commands.extend( [ 
                             Command.Command( str_cur_command = " ".join( [ "samtools view -b -S -o",str_bam, str_align_file ] ),
                                             lstr_cur_dependencies = lstr_dependencies,
-                                            lstr_cur_products = [ str_bam ] ) ] )
-    # Either prepare bams with GATK best practices or minimally
-    if args_call.f_recalibrate_sam:
-        # Create commands for recalibration
-        # Update files to recalibrated files
-        dict_recalibration = func_do_recalibration_gatk( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur )
-        lcmd_samtools_variants_commands.extend( dict_recalibration[ INDEX_CMD ] )
-        str_bam_sorted = dict_recalibration[ INDEX_FILE ]
-        str_bam_sorted_index = ".".join( [ os.path.splitext( str_bam_sorted )[ 0 ], "bai" ] )
-    else:
-        lcmd_samtools_variants_commands.extend( [ 
+                                            lstr_cur_products = [ str_bam ] ),
                             Command.Command( str_cur_command = " ".join( [ "samtools sort -O bam -T temp -o", str_bam_sorted, str_bam ] ),
                                             lstr_cur_dependencies = [ str_bam ],
                                             lstr_cur_products = [ str_bam_sorted ] ),
                             Command.Command( str_cur_command = " ".join( [ "samtools index", str_bam_sorted ] ),
                                             lstr_cur_dependencies = [ str_bam_sorted ],
                                             lstr_cur_products = [ str_bam_sorted_index ] ) ] )
+
+    # Either prepare bams with GATK best practices or minimally
+    if args_call.f_recalibrate_sam:
+        # Create commands for recalibration
+        # Update files to recalibrated files
+        dict_recalibration = func_do_recalibration_gatk( args_call, str_bam_sorted, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur )
+        lcmd_samtools_variants_commands.extend( dict_recalibration[ INDEX_CMD ] )
+        str_bam_sorted = dict_recalibration[ INDEX_FILE ]
+        str_bam_sorted_index = ".".join( [ os.path.splitext( str_bam_sorted )[ 0 ], "bai" ] )
 
     # Create depth file
     if args_call.f_calculate_base_coverage:
@@ -885,8 +886,8 @@ def func_do_variant_filtering_bcftools( args_call, str_variants_file, lstr_depen
 
     # Filtered variants file
     str_standard_variants_file = os.path.join( os.path.splitext( str_variants_file )[ 0 ] + "_initial_filtering_variants.vcf" )
-    str_filtered_variants_file = os.path.join( os.path.splitext( str_variants_file )[ 0 ] + "_filtered_variants.vcf" )
-    str_filtered_variants_index_file = str_filtered_variants_file + ".tbi"
+    str_filtered_variants_file = os.path.join( os.path.splitext( str_variants_file )[ 0 ] + "_cluster_variants.vcf" )
+    str_filtered_variants_index_file = str_filtered_variants_file + ".csi"
 
     # Filter variants 
     str_filter_command = "bcftools filter --output-type v --output " + str_standard_variants_file + " -sLowQual -g 3 -G 10 -e \"%QUAL<10 || (RPB<0.1 && %QUAL<15) || (AC<2 && %QUAL<15)\" " + str_variants_file
@@ -901,11 +902,12 @@ def func_do_variant_filtering_bcftools( args_call, str_variants_file, lstr_depen
                                              lstr_cur_dependencies = [ str_standard_variants_file ],
                                              lstr_cur_products = [ str_filtered_variants_file ] )
     cmd_secondary_filters.func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER )
+    
 
     # Create index for the VCF file
-    dict_tbi = func_tabix( str_filtered_variants_file )
+#    dict_csi = func_csi( str_filtered_variants_file )
 
-    return { INDEX_CMD : [ cmd_variant_filtration ] + dict_tbi[ INDEX_CMD ], INDEX_FILE : dict_tbi[ INDEX_FILE ] }
+    return { INDEX_CMD : [ cmd_variant_filtration, cmd_secondary_filters ], INDEX_FILE : str_filtered_variants_file }
 
 
 def func_do_variant_filtering_gatk( args_call, str_variants_file, lstr_dependencies, logr_cur ):
@@ -922,7 +924,7 @@ def func_do_variant_filtering_gatk( args_call, str_variants_file, lstr_dependenc
     """
     # Filtered variants file
     str_filtered_variants_file = os.path.join( os.path.splitext( str_variants_file )[0] + "_filtered_variants.vcf" )
-    str_filtered_variants_index_file = str_filtered_variants_file + ".tbi"
+    str_filtered_variants_index_file = str_filtered_variants_file + ".csi"
     # Filter variants
     str_filter_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T VariantFiltration -R", args_call.str_genome_fa, "-V", str_variants_file, "-window 35",
                          "-cluster 3 -filterName FS -filter \"FS > 30.0\" -filterName QD","-filter \"QD < 2.0\" --out", str_filtered_variants_file ] )
@@ -932,9 +934,9 @@ def func_do_variant_filtering_gatk( args_call, str_variants_file, lstr_dependenc
     cmd_variant_filteration.func_set_dependency_clean_level( [ str_variants_file ], Command.CLEAN_NEVER )
 
     # Create index for the VCF file
-    dict_tbi = func_tabix( str_filtered_variants_file )
+#    dict_csi = func_csi( str_filtered_variants_file )
 
-    return { INDEX_CMD : [ cmd_variant_filteration ] + dict_tbi[ INDEX_CMD ], INDEX_FILE : dict_tbi[ INDEX_FILE ] }
+    return { INDEX_CMD : [ cmd_variant_filteration ], INDEX_FILE : str_variants_file }
 
 
 def func_do_variant_filtering_none( args_call, str_variants_file, lstr_dependencies, logr_cur ):
@@ -977,18 +979,24 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, f_is_hg_18 )
 
     # Files created
     str_vcf_base = os.path.splitext( str_variants_file )[ 0 ]
-    str_cancer_mutations_unfiltered = str_vcf_base + "_cosmic.vcf.gz"
-    str_cancer_mutations_filtered = str_vcf_base + "_cosmic_filtered.vcf"
-    str_cravat_annotated_vcf = str_vcf_base + "_cravate_annotated.vcf"
-    str_cravat_filtered_vcf = str_vcf_base + "_cravat_filtered.vcf"
-    str_cancer_tab = str_vcf_base + "_cancer.tab"
-    str_cravat_result_dir = str_vcf_base + "_cravat_annotations.gz" 
-    str_cravat_detail = str_vcf_base + "_cravat_annotations.gz"
-    
+    str_cancer_mutations_unfiltered = os.path.splitext( str_vcf_base )[0] + "_cosmic.vcf.gz"
+    str_cancer_mutations_filtered = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered.vcf"
+    str_cravat_annotated_coding_vcf = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravate_annotated_coding.vcf.gz"
+    str_cravat_annotated_all_vcf = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravate_annotated_all.vcf.gz"
+    str_cravat_filtered_vcf = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravate_annotated_filtered.vcf"
+    str_cancer_tab = os.path.dirname( str_vcf_base ) + os.path.sep + "cancer.tab"
+    str_cravat_result_dir = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravat_annotations.gz" 
+    str_extracted_cravat_dir = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravat_annotations"   
+    str_cravat_detail_coding = os.path.join( str_extracted_cravat_dir,"Variant.Result.tsv" )
+    str_cravat_detail_noncoding = os.path.join( str_extracted_cravat_dir,"Variant_Non-coding.Result.tsv" )
+    str_cravat_detail_coding_updated = os.path.join( os.path.dirname( str_vcf_base ), "Variant_result_updated.tsv" )
+    str_cravat_detail_noncoding_updated = os.path.join( os.path.dirname( str_vcf_base ), "Variant_non_coding_result_updated.tsv" )
+    str_cravat_header = "/ahg/regev/users/ttickle/dev/KCO/SOFTWARE/Trinity_CTAT/mutation/headers/cravat_annotation.txt"
+
     # Index and bgzip vcf
-    dict_tbi = func_tabix( str_vcf_to_filter )
-    lcmd_cancer_filter.extend( dict_tbi[ INDEX_CMD ] )
-    str_vcf_to_filter = dict_tbi[ INDEX_FILE ]
+    dict_csi = func_csi( str_vcf_to_filter )
+    lcmd_cancer_filter.extend( dict_csi[ INDEX_CMD ] )
+    str_vcf_to_filter = dict_csi[ INDEX_FILE ]
 
     # Pull out and annotate Coding Cancer Mutations
     # Adding the following annotations from COSMIC 
@@ -1000,9 +1008,10 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, f_is_hg_18 )
                                                     "--annotations", args_call.str_cosmic_coding_vcf,
                                                     "--columns", "INFO/GENE,INFO/COSMIC_ID,INFO/TISSUE,INFO/TUMOR,INFO/FATHMM,INFO/SOMATIC",
                                                     "--output", str_cancer_mutations_unfiltered, str_variants_file ] )
-        lcmd_cancer_filter.append( Command.Command( str_cur_command = str_cancer_annotation_command,
-                                               lstr_cur_dependencies = [ args_call.str_cosmic_coding_vcf, str_variants_file ],
-                                               lstr_cur_products = [ str_cancer_mutations_unfiltered ] ) )
+        cmd_cosmic = Command.Command( str_cur_command = str_cancer_annotation_command,
+                                      lstr_cur_dependencies = [ args_call.str_cosmic_coding_vcf, str_variants_file ],
+                                      lstr_cur_products = [ str_cancer_mutations_unfiltered ] )
+        lcmd_cancer_filter.append( cmd_cosmic )
         str_vcf_to_filter = str_cancer_mutations_unfiltered
 
     # Filter variant before CRAVAT
@@ -1014,42 +1023,84 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, f_is_hg_18 )
 
     # Annotate non-common with CRAVAT
     if not f_is_hg_18 is None:
-      str_cravat_cmd = " ".join([ "annotate_with_cravat.py", "--classifier", args_call.str_cravat_classifier ] + [ "--is_hg18" ] if f_is_hg_18 else [] +
-                                  [ "--email", args_call.str_email_contact, "--max_attempts", I_CRAVAT_ATTEMPTS, 
-                                  "--wait", I_CRAVAT_WAIT, str_cancer_mutations_filtered, str_cravat_result_dir ])
+      str_cravat_result_dir_zip = str_cravat_result_dir + ".zip"
+      lstr_hg_18 = [ "--is_hg18" ] if f_is_hg_18 else []
+      str_cravat_cmd = " ".join([ "annotate_with_cravat.py", "--classifier", args_call.str_cravat_classifier ] + lstr_hg_18 +
+                                  [ "--email", args_call.str_email_contact, "--max_attempts", str( I_CRAVAT_ATTEMPTS ), 
+                                  "--wait", str( I_CRAVAT_WAIT ), str_cancer_mutations_filtered, str_cravat_result_dir ])
       cmd_cravat = Command.Command( str_cur_command = str_cravat_cmd,
                                   lstr_cur_dependencies = [ str_cancer_mutations_filtered ],
-                                  lstr_cur_products = [ str_cravat_result_dir ] )
+                                  lstr_cur_products = [ str_cravat_result_dir_zip ] )
       lcmd_cancer_filter.append( cmd_cravat )
 
       ## Unzip
-      str_unzip_cravat_cmd = " ".join( ["unzip", "-d", str_extracted_cravat_dir, str_cravat_result_dir ] )
-      cmd _unzip_cravat = Command.Command( str_cur_command = str_unzip_cravat_cmd,
-                                           lstr_cur_dependencies = [ str_cravat_result_dir ],
-                                           lstr_cur_products = [ str_cravat_detail] )
+      str_unzip_cravat_cmd = " ".join( ["unzip", "-d", str_extracted_cravat_dir, str_cravat_result_dir_zip ] )
+      cmd_unzip_cravat = Command.Command( str_cur_command = str_unzip_cravat_cmd,
+                                           lstr_cur_dependencies = [ str_cravat_result_dir_zip ],
+                                           lstr_cur_products = [ str_extracted_cravat_dir ] )
+      lcmd_cancer_filter.append( cmd_unzip_cravat )
+
+      # MV files needed from the CRAVAT dir to the current working dir.
+      str_coding_variant_result = str_extracted_cravat_dir+os.path.sep+"*"+os.path.sep+"Variant.Result.tsv"
+      str_non_coding_variant_result = str_extracted_cravat_dir+os.path.sep+"*"+os.path.sep+"Variant_Non-coding.Result.tsv"
+      str_move_cravate_files = " ".join([ "mv", "{"+str_coding_variant_result+","+str_non_coding_variant_result+"}", str_extracted_cravat_dir ])
+      cmd_mv_cravat = Command.Command( str_cur_command = str_move_cravate_files,
+                                       lstr_cur_dependencies = [ str_extracted_cravat_dir ],
+                                       lstr_cur_products = [ str_cravat_detail_noncoding, str_cravat_detail_coding ] )
+      lcmd_cancer_filter.append( cmd_mv_cravat )
+
+      # Groom CRAVAT output tab for it does not upset BCFtools.
+      str_groom_cravat_tab_coding = " ".join([ "groom_cravat_annotation.py", str_cravat_detail_coding, str_cravat_detail_coding_updated] )
+      str_groom_cravat_tab_non_coding = " ".join([ "groom_cravat_annotation.py", str_cravat_detail_noncoding, str_cravat_detail_noncoding_updated] )
+      cmd_groom_cravat_tab_coding = Command.Command( str_cur_command=str_groom_cravat_tab_coding,
+                                                     lstr_cur_dependencies=[ str_cravat_detail_coding ],
+                                                     lstr_cur_products=[ str_cravat_detail_coding_updated ] )
+      cmd_groom_cravat_tab_noncoding = Command.Command( str_cur_command=str_groom_cravat_tab_non_coding,
+                                                     lstr_cur_dependencies=[ str_cravat_detail_noncoding ],
+                                                     lstr_cur_products=[str_cravat_detail_noncoding_updated ] )
+      lcmd_cancer_filter.extend([ cmd_groom_cravat_tab_coding, cmd_groom_cravat_tab_noncoding ])
+
+      # Tabix index the CRAVAT tsv files
+      dict_tabix = func_tabix( str_cravat_detail_coding_updated, str_output_dir = os.path.dirname( str_vcf_base ), str_tabix = "-s 1 -b 2 -e 2 -S 12" )
+      lcmd_cancer_filter.extend( dict_tabix[ INDEX_CMD ] )
+      str_cravat_detail_coding_updated = str_cravat_detail_coding_updated +".gz"
+      dict_tabix = func_tabix( str_cravat_detail_noncoding_updated, str_output_dir = os.path.dirname( str_vcf_base ), str_tabix = "-s 1 -b 2 -e 2 -S 12" )
+      lcmd_cancer_filter.extend( dict_tabix[ INDEX_CMD ] )
+      str_cravat_detail_noncoding_updated = str_cravat_detail_noncoding_updated +".gz"
 
       ## Annotate and VCF file with TAB data.
-      str_cmd_annotate_with_cravat = " ".join( [ "bcftools", "annotate", "--annotations", str_cravat_detail, "--columns", "VEST,CRAVAT", "--output", str_cravat_annotated_vcf, str_cancer_mutations_filtered ] )
-      cmd_annotate_with_cravat = Command.Command( str_cur_command = str_cmd_annotate_with_cravat,
-                                                  lstr_cur_dependencies = [ str_cravat_detail, str_cancer_mutations_filtered ],
-                                                  lstr_cur_products = [  str_cravat_annotated_vcf ] ) 
+      ## CRAVAT gives both Coding and none coding Variants results.
+      ## For now, including both and not excluding noncoding.
+      str_cmd_annotate_with_cravat_coding = " ".join( [ "bcftools", "annotate", "--annotations", str_cravat_detail_coding_updated, "-h", args_call.str_cravat_headers, "--columns", "\"CHROM,POS,CHASM_PVALUE,CHASM_FDR,VEST_PVALUE,VEST_FDR\"", "--output-type", "z", "--output", str_cravat_annotated_coding_vcf, str_cancer_mutations_filtered ] )
+      cmd_annotate_with_cravat_coding = Command.Command( str_cur_command = str_cmd_annotate_with_cravat_coding,
+                                                  lstr_cur_dependencies = [ str_cravat_detail_coding_updated, str_cancer_mutations_filtered ],
+                                                  lstr_cur_products = [  str_cravat_annotated_coding_vcf ] ) 
+      lcmd_cancer_filter.append( cmd_annotate_with_cravat_coding )
+      str_cmd_annotate_with_cravat_noncoding = " ".join( [ "bcftools", "annotate", "--annotations", str_cravat_detail_noncoding_updated, "-h", args_call.str_cravat_headers, "--columns", "\"CHROM,POS,CHASM_PVALUE,CHASM_FDR,VEST_PVALUE,VEST_FDR\"", "--output-type", "z", "--output", str_cravat_annotated_all_vcf, str_cravat_annotated_coding_vcf ] )
+      cmd_annotate_with_cravat_noncoding = Command.Command( str_cur_command = str_cmd_annotate_with_cravat_noncoding,
+                                                  lstr_cur_dependencies = [ str_cravat_detail_noncoding_updated, str_cravat_annotated_coding_vcf ],
+                                                  lstr_cur_products = [ str_cravat_annotated_all_vcf ] ) 
+      lcmd_cancer_filter.append( cmd_annotate_with_cravat_noncoding )
 
       # Filter based on CRAVAT
-      str_cmd_filter_cravat_vcf = " ".join( [ "bcftools", "filter", "--include", "CRAVAT < " + STR_FDR_CUTTOFF + " || VEST < " + STR_FDR_CUTTOFF, "--output", str_cravat_filtered_vcf, str_cravat_annotated_vcf ] )
-      cmd_annotate_with_cravat = Command.Command( str_cur_command = str_cmd_filter_cravat_vcf,
-                                                  lstr_cur_dependencies = [ str_cravat_annotated_vcf ],
+      str_cmd_filter_cravat_vcf = " ".join( [ "bcftools", "filter", "--include", "\"CHASM_PVALUE < " + STR_FDR_CUTTOFF + " || VEST_PVALUE < " + STR_FDR_CUTTOFF + "\"", "--output-type", "v", "--output", str_cravat_filtered_vcf, str_cravat_annotated_all_vcf ] )
+      cmd_filter_with_cravat = Command.Command( str_cur_command = str_cmd_filter_cravat_vcf,
+                                                  lstr_cur_dependencies = [ str_cravat_annotated_all_vcf ],
                                                   lstr_cur_products = [  str_cravat_filtered_vcf ] ) 
+      lcmd_cancer_filter.append( cmd_filter_with_cravat )
 
       # Convert filtered VCF file to tab file.
       str_cmd_make_cravat_tab = " ".join( [ "java -jar GenomeAnalysisTK.jar", "-R", args_call.str_genome_fa, "-T", "VariantsToTable", "-V", str_cravat_filtered_vcf, 
                                             "-F", "CHROM", "-F", "POS", "-F", "REF", "-F", "ALT", "-F", "GENE",
-                                            "-F", "CHASM", "-F", "DP", "-F", "QUAL", "-F", "MQ", "-F", "COMMON",
+                                            "-F", "CHASM", "-F", "DP", "-F", "QUAL", "-F", "MQ",
                                             "-F", "SAO", "-F", "NSF", "-F", "NSM", "-F", "NSN", "-F", "TUMOR", "-F", "TISSUE",
-                                            "-F", "COSMIC_ID", "-F", "KGPROD", "-F", "RS", "-F", "PMC", "-F", "CRAVAT", "-F", "VEST",
-                                            "--allowMissingData", "-o", str_cancer_tab ] )
-      cmd_annotate_with_cravat = Command.Command( str_cur_command = str_cmd_make_cravat_tab,
+                                            "-F", "COSMIC_ID", "-F", "KGPROD", "-F", "RS", "-F", "PMC",
+                                            "-F", "CRAVAT_PVALUE", "-F", "CRAVAT_FDR", "-F", "VEST_PVALUE", "-F", "VEST_FDR",
+                                            "--allowMissingData", "--unsafe", "LENIENT_VCF_PROCESSING", "-o", str_cancer_tab ] )
+      cmd_cravat_table = Command.Command( str_cur_command = str_cmd_make_cravat_tab,
                                                   lstr_cur_dependencies = [ str_cravat_filtered_vcf ],
                                                   lstr_cur_products = [ str_cancer_tab ] ) 
+      lcmd_cancer_filter.append( cmd_cravat_table )
 
     # Create index for the VCF file
     # tabix
@@ -1205,6 +1256,10 @@ def run( args_call, f_do_index = False ):
 
     # If variant calling is occuring
     if not ( args_call.str_variant_call_mode.lower() == STR_VARIANT_NONE.lower() ):
+
+        # Currently edited VCF file
+        str_annotated_vcf_file = ""
+
         # Add variant calling commands
         dict_ret_variant_calling =  dict_variant_calling_funcs[ args_call.str_variant_call_mode ]( args_call = args_call,
                                                                                         str_align_file = dict_align_info[ INDEX_FILE ],
@@ -1221,48 +1276,73 @@ def run( args_call, f_do_index = False ):
                                                                                                      lstr_dependencies = [ dict_align_info[ INDEX_FOLDER ] ],
                                                                                                      logr_cur = pline_cur.logr_logger )
         lcmd_commands.extend( dict_ret_variant_filtration[ INDEX_CMD ] )
+        str_annotated_vcf_file = dict_ret_variant_filtration[ INDEX_FILE ]
 
-        # Add commands to annotate and summarize files
-        # This is a sciedpiper script and needs to get all the default parameters to be consistent with the parent script.
-        str_annotated_vcf_file = os.path.join( os.path.dirname( dict_ret_variant_calling[ INDEX_FILE ] ),
-                                 "variants_annotated_pre_rna_edit.vcf" if args_call.f_remove_rna_editing else "variants_annotated.vcf" )
-        str_annotate_cmd = "python summarize_annotate_vcf.py --dbsnp " + args_call.str_vcf_file
-# keep cleaning off for the summarize script
-#        if args_call.f_clean:
-#            str_annotate_cmd = str_annotate_cmd + " --clean"
-        if args_call.str_log_file:
-            str_annotate_cmd = str_annotate_cmd + " --log " + os.path.splitext( args_call.str_log_file )[0] + "_ann.log"
-        if args_call.i_number_threads > 1:
-            str_annotate_cmd = str_annotate_cmd + " --threads " + str( args_call.i_number_threads )
-        if args_call.str_darned_data:
-            str_annotate_cmd = str_annotate_cmd + " --darned " + args_call.str_darned_data
-        if args_call.str_radar_data:
-            str_annotate_cmd = str_annotate_cmd + " --radar " + args_call.str_radar_data
-        if args_call.f_Test:
-            str_annotate_cmd = str_annotate_cmd + " --test"
-        if args_call.str_update_classpath:
-            str_annotate_cmd = str_annotate_cmd + " --update_command " + args_call.str_update_classpath
-        str_annotate_cmd = str_annotate_cmd + " --output_file " + str_annotated_vcf_file + " " + dict_ret_variant_calling[ INDEX_FILE ]
-        cmd_summarize_annotate = Command.Command( str_cur_command = str_annotate_cmd, 
-                                          lstr_cur_dependencies = [ args_call.str_vcf_file ],
-                                          lstr_cur_products = [ str_annotated_vcf_file ] )
-        cmd_summarize_annotate.f_stop_update_at_flags = True
-        lcmd_commands.append( cmd_summarize_annotate )
+        # Clean up VCF file after variant caller
+        str_clean_vcf = str_annotated_vcf_file.split(".")[0] + "_clean.vcf"
+        str_clean_vcf_cmd = " ".join( [ "groom_vcf.py", str_annotated_vcf_file, str_clean_vcf ] )
+        cmd_clean_vcf = Command.Command( str_cur_command = str_clean_vcf_cmd,
+                                         lstr_cur_dependencies = [ str_annotated_vcf_file ],
+                                         lstr_cur_products = [ str_clean_vcf ] )
+        str_annotated_vcf_file = str_clean_vcf
+        lcmd_commands.append( cmd_clean_vcf )
+
+#        lcmd_commands.extend( func_plot_vcf( str_annotated_vcf_file )[ INDEX_CMD ] )
+
+        # Filter results to just SNPs
+        str_snp_filtered_vcf = os.path.splitext( str_annotated_vcf_file )[ 0 ] + "_snp.vcf"
+        str_cmd_filter_snps = " ".join([ "reduce_vcf_to_snps.py", str_annotated_vcf_file, str_snp_filtered_vcf ])
+        cmd_snp_filter = Command.Command( str_cur_command = str_cmd_filter_snps,
+                                          lstr_cur_dependencies = [ str_annotated_vcf_file ],
+                                          lstr_cur_products = [ str_snp_filtered_vcf ] )
+        lcmd_commands.append( cmd_snp_filter )
+        str_annotated_vcf_file = str_snp_filtered_vcf
+#        lcmd_commands.extend( func_plot_vcf( str_annotated_vcf_file )[ INDEX_CMD ] )
 
         # Filter RNA Editing
-        if args_call.f_remove_rna_editing:
-            str_cmd_rna_editing_filter = " ".join( [ "bcftools filter", "--exclude", "TODO" ]
-            str_rna_edit_filtered_vcf = os.path.join( os.path.dirname( dict_ret_variant_calling[ INDEX_FILE ] ), "variants_annotated.vcf" )
+        if args_call.str_darned_data or args_call.str_radar_data:
+            str_rna_edit_filtered_vcf = os.path.splitext( str_annotated_vcf_file )[ 0 ] + "_RNAedit.vcf"
+            lstr_cmd_rna_editing_filter = [ "filter_snps_rna_editing.py" ]
+            if args_call.str_darned_data:
+                lstr_cmd_rna_editing_filter.extend([ "--darned", args_call.str_darned_data ])
+            if args_call.str_radar_data:
+                lstr_cmd_rna_editing_filter.extend([ "--radar", args_call.str_radar_data ])
+            lstr_cmd_rna_editing_filter.extend([ str_annotated_vcf_file, str_rna_edit_filtered_vcf ])
+            str_cmd_rna_editing_filter = " ".join( lstr_cmd_rna_editing_filter )
             cmd_rna_editing_filter = Command.Command( str_cur_command = str_cmd_rna_editing_filter,
                                                       lstr_cur_dependencies = [ str_annotated_vcf_file ],
                                                       lstr_cur_products = [ str_rna_edit_filtered_vcf ] )
             lcmd_commands.append( cmd_rna_editing_filter )
             # Switch over the annotated VCF to this RNA-Edited annotated VCF
             str_annotated_vcf_file = str_rna_edit_filtered_vcf
+#            lcmd_commands.extend( func_plot_vcf( str_annotated_vcf_file )[ INDEX_CMD ] )
+
+        # Tabix / gz file sample
+        dict_sample_csi = func_csi( str_annotated_vcf_file )
+        str_annotated_vcf_file = dict_sample_csi[ INDEX_FILE ]
+        lcmd_commands.extend( dict_sample_csi[ INDEX_CMD ] )
+
+        # Tabix / gz DBSNP
+        dict_dbsnp_csi = func_csi( args_call.str_vcf_file, args_call.str_file_base )
+        str_tbx_dbsnp = dict_dbsnp_csi[ INDEX_FILE ]
+        lcmd_commands.extend( dict_dbsnp_csi[ INDEX_CMD ] )
+        str_compressed_dbsnp = args_call.str_vcf_file + ".gz"
+
+        # DBSNP annotation
+        # Annotate combined sample vcf files
+        # bcftools annotate --annotations str_dbsnp_vcf -c
+        # PM variant is clinicall precious (clinical and pubmed cited)
+        # NSF, NSM, NSN, COMMON, SAO, KGPROD, KGVALIDATED, MUT, WTD, VLD, RS, PMC
+        str_dbsnp_annotated_vcf = str_annotated_vcf_file.split(".")[0] + "_dbsnp.vcf.gz"
+        str_annotate_command = " ".join( [ "bcftools", "annotate", "--output-type", "z", "--annotations", str_compressed_dbsnp, "--columns", "INFO/COMMON,INFO/PM,INFO/NSF,INFO/NSM,INFO/NSN,INFO/SAO,INFO/KGPROD,INFO/KGValidated,INFO/MUT,INFO/WTD,INFO/VLD,INFO/RS,INFO/PMC", "--output", str_dbsnp_annotated_vcf, str_annotated_vcf_file ] )
+        lcmd_commands.append( Command.Command( str_cur_command = str_annotate_command,
+                                           lstr_cur_dependencies = [ str_compressed_dbsnp, str_annotated_vcf_file ],
+                                           lstr_cur_products = [ str_dbsnp_annotated_vcf ] ) )
+        str_annotated_vcf_file = str_dbsnp_annotated_vcf
 
         # Perform cancer filtering
         f_cravat_hg18 = None
-        if args_call.str_email_contact is None or ( not args_call.str_hg_19 and not args_call.str_hg_18 ):
+        if args_call.str_email_contact is None or ( not args_call.f_hg_19 and not args_call.f_hg_18 ):
           pline_cur.logr_logger.warning( "CRAVAT analysis will not be ran. Please make sure to provide an email and indicate if hg18 or hg19 is being used." )
         elif args_call.f_hg_18:
           f_cravat_hg18 = True
@@ -1280,33 +1360,92 @@ def run( args_call, f_do_index = False ):
         exit( 5 )
     exit( 0 )
 
-
-def func_tabix( str_vcf ):
-  """ Creates a tbi (vcf index) for the given vcf file.
-      If it is not gzipped, the file is gzipped.
-      The gzip and tbi files are made with the vcf file.
+def func_csi( str_vcf, str_output_dir = "" ):
   """
-  
+      Creates a bcftools index (vcf index) for the given vcf file.
+      If it is not gzipped, the file is gzipped.
+      The gzip and csi files are made with the vcf file.
+  """
+
+  lcmd_index = [] 
+ 
   # Check extension
-  if not os.path.splitext( str_vcf ) == ".gz":
+  if not os.path.splitext( str_vcf )[1] == ".gz":
     
     # GZ files
     str_gz = str_vcf + ".gz"
+    if str_output_dir:
+      str_gz = os.path.join( str_output_dir, os.path.basename( str_gz ))
     str_cmd_gz = " ".join( [ "bgzip -c ", str_vcf, ">", str_gz ] )
     cmd_gz = Command.Command( str_cur_command = str_cmd_gz,
                                      lstr_cur_dependencies = [ str_vcf ],
                                      lstr_cur_products = [ str_gz ] )
     str_vcf = str_gz
+    lcmd_index.append( cmd_gz )
+
+  if not os.path.exists( str_vcf + ".csi" ):
+    # Create index for the VCF file
+    str_csi = str_vcf + ".csi"
+    if str_output_dir:
+      str_csi = os.path.join( str_output_dir, os.path.basename( str_csi ))
+    str_cmd_index_vcf = " ".join( [ "bcftools index ", str_vcf ] )
+    cmd_index_vcf = Command.Command( str_cur_command = str_cmd_index_vcf,
+                                     lstr_cur_dependencies = [ str_vcf ],
+                                     lstr_cur_products = [ str_csi ] )
+    lcmd_index.append( cmd_index_vcf )
+  return( { INDEX_CMD: lcmd_index, INDEX_FILE: str_vcf } )
+
+def func_tabix( str_vcf, str_output_dir = "", str_tabix = "" ):
+  """
+      Creates a tbi (vcf index) for the given vcf file.
+      If it is not gzipped, the file is gzipped.
+      The gzip and tbi files are made with the vcf file.
+  """
+
+  lcmd_tabix = [] 
+ 
+  # Check extension
+  if not os.path.splitext( str_vcf )[1] == ".gz":
+    
+    # GZ files
+    str_gz = str_vcf + ".gz"
+    if str_output_dir:
+      str_gz = os.path.join( str_output_dir, os.path.basename( str_gz ))
+    str_cmd_gz = " ".join( [ "bgzip -c ", str_vcf, ">", str_gz ] )
+    cmd_gz = Command.Command( str_cur_command = str_cmd_gz,
+                                     lstr_cur_dependencies = [ str_vcf ],
+                                     lstr_cur_products = [ str_gz ] )
+    str_vcf = str_gz
+    lcmd_tabix.append( cmd_gz )
 
   if not os.path.exists( str_vcf + ".tbi" ):
     # Create index for the VCF file
     str_tbi = str_vcf + ".tbi"
-    str_cmd_index_vcf = " ".join( [ "tabix -f", str_vcf ] )
+    if str_output_dir:
+      str_tbi = os.path.join( str_output_dir, os.path.basename( str_tbi ))
+    str_cmd_index_vcf = " ".join( [ "tabix -f",str_tabix, str_vcf ] )
     cmd_index_vcf = Command.Command( str_cur_command = str_cmd_index_vcf,
                                      lstr_cur_dependencies = [ str_vcf ],
                                      lstr_cur_products = [ str_tbi ] )
-  return( { INDEX_CMD: [ cmd_gz, cmd_index_vcf ], INDEX_FILE: str_vcf } )
+    lcmd_tabix.append( cmd_index_vcf )
+  return( { INDEX_CMD: lcmd_tabix, INDEX_FILE: str_vcf } )
 
+def func_plot_vcf( str_vcf ):
+
+  lcmd_plot = []
+
+  st
+  str_plot_location = os.path.join( os.path.dirname( str_vchk_stats ), os.path.basename( str_vchk_stats ) + "_plot" )
+  str_vchk_stats_command = " ".join( [ "bcftools", "stats", str_vcf, ">", str_vchk_stats ] )
+  str_vchk_plot_command = " ".join( [ "plot-vcfstats", str_vchk_stats, "-p", str_plot_location + os.path.sep ] )
+  lcmd_plot.append( Command.Command( str_cur_command = str_vchk_stats_command,
+                                      lstr_cur_dependencies = [ str_vcf ],
+                                      lstr_cur_products = [ str_vchk_stats ] ) )
+  lcmd_plot.append( Command.Command( str_cur_command = str_vchk_plot_command,
+                                      lstr_cur_dependencies = [ str_vchk_stats ],
+                                      lstr_cur_products = [ str_plot_location ] ) )
+
+  return( { INDEX_CMD: lcmd_plot, INDEX_FILE: str_plot_location } )
 
 if __name__ == "__main__":
 
@@ -1343,7 +1482,6 @@ if __name__ == "__main__":
     args_group_run.add_argument( "-i", "--index", metavar = "Use_premade_index", dest = "str_initial_index", default = None, help = "The initial index is made only from the reference genome and can be shared. If premade, supply a path here to the index directory so that it is not rebuilt for every alignment. Please provide the full path." )
     args_group_run.add_argument( "--validate_dnaseq", dest = "f_validate_by_dnaseq", default = False, action = "store_true", help = "Used for development only. Should not be used with biological samples.")
     args_group_run.add_argument( "-y", "--star_memory", metavar = "Star_memory", dest = "str_star_memory_limit", default = None, help = "Memory limit for star index. This should be used to increase memory if needed. Reducing memory consumption should be performed with the STAR Limited mod." )
-args_call.f_remove_rna_editing
 
     # GATK associated
     args_group_gatk = prsr_arguments.add_argument_group( "GATK", "Associated with or controlling GATK tools." )
@@ -1357,16 +1495,18 @@ args_call.f_remove_rna_editing
     args_group_resources.add_argument( "-f", "--reference", metavar = "Reference_genome", dest = "str_genome_fa", required = True, help = "Path to the reference genome to use in the analysis pipeline." )
     args_group_resources.add_argument( "-k", "--gtf", metavar = "Reference GTF", dest = "str_gtf_file_path", default = None, help = "GTF file for reference genome.")
     args_group_resources.add_argument( "-w", "--vcf", metavar = "Variant_calling_file_for_the_reference_genome", dest = "str_vcf_file", default = None, help = "Variant calling file for the reference genome.")
+    args_group_resources.add_argument( "--vcf_snps", metavar="Reference_VCF_of_SNPs", dest="str_snp_vcf", default=None, help="The reference VCF including only SNP entries, if not given, will be generated from the file given with --vcf" )
     args_group_resources.add_argument( "--darned", metavar = "Darned_data", dest = "str_darned_data", default = None, help = "Darned data for RNA editing removal, if included will be used for RNA editing removal.")
     args_group_resources.add_argument( "--radar", metavar = "Radar_data", dest = "str_radar_data", default = None, help = "Radar data for RNA editing removal, if included will be used for RNA editing removal.")
 
     # Cravat associated
     args_group_cravat = prsr_arguments.add_argument_group( "CRAVAT", "Associated with CRAVAT prioritization of variant calls." )
-    args_group_cravat.add_argument( "--tissue_type", metavar = "tissue", dest = "str_cravat_classifier", default = STR_CRAVAT_CLASSIFIER_DEFAULT, help = "Tissue type (used in CRAVAT variant prioritation). Supported classifiers can be found at http://www.cravat.us/help.jsp )" )
+    args_group_cravat.add_argument( "--cosmic_annotation_header", metavar = "cravat_headers", dest = "str_cravat_headers", default = None, help = "Headers for each CRAVAT feature aannoated to the VCF file (used in BCFtools)." )
+    args_group_cravat.add_argument( "--tissue_type", metavar = "cravat_tissue", dest = "str_cravat_classifier", default = STR_CRAVAT_CLASSIFIER_DEFAULT, help = "Tissue type (used in CRAVAT variant prioritation). Supported classifiers can be found at http://www.cravat.us/help.jsp )" )
     args_group_cravat.add_argument( "--email", metavar = "email_contact", dest = "str_email_contact", default = None, help = "Email used to notify of errors associated with cravat." )
     group_hg = args_group_cravat.add_mutually_exclusive_group()
-    group_hg.add_argument( "--is_hg19", metavar = "is_Hg19", dest = "f_hg_19", default = False, help = "Indicates that Hg19 is being used." )
-    group_hg.add_argument( "--is_hg18", metavar = "is_Hg18", dest = "f_hg_18", default = False, help = "Indicates that Hg18 is being used." )
+    group_hg.add_argument( "--is_hg19", dest = "f_hg_19", action="store_true", help = "Indicates that Hg19 is being used." )
+    group_hg.add_argument( "--is_hg18", dest = "f_hg_18", action="store_true", help = "Indicates that Hg18 is being used." )
     args = prsr_arguments.parse_args()
     
     run( args )
