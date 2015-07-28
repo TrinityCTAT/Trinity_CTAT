@@ -6,9 +6,13 @@ function createBrowser( inspectorView ){
     showNavigation: true,
     genome: "hg19",
     tracks: [{ url: inspectorView[ defaultSample ][ "DNA" ],
+               indexURL: inspectorView[ defaultSample ].DNA_INDEX,
+               type: "bam",
                label: "Exome Sequencing (" + defaultSample + ")",
                height: 150 },
              { url: inspectorView[ defaultSample ][ "RNA" ],
+               indexURL: inspectorView[ defaultSample ].RNA_INDEX,
+               type: "bam",
                label: "RNA-Seq Sequencing (" + defaultSample + ")",
                color: "rgb( 102, 153, 255 )",
                height: 150 }]
@@ -277,10 +281,14 @@ function switchSample( sampleName ){
     igv.browser.removeTrack( igv.browser.trackViews[2].track)
     // Add new tracks
     sampleTrackOptionsRNA = { url: inspectorView[ sampleName ].RNA,
+                            indexURL: inspectorView[ sampleName ].RNA_INDEX,
+                            type: "bam",
                             label: "RNA-Seq Sequencing (" + sampleName + ")",
                             height: 150,
                             color: "rgb( 102, 153, 255 )" }
     sampleTrackOptionsDNA = { url: inspectorView[ sampleName ].DNA,
+                            indexURL: inspectorView[ sampleName ].DNA_INDEX,
+                            type: "bam",
                             label: "exome Sequencing (" +sampleName + ")",
                             height: 150 }
     // Update the Genome
@@ -290,5 +298,7 @@ function switchSample( sampleName ){
   // Update True Positive 
   // Update False Positive
   // Update False Negative
+  console.log( "Switch sample" );
+  console.log( sampleName );
   updateErrorMenus( sampleName );
 }
