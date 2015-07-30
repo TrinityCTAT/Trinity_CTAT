@@ -149,7 +149,7 @@ main: {
                 $gene_id = $gene_name;
             }
             
-            $fusion_to_annots{$gene_id}->{"$chr:$lend-$rend"} = 1;
+            $fusion_to_annots{$gene_id}->{"$chr:$lend-$rend:$orient"} = 1;
         }
         close $fh;
         

@@ -28,6 +28,9 @@ main: {
         }
         else {
             my $fusion = $x[0];
+            if ($fusion =~ /\|/) {
+                $fusion =~ s/^.*\|//;
+            }
             my ($geneA, $geneB) = split(/--/, $fusion);
             if ($geneA eq $geneB) {
                 next; # no selfies

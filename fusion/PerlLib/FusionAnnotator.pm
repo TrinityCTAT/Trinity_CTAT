@@ -46,8 +46,8 @@ sub get_annotations {
         push (@annotations, $annotation_text);
     }
 
-    if (my $dist_annot = &__get_distance_annotation($geneA, $geneB)) {
-        push (@annotations, $dist_annot);
+    if (my @dist_annots = &__get_distance_annotation($geneA, $geneB)) {
+        push (@annotations, @dist_annots);
     }
     
     
@@ -72,32 +72,54 @@ sub __get_distance_annotation {
     #print STDERR "A: $chr_info_A\tB: $chr_info_B\n";
     
 
-    my ($chrA, $coords_A) = split(/:/, $chr_info_A);
+    my ($chrA, $coords_A, $orientA) = split(/:/, $chr_info_A);
     $coords_A =~ s/\,.*$//;
     my ($lendA, $rendA) = split(/-/, $coords_A);
     
-    my ($chrB, $coords_B) = split(/:/, $chr_info_B);
+    my ($chrB, $coords_B, $orientB) = split(/:/, $chr_info_B);
     $coords_B =~ s/\,.*$//;
     my ($lendB, $rendB) = split(/-/, $coords_B);
     
-    if ($chrA ne $chrB) {
-        return(undef);
-    }
-
     my $dist = -1;
     if ($lendA < $rendB && $rendA > $lendB) {
         # overlap
         $dist = 0;
     }
-    my @coords = sort {$a<=>$b} ($lendA, $rendA, $lendB, $rendB);
-    $dist = $coords[2] - $coords[1];
 
-    if ($dist > 0 && $dist <= $MAX_NEIGHBOR_DIST) {
-        return("NEIGHBORS\[$dist]");
+    my @annotations;
+
+    if ($chrA eq 'chrM' || $chrB eq 'chrM') {
+        push (@annotations, "INCL_MITOC_GENE");
     }
-    else {
-        return(undef);
+
+    if ($chrA eq $chrB) {
+    
+        my @coords = sort {$a<=>$b} ($lendA, $rendA, $lendB, $rendB);
+        $dist = $coords[2] - $coords[1];
+        
+        
+        
+        if ($dist > 0 && $dist <= $MAX_NEIGHBOR_DIST) {
+            
+            if ($orientA ne $orientB) { 
+                push(@annotations, "INVERSION:$orientA:$orientB:[$dist]");
+            }
+            elsif ($orientA eq '+' && $lendB < $rendA) { 
+                push (@annotations, "LOCAL_REARRANGEMENT:$orientA:[$dist]");
+            }
+            elsif ($orientA eq '-' && $rendB > $lendA) { 
+                push (@annotations, "LOCAL_REARRANGEMENT:$orientA:[$dist]"); 
+            }
+            else {
+                # no other weirdness, just neighbors, probably readthru transcription
+                
+                push (@annotations, "NEIGHBORS\[$dist]");
+            }
+        }
     }
+
+    
+    return(@annotations);
 }
 
 
