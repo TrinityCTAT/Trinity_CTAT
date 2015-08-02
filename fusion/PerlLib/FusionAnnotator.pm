@@ -65,7 +65,7 @@ sub __get_distance_annotation {
     
     unless ($chr_info_A && $chr_info_B) {
         # cant compare them
-        return(undef);
+        return();
     }
 
 
