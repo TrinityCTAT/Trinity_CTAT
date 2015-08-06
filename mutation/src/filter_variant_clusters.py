@@ -121,7 +121,7 @@ class Window:
     lstr_cur_line = self.llstr_line_cache.popleft()
     f_cur_keep = self.lf_line_keep.popleft()
     if f_cur_keep:
-      self.hndl_output_file.write( c_CHR_VCF_DELIM.join( lstr_cur_line + ["\n"] ) )
+      self.hndl_output_file.write( c_CHR_VCF_DELIM.join( lstr_cur_line ) + "\n" )
 
 # Window controlling writting to the output file
 with open( args.str_output_file, "w" ) as hndl_out:
@@ -133,7 +133,7 @@ with open( args.str_output_file, "w" ) as hndl_out:
     for lstr_line in csv.reader( hndl_vcf_in, delimiter = c_CHR_VCF_DELIM ):
       # Write comments directly to output
       if lstr_line[0][0] == c_CHR_COMMENT:
-        hndl_out.write( c_CHR_VCF_DELIM.join( lstr_line + ["\n"] ) )
+        hndl_out.write( c_CHR_VCF_DELIM.join( lstr_line ) + "\n" )
         continue
     
       # Add a feature into the window
