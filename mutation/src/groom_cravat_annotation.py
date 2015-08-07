@@ -66,6 +66,7 @@ if args.str_input_file:
           lstr_header_order = [ i_chrom_index, i_pos_index, i_chasm_pvalue, i_chasm_fdr, i_vest_pvalue, i_vest_fdr ]
           lstr_tab.append( STR_TAB_DELIMITER.join([ STR_CHROM_UPDATE, STR_POS_UPDATE, STR_CHASM_PVALUE_UPDATE,
                                                     STR_CHASM_FDR_UPDATE, STR_VEST_PVALUE_UPDATE, STR_VEST_FDR_UPDATE ]) )
+          continue
 
         # Shuffle to header index and reduce
         # And store
