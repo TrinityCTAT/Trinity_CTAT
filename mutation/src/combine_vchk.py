@@ -100,6 +100,5 @@ dict_absolute_json = {  qp.c_STR_TITLE: "Mutations by Substition",
                         qp.c_STR_DATA: [ { qp.c_STR_DATA : lli_values_abs,
                                            qp.c_C_PLOT_COLOR : qp.c_C_PLOT_COLOR_DEFAULT, 
                                            qp.c_STR_X_TICK_LABEL : lstr_labels_abs,  } ] }
-
 bc.BarChart().func_plot( dict_absolute_json, os.path.join( args_call.str_output_dir, "Total_substitutions.pdf" ))
 func_write_json( dict_json=dict_absolute_json, str_file_name= os.path.join( args_call.str_output_dir, "Total_substitutions.json" ) )
