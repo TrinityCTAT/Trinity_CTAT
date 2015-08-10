@@ -53,8 +53,17 @@ if args.str_input_file:
             str_header_token = lstr_line[0][ len( str_header_type ): ]
             # Remove brackets
             str_header_token = str_header_token.strip( "<>" )
+            # Remove , and = from idescription free text.
+            i_description_text_start = str_header_token.index( "Description=\"" )
+            i_description_text_start += len( "Description=\"" )
+            i_description_next_quote = str_header_token[ i_description_text_start: ].index("\"")
+            i_description_next_quote += i_description_text_start
+            str_freetext = str_header_token[ i_description_text_start: i_description_next_quote ]
+            str_freetext = str_freetext.replace( "=",":" )
+            str_freetext = str_freetext.replace( ","," " )
+            str_header_token = str_header_token[:i_description_text_start] + str_freetext + str_header_token[ i_description_next_quote: ]
             # Split tokens and store as dict
-            dict_header_token = dict([ str_header_token.split("=") for str_header_token in str_header_token.split(",") ])
+            dict_header_token = dict([ str_header_token_piece.split("=") for str_header_token_piece in str_header_token.split(",") ])
             # Work with info field formats
             if str_header_type == STR_INFO:
               if ( not STR_NUMBER in dict_header_token ) and ( STR_TYPE in dict_header_token ):
