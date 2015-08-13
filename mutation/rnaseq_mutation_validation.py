@@ -133,7 +133,7 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
     def func_convert_fastq_left_rna_bam( self, str_fastq_left, str_output_dir ):
         # Convert left fastq rna sample to the commonly aligned bam (ok)
         str_file_base = os.path.splitext( os.path.basename( str_fastq_left ) )[0]
-        return os.path.join( str_output_dir, self.str_bams_dir, "samples", str_file_base, "COMMON_ALIGNMENT", "star_align_2_reads_"+str_file_base+"_fq_P_qtrim_fq","Aligned.out.bam" )
+        return os.path.join( str_output_dir, self.str_bams_dir, "samples", str_file_base, "COMMON_ALIGNMENT", "star_align_2_reads_"+os.path.basename( str_fastq_left ).replace(".","_")+"_P_qtrim_fq","Aligned.sorted.bam" )
     def func_convert_fastq_left_rna_vcf( self, str_fastq_left, str_output_dir ):
         # Convert left fastq rna sample to the final output vcf (ok)
         str_file_base = os.path.splitext( os.path.basename( str_fastq_left ) )[0]
@@ -230,7 +230,10 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                 # Make dep / product names
                 lstr_truth_call_dependencies = [ [ lstr_sample[ 1 ], lstr_sample[2] ] for lstr_sample in llstr_truth_samples ]
                 lstr_truth_call_dependencies = [ str_dep for lstr_subgroup in lstr_truth_call_dependencies for str_dep in lstr_subgroup ]
-                lstr_truth_call_products = [ [ self.func_convert_fastq_left_dna_bam( lstr_file[ 1 ], args_parsed.str_file_base ), self.func_convert_fastq_left_dna_vcf ( lstr_file[ 1 ], args_parsed.str_file_base ) ] for lstr_file in llstr_truth_samples ]
+                lstr_truth_call_products = [ [ self.func_convert_fastq_left_dna_bam( lstr_file[ 1 ], args_parsed.str_file_base ),
+                                               self.func_convert_fastq_left_dna_bam( lstr_file[ 1 ], args_parsed.str_file_base ) + ".bai",
+                                               self.func_convert_fastq_left_dna_vcf ( lstr_file[ 1 ], args_parsed.str_file_base ),
+                                               self.func_convert_fastq_left_dna_vcf ( lstr_file[ 1 ], args_parsed.str_file_base ) + ".tbi" ] for lstr_file in llstr_truth_samples ]
                 lstr_truth_call_products = [ str_prod for lstr_subgroup in lstr_truth_call_products for str_prod in lstr_subgroup ]
 
                 # Run dna samples
@@ -264,6 +267,7 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
             lstr_bam_dependencies = [ [ lstr_sample[ 1 ], lstr_sample[2] ] for lstr_sample in llstr_rna_samples ]
             lstr_bam_dependencies = [ str_dep for lstr_subgroup in lstr_bam_dependencies for str_dep in lstr_subgroup ]
             lstr_bam_products = [ self.func_convert_fastq_left_rna_bam( lstr_sample[ 1 ], args_parsed.str_file_base ) for lstr_sample in llstr_rna_samples ]
+            lstr_bam_products.extend( [ str_bam + ".bai" for str_bam in lstr_bam_products ] )
             lstr_call_dependencies = lstr_bam_products
 
             ########################
@@ -298,6 +302,7 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                 "--run_conf", str_call_run_conf, "--reads_list_file", str_variant_calling_sample_file, 
                                                 "--project_base_dir", str_current_project_dir, "--memory 35 --run_on_grid --num_parallel_procs", str( args_parsed.i_jobs ) ] )
                 lstr_call_products = [ self.func_convert_fastq_left_rna_vcf( lstr_sample[ 1 ], str_current_project_dir ) for lstr_sample in llstr_rna_samples ]
+                lstr_call_products.extend( [ str_vcf + ".tbi" for str_vcf in lstr_call_products ] )
                 lcmd_commands_run.append( Command.Command( str_cur_command = str_cmd_call_variants,
                                                    lstr_cur_dependencies = lstr_call_dependencies + [ args_parsed.str_annot_config, str_call_run_conf ],
                                                    lstr_cur_products = lstr_call_products ) )
@@ -421,9 +426,6 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                 ############################################
                 if len( lstr_generated_dna_rna_tab ) > 0:
 
-#                    print "JSON INFO AREA FOR REAL DATA"
-#                    print lstr_dna_rna_file_info
-
                     # JSON object
                     str_dna_rna_file_base = os.path.splitext( os.path.basename( str_call_run_conf ) )[ 0 ]
                     str_dna_rna_json_file = os.path.join( args_parsed.str_file_base, str_dna_rna_file_base, str_dna_rna_file_base + ".json" )
@@ -432,13 +434,6 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                     lstr_cur_dependencies = lstr_dna_rna_json_file_dependencies,
                                                     lstr_cur_products = str_dna_rna_json_file )
                     lcmd_commands_run.append( cmd_dna_rna_json )
-
-#                    print "COMMAND"
-#                    print str_dna_rna_json_command
-#                    print "DEPENDENCIES"
-#                    print lstr_dna_rna_json_file_dependencies
-#                    print "PRODUCTS"
-#                    print str_dna_rna_json_file
 
                     # Figures
                     dict_validation_commands = self.func_validation_figure_commands( args_parsed = args_parsed, str_cur_project_dir = str_current_project_dir,
@@ -461,6 +456,7 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                 llstr_synthetic_samples = []
                 lstr_syn_symbolic_link_command = []
                 lstr_syn_file_info = []
+                lstr_syn_json_file_dependencies = []
                 for dict_sample in dict_sample_study.values():
                     if not dict_sample[ STR_SYNTHETIC_VCF ]:
                         continue
@@ -476,7 +472,7 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                     str_syn_link_prod_ref_vcf = str_link_base + "_reference_syn.vcf"
                     str_syn_link_cmd = "ln -sf " + str_syn_link_dep + " " + str_syn_link_prod_ref_vcf
                     lstr_syn_link_products.append( str_syn_link_prod_ref_vcf )
-                    lcmd_command_run.append( Command.Command( str_cur_command = str_syn_link_cmd,
+                    lcmd_commands_run.append( Command.Command( str_cur_command = str_syn_link_cmd,
                                                      lstr_cur_dependencies = [ str_syn_link_dep ],
                                                      lstr_cur_products = [ str_syn_link_prod_ref_vcf ] ) )
                     str_syn_link_prod_ref_tbi = str_link_base + "_reference_syn.vcf.tbi"
@@ -548,6 +544,9 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                            self.func_convert_fastq_left_rna_bam( str_cur_tab_sample, args_parsed.str_file_base ),
                                                            self.func_convert_fastq_left_dna_bam( str_cur_tab_sample, args_parsed.str_file_base ),
                                                            str_syn_link_prod_vcf, str_syn_link_prod_ref_vcf, str_cur_tab_file ] ) )
+                    lstr_syn_json_file_dependencies.extend( [ self.func_convert_fastq_left_rna_bam( str_cur_tab_sample, args_parsed.str_file_base ),
+                                                              self.func_convert_fastq_left_dna_bam( str_cur_tab_sample, args_parsed.str_file_base ),
+                                                              str_syn_link_prod_vcf, str_syn_link_prod_ref_vcf, str_cur_tab_file ] )
 
                 # If there synthetic samples to run make tab files.
                 if len( llstr_synthetic_samples ) > 0:
@@ -569,9 +568,6 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                 ############################################
                 if len( lstr_generated_syn_rna_tab ) > 0:
 
-#                    print "JSON INFO AREA FOR SYN DATA"
-#                    print lstr_syn_file_info
-
                     # JSON object
                     str_syn_file_base = os.path.splitext( os.path.basename( str_call_run_conf ) )[ 0 ]
                     str_syn_json_file = os.path.join( args_parsed.str_file_base, str_syn_file_base, str_syn_file_base + ".json" )
@@ -580,13 +576,6 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                     lstr_cur_dependencies = lstr_syn_json_file_dependencies,
                                                     lstr_cur_products = str_syn_json_file )
                     lcmd_commands_run.append( cmd_syn_json )
-
-#                    print "COMMAND"
-#                    print str_syn_json_command
-#                    print "DEPENDENCIES"
-#                    print lstr_syn_json_file_dependencies
-#                    print "PRODUCTS"
-#                    print str_syn_json_file
 
                     # Validation figures
                     dict_validation_commands = self.func_validation_figure_commands( args_parsed = args_parsed, str_cur_project_dir = str_current_project_dir,
