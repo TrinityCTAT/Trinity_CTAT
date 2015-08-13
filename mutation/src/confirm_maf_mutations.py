@@ -40,7 +40,11 @@ c_I_VCF_RETURN_GENOTYPE = 1
 
 ######## functions
 def func_read_maf( str_maf_file ):
-  
+  """
+  Read in a MAF file.
+  Return a dict[ sample_name ] = [ [position info],[position info],...]
+  where position info is [position, gene name, genotype]
+  """  
   # Dict
   # { sample: [ [ pos, gene ], [ pos, gene ] , ... ] }
   dict_maf = {}
@@ -63,7 +67,13 @@ def func_read_maf( str_maf_file ):
 
 
 def func_read_sample_mappings( str_file_sample_mappings ):
-  
+  """
+  Read in a file that maps between MAF ids and samples (VCF files)
+  This is a tab delimited file. 
+  MAF_Id\tVCF_file
+
+  Return a dict[ MAF_id ] = VCF_name
+  """
   dict_sample_mappings = {}
   f_skip = True
 
@@ -79,8 +89,9 @@ def func_read_sample_mappings( str_file_sample_mappings ):
 def func_read_vcf( str_file ):
   """
   Parse a VCF file.
-  """
 
+  Return a dict[ chr--pos ] = [ ALT, Genotype ]
+  """
   # Dict to hold genomic locations
   # { chr--pos: None }
   dict_location = {}
@@ -106,9 +117,6 @@ prsr_arguments.add_argument( "-s", "--sample", metavar = "Sample_mapping_file", 
 prsr_arguments.add_argument( "-k", "--key_genes", metavar = "Key_mutations", dest = "str_key_mappings", default = None, help = "Comma delimited gene name list. If given analysis will be reduced to these genes only.." )
 prsr_arguments.add_argument( dest = "str_output_file", default = None, help = "PDF figure and related text file." )
 args_call = prsr_arguments.parse_args()
-
-print( "output" )
-print( args_call.str_output_file )
 
 # Holds the locations that were confirmed
 # { gene : i_confirmed_instances }
