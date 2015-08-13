@@ -68,9 +68,11 @@ if args.str_input_file:
         str_alt = lstr_line[ I_ALT_INDEX ]
         str_ref = lstr_line[ I_REF_INDEX ]
 
+        # Create ID (chr-pos)
+        str_id = lstr_line[ I_CHR_INDEX ].lower() + "-" + lstr_line[ I_POS_INDEX ]
+
         # Filter Darned
         # TODO fix for commas
-        str_id = lstr_line[ I_CHR_INDEX ].lower() + "-" + lstr_line[ I_POS_INDEX ]
         if dict_darned:
           if str_id in dict_darned:
             lstr_rna_edit_entry = dict_darned[ str_id ]
