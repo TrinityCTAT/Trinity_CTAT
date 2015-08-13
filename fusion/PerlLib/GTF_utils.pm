@@ -37,10 +37,13 @@ sub index_GTF_gene_objs_from_GTF {
         
 
         if ($seen{$gene_id}) {
-            confess "Error, already processed gene: $gene_id";
+            confess "Error, already processed gene: $gene_id\n"
+                . " here: " . $gene_obj->toString() . "\n"
+                . " and earlier: " . $seen{$gene_id}->toString();
+            
         }
         
-        $seen{$gene_id} = 1;
+        $seen{$gene_id} = $gene_obj;
 
 
         my $seqname = $gene_obj->{asmbl_id};
@@ -105,7 +108,7 @@ sub GTF_to_gene_objs {
         
 		# print "gene_id: $gene_id, transcrpt_id: $transcript_id, $type\n";
 
-        if ($type eq 'transcript') { next; } # capture by exon coordinates
+        if ($type eq 'transcript' || $type eq 'gene') { next; } # capture by exon coordinates
 
         
         if ($type eq 'CDS' || $type eq 'stop_codon' || $type eq 'start_codon') {

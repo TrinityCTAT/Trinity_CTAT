@@ -3,7 +3,7 @@
 package TiedHash;
 use strict;
 use warnings;
-#use DB_File;
+use DB_File;
 use Carp;
 
 =example
@@ -92,8 +92,6 @@ sub make_index_file {
     my $self = shift;
     my $filename = shift;
     
-    die "not using this anymore"; # min changes use this and reduce requirements
-
     unless ($filename) {
         confess "need filename as parameter";
     }
@@ -103,10 +101,8 @@ sub make_index_file {
     }
     
     $self->{index_filename} = $filename;
-
     
-    
-    #tie (%{$self->{tied_index}}, 'DB_File', $filename, O_CREAT|O_RDWR, 0666, $DB_BTREE);
+    tie (%{$self->{tied_index}}, 'DB_File', $filename, O_CREAT|O_RDWR, 0666, $DB_BTREE);
 
     $self->{tie_invoked} = 1;
     
@@ -119,8 +115,6 @@ sub use_index_file {
     my $self = shift;
     my $filename = shift;
     
-    die "Not using anymore";
-
     unless ($filename) {
         confess "need filename as parameter";
     }
@@ -131,7 +125,7 @@ sub use_index_file {
     
     $self->{index_filename} = $filename;
     
-    #tie (%{$self->{tied_index}}, 'DB_File', $filename, O_RDONLY, 0, $DB_BTREE);
+    tie (%{$self->{tied_index}}, 'DB_File', $filename, O_RDONLY, 0, $DB_BTREE);
 
     $self->{tie_invoked} = 1;
 

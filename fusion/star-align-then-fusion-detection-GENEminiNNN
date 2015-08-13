@@ -11,7 +11,8 @@ use __GLOBALS__;
 use Pipeliner;
 
 
-my $usage = "usage: $0 left.fq right.fq output_directory\n\n";
+
+my $usage = "usage: $0 left.fq [right.fq|NULL] output_directory\n\n";
 
 my $left_fq = $ARGV[0] or die $usage;
 my $right_fq = $ARGV[1] or die $usage;
@@ -20,10 +21,17 @@ my $output_dir = $ARGV[2] or die $usage;
 
 my $UTILDIR = "$FindBin::Bin/util/star-fusion-util";
 
+my $STAR_FUSION_DIR = $ENV{STAR_FUSION_DIR} or die "Error, need env var STAR_FUSION_DIR pointing to the STAR-Fusion installation directory";
+
+
 main: {
 
+    if ($right_fq eq 'NULL') {
+        $right_fq = "";
+    }
+
     $left_fq = &ensure_full_path($left_fq);
-    $right_fq = &ensure_full_path($right_fq);
+    $right_fq = &ensure_full_path($right_fq) if $right_fq;
 
     unless (-d $output_dir) {
         &process_cmd("mkdir -p $output_dir");
@@ -31,21 +39,25 @@ main: {
     
     chdir $output_dir or die "Error, cannot cd to $output_dir";
     
-    my $pipeliner = new Pipeliner(-verbose => 1);
+    my $pipeliner = new Pipeliner(-verbose => 2);
 
     ## Run Star
     
-    my $cmd = "STAR --genomeDir $FUSION_ANNOTATOR_LIB/Hg19.fa_star_index "
+    my $cmd = "STAR --genomeDir $FUSION_ANNOTATOR_LIB/geneContigs.miniNNN.fa.star.idx "
         . " --readFilesIn $left_fq $right_fq "
+        . " --twopassMode Basic "
         . " --outSAMstrandField intronMotif "
         . " --outFilterIntronMotifs RemoveNoncanonicalUnannotated "
-        . " --outReadsUnmapped None --chimSegmentMin 15 "
-        . " --chimJunctionOverhangMin 15 "
+        . " --outReadsUnmapped None --chimSegmentMin 12 "
+        . " --chimJunctionOverhangMin 12 "
+        . " --alignSJDBoverhangMin 10 "
         . " --alignMatesGapMax 200000 "
         . " --alignIntronMax 200000 "
+        . " --chimSegmentReadGapMax parameter 3 "
+        . " --chimFilter None "
         . " --runThreadN 4"
         . " --outSAMtype BAM SortedByCoordinate ";
-    
+
     if ($left_fq =~ /\.gz$/) {
         $cmd .= " --readFilesCommand zcat ";
     }
@@ -54,27 +66,12 @@ main: {
  
 
     ##  assign fusion junctions to genes:
-
-    $cmd = "$UTILDIR/STAR_junction_to_genes.pl Chimeric.out.junction > Chimeric.out.junction.genes";
-    $pipeliner->add_commands(Command->new($cmd, "Chimeric.out.junction.genes.ok"));
-
-    ## assign spanning reads to genes:
     
-    $cmd = "$UTILDIR/STAR_spanning_to_genes.pl Chimeric.out.sam > Chimeric.out.sam.spanning.genes";
-    $pipeliner->add_commands(Command->new($cmd, "Chimeric.out.sam.spanning.genes.ok"));
-
-    ## make a joint summary file:
-    $cmd = "$UTILDIR/STAR_collate_junction_and_spanning_results.pl Chimeric.out.junction.genes Chimeric.out.sam.spanning.genes > STAR.fusion_candidates.txt";
-    $pipeliner->add_commands(Command->new($cmd, "STAR.fusion_candidates.txt.ok"));
+    $cmd = "/home/unix/bhaas/GITHUB/STAR-Fusion/STAR-Fusion -S Chimeric.out.sam -J Chimeric.out.junction  -G $FUSION_ANNOTATOR_LIB/geneContigs.miniNNN.gtf --verbose_level 2";
+    $pipeliner->add_commands( Command->new($cmd, "star-fusion.ok") );
     
-    ## sort by junction count.
-    $cmd = "sort -k2,2nr -k3,3nr STAR.fusion_candidates.txt > STAR.fusion_candidates.sorted.txt";
-    $pipeliner->add_commands(Command->new($cmd, "STAR.fusion_candidates.sorted.txt.ok"));
-    
-
-
     $pipeliner->run();
-
+    
     exit(0);
 
     
