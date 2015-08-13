@@ -97,6 +97,7 @@ def func_do_star_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
     str_star_output_bam = os.path.join( str_align_dir_2, "Aligned.out.bam" )
     str_star_output_bai = os.path.join( str_align_dir_2, "Aligned.sorted.bam.bai" )
     str_star_sorted_bam = os.path.join( str_align_dir_2, "Aligned.sorted.bam" )
+    str_temp_prefix = os.path.join( str_align_dir_2, "temp" )
 
     # Commands to build and return
     lcmd_commands = []
@@ -169,7 +170,7 @@ def func_do_star_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
                                                lstr_cur_products = [ str_star_output_bam ] ) )
  
         # Sort coordinate order
-        lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools sort -O bam -T temp -o", str_star_sorted_bam, str_star_output_bam ] ),
+        lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools sort -O bam -T " + str_temp_prefix + " -o", str_star_sorted_bam, str_star_output_bam ] ),
                                                lstr_cur_dependencies = [ str_star_output_bam ],
                                                lstr_cur_products = [ str_star_sorted_bam ] ) )
  
@@ -286,6 +287,7 @@ def func_do_gsnp_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
     str_bai_file = os.path.join( str_align_dir, STR_BAI_FILE_NAME )
     str_output_file = os.path.join( str_align_dir, STR_BAM_FILE_NAME)
     str_star_sorted_bam = os.path.join( str_align_dir, STR_BAM_SORTED_FILE_NAME )
+    str_temp_prefix = os.path.join( str_align_dir, "temp" )
     #TODO update, is sanger appropriate for all others?
     str_quality_protocol = "illumina" if args_call.str_sequencing_platform == STR_ILLUMINA else "sanger"
 
@@ -361,7 +363,7 @@ def func_do_gsnp_alignment( args_call, str_unique_id, pline_cur, f_index_only = 
                                                lstr_cur_products = [ str_output_file ] ) )
  
         # Sort coordinate order
-        lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools sort -O bam -T temp -o", str_star_sorted_bam, str_output_file ] ),
+        lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools sort -O bam -T " + str_temp_prefix + " -o", str_star_sorted_bam, str_output_file ] ),
                                                lstr_cur_dependencies = [ str_output_file ],
                                                lstr_cur_products = [ str_star_sorted_bam ] ) )
  
@@ -397,6 +399,7 @@ def func_do_BWA_alignment( args_call, str_unique_id, pline_cur, f_index_only = F
     str_sam = os.path.join( args_call.str_file_base, ".".join( [ str_left_file_key, "sam" ] ) )
     str_bam = os.path.join( args_call.str_file_base, ".".join( [ str_left_file_key, "bam" ] ) )
     str_star_sorted_bam = os.path.join( args_call.str_file_base, ".".join( [ str_left_file_key, "sorted", "bam" ] ) )
+    str_temp_prefix = os.path.join( args_call.str_file_base, "temp" )
     str_bai = str_star_sorted_bam + ".bai"
     
     lcmd_dna_mapping_commands = []
@@ -443,7 +446,7 @@ def func_do_BWA_alignment( args_call, str_unique_id, pline_cur, f_index_only = F
                                            lstr_cur_products = [ str_bam ] ) )
  
     # Sort coordinate order
-    lcmd_dna_mapping_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools sort -O bam -T temp -o", str_star_sorted_bam, str_bam ] ),
+    lcmd_dna_mapping_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools sort -O bam -T " + str_temp_prefix + " -o", str_star_sorted_bam, str_bam ] ),
                                            lstr_cur_dependencies = [ str_bam ],
                                            lstr_cur_products = [ str_star_sorted_bam ] ) )
  
@@ -485,18 +488,18 @@ def func_do_recalibration_gatk( args_call, str_align_file, str_unique_id, str_pr
 
     # Files
     str_dedupped_bam = os.path.join( str_tmp_dir, "dedupped.bam" )
-    str_dedupped_bai = os.path.join( str_tmp_dir, "dedupped.bam.bai" )
+    str_dedupped_bai = os.path.join( str_tmp_dir, "dedupped.bai" )
     str_intervals = os.path.join( str_tmp_dir, "forIndelRealigner.intervals" )
     str_qc_metrics = os.path.join( str_tmp_dir, "mark_duplicates_qc_metrics.txt" )
     str_realigned_bam = os.path.join( str_tmp_dir, "realigned.bam" )
-    str_realigned_bai = os.path.join( str_tmp_dir, "realigned.bam.bai" )
+    str_realigned_bai = os.path.join( str_tmp_dir, "realigned.bai" )
     str_recalibrated_alignment_file = os.path.join( str_tmp_dir, "recal_table.table" )
     str_recalibrated_bam = os.path.join( str_tmp_dir, "recalibrated.bam" )
-    str_recalibrated_bai = os.path.join( str_tmp_dir, "recalibrated.bam.bai" )
+    str_recalibrated_bai = os.path.join( str_tmp_dir, "recalibrated.bai" )
     str_recalibration_plots_pdf = os.path.join( str_tmp_dir, "recalibration.pdf" )
     str_sorted_bam = os.path.join( str_tmp_dir, "sorted.bam" )
     str_split_bam = os.path.join( str_tmp_dir, "split.bam" )
-    str_split_bai = os.path.join( str_tmp_dir, "split.bam.bai" )
+    str_split_bai = os.path.join( str_tmp_dir, "split.bai" )
     # This is the file that is returned, could be many of the files below depending on the settings
     # This is dynamically set and different parts of this pipeline segment are activated.
     str_return_bam = ""
@@ -818,12 +821,13 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
         # Sorted bam file path
         str_bam_file = os.path.split( str_bam )[1]
         str_bam_sorted = os.path.join( str_tmp_dir, ".".join( [ os.path.splitext( str_bam_file )[0],"sorted", "bam" ] ) )
+        str_temp_prefix = os.path.join( str_tmp_dir, temp ) 
         str_bam_sorted_index = ".".join( [ str_bam_sorted, "bai" ] )
         lcmd_samtools_variants_commands.extend( [ 
                             Command.Command( str_cur_command = " ".join( [ "samtools view -b -S -o",str_bam, str_align_file ] ),
                                             lstr_cur_dependencies = lstr_dependencies,
                                             lstr_cur_products = [ str_bam ] ),
-                            Command.Command( str_cur_command = " ".join( [ "samtools sort -O bam -T temp -o", str_bam_sorted, str_bam ] ),
+                            Command.Command( str_cur_command = " ".join( [ "samtools sort -O bam -T " + str_temp_prefix + " -o", str_bam_sorted, str_bam ] ),
                                             lstr_cur_dependencies = [ str_bam ],
                                             lstr_cur_products = [ str_bam_sorted ] ),
                             Command.Command( str_cur_command = " ".join( [ "samtools index", str_bam_sorted ] ),
@@ -923,7 +927,7 @@ def func_do_variant_filtering_gatk( args_call, str_variants_file, lstr_dependenc
                : Logger
     """
     # Filtered variants file
-    str_filtered_variants_file = os.path.join( os.path.splitext( str_variants_file )[0] + "_filtered_variants.vcf" )
+    str_filtered_variants_file = os.path.join( os.path.splitext( str_variants_file )[0] + "_filtered.vcf" )
     str_filtered_variants_index_file = str_filtered_variants_file + ".csi"
     # Filter variants
     str_filter_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T VariantFiltration -R", args_call.str_genome_fa, "-V", str_variants_file, "-window 35",
@@ -936,7 +940,7 @@ def func_do_variant_filtering_gatk( args_call, str_variants_file, lstr_dependenc
     # Create index for the VCF file
 #    dict_csi = func_csi( str_filtered_variants_file )
 
-    return { INDEX_CMD : [ cmd_variant_filteration ], INDEX_FILE : str_variants_file }
+    return { INDEX_CMD : [ cmd_variant_filteration ], INDEX_FILE : str_filtered_variants_file }
 
 
 def func_do_variant_filtering_none( args_call, str_variants_file, lstr_dependencies, logr_cur ):
@@ -984,6 +988,7 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, f_is_hg_18 )
     str_cravat_annotated_coding_vcf = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravate_annotated_coding.vcf.gz"
     str_cravat_annotated_all_vcf = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravate_annotated_all.vcf.gz"
     str_cravat_filtered_vcf = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravate_annotated_filtered.vcf"
+    str_cravat_filtered_groom_vcf = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravate_annotated_filtered_groom.vcf"
     str_cancer_tab = os.path.dirname( str_vcf_base ) + os.path.sep + "cancer.tab"
     str_cravat_result_dir = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravat_annotations.gz" 
     str_extracted_cravat_dir = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravat_annotations"   
@@ -991,7 +996,6 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, f_is_hg_18 )
     str_cravat_detail_noncoding = os.path.join( str_extracted_cravat_dir,"Variant_Non-coding.Result.tsv" )
     str_cravat_detail_coding_updated = os.path.join( os.path.dirname( str_vcf_base ), "Variant_result_updated.tsv" )
     str_cravat_detail_noncoding_updated = os.path.join( os.path.dirname( str_vcf_base ), "Variant_non_coding_result_updated.tsv" )
-    str_cravat_header = "/ahg/regev/users/ttickle/dev/KCO/SOFTWARE/Trinity_CTAT/mutation/headers/cravat_annotation.txt"
 
     # Index and bgzip vcf
     dict_csi = func_csi( str_vcf_to_filter )
@@ -1089,16 +1093,23 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, f_is_hg_18 )
                                                   lstr_cur_products = [  str_cravat_filtered_vcf ] ) 
       lcmd_cancer_filter.append( cmd_filter_with_cravat )
 
+      # Groom before filter
+      str_cmd_groom_cancer_filtered = " ".join( [ "groom_vcf.py", str_cravat_filtered_vcf, str_cravat_filtered_groom_vcf ] )
+      cmd_groom_cancer_filtered = Command.Command( str_cur_command = str_cmd_groom_cancer_filtered,
+                                                  lstr_cur_dependencies = [ str_cravat_filtered_vcf ],
+                                                  lstr_cur_products = [ str_cravat_filtered_groom_vcf ] ) 
+      lcmd_cancer_filter.append( cmd_groom_cancer_filtered )
+
       # Convert filtered VCF file to tab file.
-      str_cmd_make_cravat_tab = " ".join( [ "java -jar GenomeAnalysisTK.jar", "-R", args_call.str_genome_fa, "-T", "VariantsToTable", "-V", str_cravat_filtered_vcf, 
+      str_cmd_make_cravat_tab = " ".join( [ "java -jar GenomeAnalysisTK.jar", "-R", args_call.str_genome_fa, "-T", "VariantsToTable", "-V", str_cravat_filtered_groom_vcf, 
                                             "-F", "CHROM", "-F", "POS", "-F", "REF", "-F", "ALT", "-F", "GENE",
-                                            "-F", "CHASM", "-F", "DP", "-F", "QUAL", "-F", "MQ",
+                                            "-F", "DP", "-F", "QUAL", "-F", "MQ",
                                             "-F", "SAO", "-F", "NSF", "-F", "NSM", "-F", "NSN", "-F", "TUMOR", "-F", "TISSUE",
                                             "-F", "COSMIC_ID", "-F", "KGPROD", "-F", "RS", "-F", "PMC",
                                             "-F", "CRAVAT_PVALUE", "-F", "CRAVAT_FDR", "-F", "VEST_PVALUE", "-F", "VEST_FDR",
                                             "--allowMissingData", "--unsafe", "LENIENT_VCF_PROCESSING", "-o", str_cancer_tab ] )
       cmd_cravat_table = Command.Command( str_cur_command = str_cmd_make_cravat_tab,
-                                                  lstr_cur_dependencies = [ str_cravat_filtered_vcf ],
+                                                  lstr_cur_dependencies = [ str_cravat_filtered_groom_vcf ],
                                                   lstr_cur_products = [ str_cancer_tab ] ) 
       lcmd_cancer_filter.append( cmd_cravat_table )
 
@@ -1501,7 +1512,7 @@ if __name__ == "__main__":
 
     # Cravat associated
     args_group_cravat = prsr_arguments.add_argument_group( "CRAVAT", "Associated with CRAVAT prioritization of variant calls." )
-    args_group_cravat.add_argument( "--cosmic_annotation_header", metavar = "cravat_headers", dest = "str_cravat_headers", default = None, help = "Headers for each CRAVAT feature aannoated to the VCF file (used in BCFtools)." )
+    args_group_cravat.add_argument( "--cravat_annotation_header", metavar = "cravat_headers", dest = "str_cravat_headers", default = None, help = "Headers for each CRAVAT feature annotated to the VCF file (used in BCFtools)." )
     args_group_cravat.add_argument( "--tissue_type", metavar = "cravat_tissue", dest = "str_cravat_classifier", default = STR_CRAVAT_CLASSIFIER_DEFAULT, help = "Tissue type (used in CRAVAT variant prioritation). Supported classifiers can be found at http://www.cravat.us/help.jsp )" )
     args_group_cravat.add_argument( "--email", metavar = "email_contact", dest = "str_email_contact", default = None, help = "Email used to notify of errors associated with cravat." )
     group_hg = args_group_cravat.add_mutually_exclusive_group()
