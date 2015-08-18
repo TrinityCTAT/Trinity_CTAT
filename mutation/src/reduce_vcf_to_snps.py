@@ -33,12 +33,11 @@ if args.str_input_file:
   with open( args.str_output_file, "w" ) as hndl_out:
     with open( args.str_input_file, "r" ) as hndl_vcf:
       for lstr_line in csv.reader( hndl_vcf, delimiter = STR_VCF_DELIMITER ):
-      
+
         # Keep comments
         if lstr_line[0][0] == CHR_COMMENT:
           lstr_vcf.append( STR_VCF_DELIMITER.join( lstr_line ) )
           continue
-
         # Look for reference vcf indication of mutation type
         if args.f_reference_mode:
           lstr_info = lstr_line[ I_INFO_INDEX ].split( CHR_INFO_DELIMITER )
@@ -50,6 +49,7 @@ if args.str_input_file:
               continue
           if f_found_mutation:
             lstr_vcf.append( STR_VCF_DELIMITER.join( lstr_line ) )
+            print "Found SNP info tag, stored."
             continue
 
         # If is not a reference file, there should be a call for passing or not.
@@ -73,13 +73,21 @@ if args.str_input_file:
         # if the reference and the alt both have 1 base entries they should be kept, even if there are none SNP entries
         # Not removing the none snp information currently because the DBSNP info would have to be updated to reflect any indexing
         # referring to the REF or ALT
-        if not min( [ len( str_alt_token ) for str_alt_token in str_alt.split( "," ) ] ) == 1:
-          print "Skip not snp ALT"
-          continue
-        if not min( [ len( str_ref_token ) for str_ref_token in str_ref.split( "," ) ] ) == 1:
+        if "," in str_alt:
+          if not min( [ len( str_alt_token ) for str_alt_token in str_alt.split( "," ) ] ) == 1:
+            print "Skip not snp ALT with comma"
+            continue
+        elif len( str_alt ) > 1:
+            print "Skip not snp ALT"
+            continue
+        if "," in str_ref:
+          if not min( [ len( str_ref_token ) for str_ref_token in str_ref.split( "," ) ] ) == 1:
+            print "Skip not snp REF with comma"
+            continue
+        elif len( str_ref ) > 1:
           print "Skip not snp REF"
           continue
-   
+
         # Store SNP
         lstr_vcf.append( STR_VCF_DELIMITER.join( lstr_line ) )
 
