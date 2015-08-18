@@ -1,0 +1,38 @@
+{
+  "data": [
+    {
+      "color": "cyan", 
+      "data": [
+        4037604, 
+        4678708, 
+        4236322, 
+        21278248, 
+        4050466, 
+        14501036, 
+        5239288, 
+        4663704, 
+        21263484, 
+        14532438, 
+        5236248, 
+        4224158
+      ], 
+      "x_ticks": [
+        "A>T", 
+        "C>G", 
+        "T>G", 
+        "G>A", 
+        "T>A", 
+        "T>C", 
+        "C>A", 
+        "G>C", 
+        "C>T", 
+        "A>G", 
+        "G>T", 
+        "A>C"
+      ]
+    }
+  ], 
+  "title": "Mutations by Substition", 
+  "x_axis": "Base Substitutions", 
+  "y_axis": "Total Count"
+}
