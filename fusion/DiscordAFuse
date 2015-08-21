@@ -40,8 +40,8 @@ class DiscordAFuse( ParentScript.ParentScript ):
         arg_raw.add_argument("--out_dir", dest="out_dirname", required=True, help="output directory")
         arg_raw.add_argument("--out_prefix", dest="out_prefix", required=True, help="output filename prefix")
         arg_raw.add_argument("--denovo_assembler", dest="denovo_assembler", required=True, help="de novo assembly method: Trinity|Oases")
-        arg_raw.add_argument("--include_Trinity", dest="include_Trinity", required=False, action = "store_true", default=False, help="include fusion-guided Trinity assembly")
-        arg_raw.add_argument("--include_whole_genome", dest="include_whole_genome", required=False, action="store_true", default=False, help="include whole genome in STAR aignment")
+
+
         arg_raw.add_argument("--prep_for_IGV", dest="prep_for_IGV", required=False, action="store_true", default=False, help="generate bam, bed, etc., for use with IGV")
         arg_raw.add_argument("--write_intermediate_results", dest="write_intermediate_results", required=False, action="store_true", default=False, help="generate bam, bed, etc., for intermediate aligner outputs")
         
