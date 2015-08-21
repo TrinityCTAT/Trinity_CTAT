@@ -85,21 +85,20 @@ lli_values_abs = [ dict_absolute[ str_key ] for str_key in lstr_labels_abs ]
 # Plot
 # Should move this to quickplots
 # Boxplots
-dict_rel_json = { qp.c_STR_TITLE: "Percent Base Transitions / Transversion",
-                  qp.c_STR_X_AXIS: "Base Transition / Transversion",
+dict_rel_json = { qp.c_STR_TITLE: "Mutations by Substitution",
+                  qp.c_STR_X_AXIS: "Base Substitution",
                   qp.c_STR_Y_AXIS: "Percent",
                   qp.c_STR_DATA: lli_values,
                   qp.c_STR_DATA_LABEL: lstr_labels }
-bx.BoxPlot().func_plot( dict_rel_json, os.path.join( args_call.str_output_dir, "Distributions_transitions.pdf" ))
-func_write_json( dict_json=dict_rel_json, str_file_name= os.path.join( args_call.str_output_dir, "Distributions_transitions.json" ) )
+bx.BoxPlot().func_plot( dict_rel_json, os.path.join( args_call.str_output_dir, "Distributions_substitutions.pdf" ))
+func_write_json( dict_json=dict_rel_json, str_file_name= os.path.join( args_call.str_output_dir, "Distributions_substitutions.json" ) )
 
 # Barchart
-dict_absolute_json = {  qp.c_STR_TITLE: "Total Base Transitions / Transversion",
-                        qp.c_STR_X_AXIS: "Base Transitions / Transversion",
+dict_absolute_json = {  qp.c_STR_TITLE: "Mutations by Substition",
+                        qp.c_STR_X_AXIS: "Base Substitutions",
                         qp.c_STR_Y_AXIS: "Total Count",
                         qp.c_STR_DATA: [ { qp.c_STR_DATA : lli_values_abs,
                                            qp.c_C_PLOT_COLOR : qp.c_C_PLOT_COLOR_DEFAULT, 
                                            qp.c_STR_X_TICK_LABEL : lstr_labels_abs,  } ] }
-
-bc.BarChart().func_plot( dict_absolute_json, os.path.join( args_call.str_output_dir, "Total_transitions.pdf" ))
-func_write_json( dict_json=dict_absolute_json, str_file_name= os.path.join( args_call.str_output_dir, "Total_transitions.json" ) )
+bc.BarChart().func_plot( dict_absolute_json, os.path.join( args_call.str_output_dir, "Total_substitutions.pdf" ))
+func_write_json( dict_json=dict_absolute_json, str_file_name= os.path.join( args_call.str_output_dir, "Total_substitutions.json" ) )

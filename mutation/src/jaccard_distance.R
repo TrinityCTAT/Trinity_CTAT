@@ -25,8 +25,6 @@ dist_matrix = function(x, by.row = FALSE) {
             m[j,i] = jaccard;
         }
     }
-    print("MN")
-    print(m)        
     return(m)
     
 }
