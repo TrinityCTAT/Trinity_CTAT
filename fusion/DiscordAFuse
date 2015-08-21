@@ -96,7 +96,7 @@ class DiscordAFuse( ParentScript.ParentScript ):
         
         lcmd_commands.append(Command.Command( str_cur_command = cmdstr,
                                               lstr_cur_dependencies = [ aligned_bam_filename, left_fq_filename, right_fq_filename ],
-                                              lstr_cur_products = [discordant_left_fq_filename, discordant_right_fq_filename] )
+                                              lstr_cur_products = [discordant_left_fq_filename, discordant_right_fq_filename] ) )
 
         ## De novo assemble the extracted reads
 
@@ -115,7 +115,8 @@ class DiscordAFuse( ParentScript.ParentScript ):
         else:
             # oases
             # //TODO
-            
+
+            pass
         
 
 
@@ -134,7 +135,7 @@ class DiscordAFuse( ParentScript.ParentScript ):
         # filter these
         
 
-        
+
         return lcmd_commands
 
 
@@ -385,5 +386,5 @@ def ensure_full_path(file_or_dir):
 if __name__ == "__main__":
 
     # Needed to run, calls the script
-    FusionInspector().func_run_pipeline()
+    DiscordAFuse().func_run_pipeline()
 
