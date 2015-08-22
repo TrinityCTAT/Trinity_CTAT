@@ -57,6 +57,8 @@ class DiscordAFuse( ParentScript.ParentScript ):
         To know the variables available from command line look in the ParentScript in func_create_arguments.
         """
 
+        args = args_parsed
+        
         aligned_bam_filename = ensure_full_path(args.aligned_bam_filename)
         left_fq_filename = ensure_full_path(args.left_fq_filename)
         right_fq_filename = ensure_full_path(args.right_fq_filename)
@@ -65,7 +67,7 @@ class DiscordAFuse( ParentScript.ParentScript ):
 
         denovo_assembler = args.denovo_assembler
 
-        if not re.match("trinity|oases", denovo_assembler, 'I'):
+        if not re.search("(trinity|oases)", denovo_assembler, re.I):
             raise Exception("Error, assembler: " + denovo_assembler + " is not recognized. Only 'Trinity' and 'Oases' are currently supported.")
         
         
@@ -80,7 +82,7 @@ class DiscordAFuse( ParentScript.ParentScript ):
 
 
         # relocate to the output directory
-        os.chdir(our_dirname)
+        os.chdir(out_dirname)
         
 
         ## Extract the discordant and unmapped reads into fastq files
@@ -90,8 +92,8 @@ class DiscordAFuse( ParentScript.ParentScript ):
         cmdstr = str( os.sep.join([UTILDIR, "retrieve_discordant_and_unmapped_reads.py"]) + " " + aligned_bam_filename +
                                   " " + left_fq_filename + " " + right_fq_filename )
 
-        discordant_left_fq_filename = left_fq_filename + ".extracted.fq"
-        discordant_right_fq_filename = right_fq_filename + ".extracted.fq"
+        discordant_left_fq_filename = os.path.basename(left_fq_filename) + ".extracted.fq"
+        discordant_right_fq_filename = os.path.basename(right_fq_filename) + ".extracted.fq"
 
         
         lcmd_commands.append(Command.Command( str_cur_command = cmdstr,
@@ -102,15 +104,21 @@ class DiscordAFuse( ParentScript.ParentScript ):
 
         assembled_transcripts_filename = None
 
-        if re.match("trinity", denovo_assembler, 'I'):
+        if re.match("trinity", denovo_assembler, re.I):
 
-            cmdstr = str(TRINITY_HOME + "/Trinity --seqType fq --max_mem 30G " +
+            cmdstr = str(TRINITY_HOME + "/Trinity --seqType fq --max_memory 10G " +
                          " --left " + discordant_left_fq_filename +
                          " --right " + discordant_right_fq_filename +
                          " --CPU 4 --full_cleanup --output trinity_out_dir " +
                          " --min_contig_length 100")
             
-            assembled_transcripts_filename = "trinity_out_dir/Trinity.fasta"
+            assembled_transcripts_filename = "trinity_out_dir.Trinity.fasta"
+
+            lcmd_commands.append(Command.Command( str_cur_command = cmdstr,
+                                                  lstr_cur_dependencies = [discordant_left_fq_filename, discordant_right_fq_filename],
+                                                  lstr_cur_products = [assembled_transcripts_filename ] ) )
+            
+
 
         else:
             # oases
@@ -139,239 +147,6 @@ class DiscordAFuse( ParentScript.ParentScript ):
         return lcmd_commands
 
 
-
-    def get_fusion_and_spanning_reads (self, args_parsed, mergedContig_gtf_filename, mergedContig_fasta_filename, bam_file, lcmd_commands):
-        
-        ## extract the fusion JUNCTION reads
-        fusion_junction_reads_sam_file = bam_file + ".fusion_junc_reads.sam"
-        fusion_junction_info_file = bam_file + ".fusion_junction_info"
-        
-        cmdstr = str(os.sep.join([UTILDIR, "get_fusion_JUNCTION_reads_from_fusion_contig_bam.pl"]) + " " +
-                     mergedContig_gtf_filename + " " +
-                     bam_file + " > " + fusion_junction_reads_sam_file)
-
-        lcmd_commands.append( Command.Command (str_cur_command = cmdstr,
-                                              lstr_cur_dependencies = [ mergedContig_gtf_filename, bam_file ],
-                                              lstr_cur_products = [ fusion_junction_reads_sam_file, fusion_junction_info_file ] ) )
-
-        if args_parsed.write_intermidate_results:
-            self.sort_sam_to_bam(fusion_junction_reads_sam_file, mergedContig_fasta_filename, lcmd_commands)
-
-            ## convert the fusion JUNCTION reads sam file to bed format
-            fusion_junction_reads_bed_file = bam_file + ".fusion_junc_reads.bed"
-            cmdstr = str(TRINITY_HOME + "/util/misc/SAM_to_bed.pl " + fusion_junction_reads_sam_file +
-                         " > " + fusion_junction_reads_bed_file)
-
-            lcmd_commands.append( Command.Command ( str_cur_command = cmdstr,
-                                                   lstr_cur_dependencies = [ fusion_junction_reads_sam_file ],
-                                                   lstr_cur_products = [ fusion_junction_reads_bed_file ] ) )
-
-            self.sort_and_index_bed(fusion_junction_reads_bed_file, lcmd_commands)
-        
-
-
-        ## extract the fusion SPANNING reads
-        fusion_spanning_reads_sam_file = bam_file + ".fusion_span_reads.sam"
-        fusion_spanning_reads_info_file = bam_file + ".fusion_spanning_info"
-
-        cmdstr = str(os.sep.join([UTILDIR, "get_fusion_SPANNING_reads_from_bam.from_chim_summary.pl"]) + " " +
-                     mergedContig_gtf_filename + " " +
-                     bam_file + " " + fusion_junction_info_file + 
-                     " > " + fusion_spanning_reads_sam_file)
-
-        lcmd_commands.append( Command.Command (str_cur_command = cmdstr,
-                                              lstr_cur_dependencies = [ mergedContig_gtf_filename, bam_file, fusion_junction_info_file ],
-                                              lstr_cur_products = [ fusion_spanning_reads_sam_file, fusion_spanning_reads_info_file ] ) )
-
-        if args_parsed.write_intermediate_results:
-            self.sort_sam_to_bam(fusion_spanning_reads_sam_file, mergedContig_fasta_filename, lcmd_commands)
-
-            ## convert the fusion JUNCTION reads sam file to bed format
-            fusion_spanning_reads_bed_file = bam_file + ".fusion_span_reads.bed"
-            cmdstr = str(TRINITY_HOME + "/util/misc/SAM_pair_to_bed.pl " + fusion_spanning_reads_sam_file +
-                         " > " + fusion_spanning_reads_bed_file)
-
-            lcmd_commands.append( Command.Command ( str_cur_command = cmdstr,
-                                                   lstr_cur_dependencies = [ fusion_spanning_reads_sam_file ],
-                                                   lstr_cur_products = [ fusion_spanning_reads_bed_file ] ) )
-
-
-
-            self.sort_and_index_bed(fusion_spanning_reads_bed_file, lcmd_commands)
-
-
-
-
-
-
-    def sort_and_index_bed(self, bed_file, lcmd_commands):
-
-        # sort by contig name followed by coordinate
-        sorted_bed_file = bed_file + ".sorted.bed"
-
-        cmdstr = str("sort -k1,1 -k2,2n " + bed_file + " > " + sorted_bed_file)
-        lcmd_commands.append( Command.Command (str_cur_command = cmdstr,
-                                               lstr_cur_dependencies = [ bed_file ],
-                                               lstr_cur_products = [ sorted_bed_file ] ) )
-
-
-        # index using tabix (preferred for IGV-web)
-        cmdstr = str("bgzip -f " + sorted_bed_file)
-        lcmd_commands.append( Command.Command (str_cur_command = cmdstr,
-                                               lstr_cur_dependencies = [ sorted_bed_file ],
-                                               lstr_cur_products = [ sorted_bed_file + ".gz" ] ) )
-
-        cmdstr = str("tabix -p bed " + sorted_bed_file + ".gz")
-        lcmd_commands.append( Command.Command (str_cur_command = cmdstr,
-                                               lstr_cur_dependencies = [ sorted_bed_file + ".gz" ],
-                                               lstr_cur_products = [ sorted_bed_file + ".gz.tbi" ] ) )
-
-
-        return
-
-
-
-
-
-    def sort_sam_to_bam(self, fusion_junction_reads_sam_file, mergedContig_fasta_filename, lcmd_commands):
-
-        cmdstr = str("set -o pipefail & samtools view -bT " + mergedContig_fasta_filename + " " + fusion_junction_reads_sam_file +
-                     " | samtools sort - " + fusion_junction_reads_sam_file)
-
-        lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
-                                               lstr_cur_dependencies = [ fusion_junction_reads_sam_file ],
-                                               lstr_cur_products = [ fusion_junction_reads_sam_file + ".bam" ] ) )
-
-        # index it
-        cmdstr = str("samtools index " + fusion_junction_reads_sam_file + ".bam")
-
-        lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
-                                               lstr_cur_dependencies = [ fusion_junction_reads_sam_file + ".bam" ],
-                                               lstr_cur_products = [ fusion_junction_reads_sam_file + ".bam.bai" ] ) )
-
-        return
-
-
-
-    def bam_to_bed(self, bam_file, lcmd_commands):
-        ## convert the reads bam file to bed format
-        cmdstr = str(TRINITY_HOME + "/util/misc/SAM_pair_to_bed.pl " + bam_file +
-                     " > " + bam_file + ".bed")
-        
-        lcmd_commands.append( Command.Command ( str_cur_command = cmdstr,
-                                                lstr_cur_dependencies = [ bam_file ],
-                                                lstr_cur_products = [ bam_file + ".bed" ] ) )
-        
-        
-        self.sort_and_index_bed(bam_file + ".bed", lcmd_commands)
-
-        return
-
-
-    
-                                                                
-    def add_fusion_read_alignment(self, args_parsed, mergedContig_fasta_filename, mergedContig_gtf_filename, lcmd_commands):
-    
-        reads_list_string = args_parsed.align_reads
-
-        reads_list = reads_list_string.split(",")
-
-        for reads_file in reads_list:
-
-            reads_file_basename =  os.path.basename(reads_file)
-
-            alignment_output_file_prefix = args_parsed.out_dirname + "/" + reads_file_basename
-            
-            cmdstr = str(TRINITY_HOME + "/util/misc/run_GSNAP.pl --genome " + mergedContig_fasta_filename +
-                         " --reads " + reads_file +
-                         " -G " + mergedContig_gtf_filename  + " --CPU 4 " +
-                         " --out_prefix " + alignment_output_file_prefix)
-
-            lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
-                                                   lstr_cur_dependencies = [ reads_file, mergedContig_fasta_filename, mergedContig_gtf_filename ],
-                                                   lstr_cur_products = [ alignment_output_file_prefix + ".cSorted.bam" ] ) )
-            
-
-
-            ## convert the reads bam file to bed format
-            cmdstr = str(TRINITY_HOME + "/util/misc/SAM_pair_to_bed.pl " + alignment_output_file_prefix + ".cSorted.bam" +
-                         " > " + alignment_output_file_prefix + ".bed")
-
-            lcmd_commands.append( Command.Command ( str_cur_command = cmdstr,
-                                                   lstr_cur_dependencies = [ alignment_output_file_prefix + ".cSorted.bam" ],
-                                                   lstr_cur_products = [ alignment_output_file_prefix + ".bed" ] ) )
-
-
-            # filter out the reads that arent mapping to the corresponding fusion contig
-
-            cmdstr = str(UTILDIR + "/restrict_bed_to_fusion_contig_mappings.pl " +
-                         alignment_output_file_prefix + ".bed" + " > " + alignment_output_file_prefix + ".filtered.bed")
-
-            lcmd_commands.append( Command.Command ( str_cur_command = cmdstr,
-                                                    lstr_cur_dependencies = [ alignment_output_file_prefix + ".bed" ],
-                                                    lstr_cur_products = [ alignment_output_file_prefix + ".filtered.bed" ] ) )
-
-
-            self.sort_and_index_bed(alignment_output_file_prefix + ".filtered.bed", lcmd_commands)
-
-
-        return
-    
-    
-    
-
-    def add_trinfusion_gmap_subpipe(self, args_parsed, mergedContig_fasta_filename, mergedContig_gtf_filename, trinity_fasta_filename, lcmd_commands, workdir):
-
-        gmap_gff3_output_filename = os.sep.join([workdir, args_parsed.out_prefix + ".gmap_trinity_GG.gff3"])
-
-        cmdstr = str(TRINITY_HOME + "/util/misc/process_GMAP_alignments_gff3_chimeras_ok.pl " +
-                     "--genome " + mergedContig_fasta_filename + " --transcripts " + trinity_fasta_filename +
-                     " --no_chimera > " + gmap_gff3_output_filename)
-
-        lcmd_commands.append( Command.Command (str_cur_command = cmdstr,
-                                               lstr_cur_dependencies = [ mergedContig_fasta_filename, trinity_fasta_filename ],
-                                               lstr_cur_products = [ gmap_gff3_output_filename ] ) )
-        
-        
-        ## extract the Trinity fusion transcripts
-        trinity_fusion_trans_filename = os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".gmap_trinity_GG.fusions.gff3"])
-        cmdstr = str(os.sep.join([UTILDIR, "get_Trinity_fusion_alignments_from_gff3.pl"]) + " " + mergedContig_gtf_filename +
-                     " " + gmap_gff3_output_filename + " > " + trinity_fusion_trans_filename)
-        lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
-                                               lstr_cur_dependencies = [ mergedContig_gtf_filename, gmap_gff3_output_filename ],
-                                               lstr_cur_products = [ trinity_fusion_trans_filename ] ) )
-
-
-
-        ## extract the Trinity Fusion transcripts
-        trinityGG_fusion_fasta = os.sep.join([args_parsed.out_dirname, args_parsed.out_prefix + ".gmap_trinity_GG.fusions.fasta"])
-        cmdstr = str(os.sep.join([UTILDIR, "get_Trinity_fusion_fasta_seqs.pl"]) + " " + trinity_fasta_filename + " " + trinity_fusion_trans_filename +
-                     " > " + trinityGG_fusion_fasta)
-        lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
-                                               lstr_cur_dependencies = [ trinity_fasta_filename, trinity_fusion_trans_filename ],
-                                               lstr_cur_products = [ trinityGG_fusion_fasta ] ) )
-    
-        
-                    
-
-
-        
-        # convert fusion trans to bed
-        trinity_fusion_trans_bed_filename = trinity_fusion_trans_filename + ".bed"
-        min_per_id = 95
-        cmdstr = str(UTILDIR + "/transcript_gff3_to_bed.pl " + trinity_fusion_trans_filename +
-                     " " + str(min_per_id) + " > " + trinity_fusion_trans_bed_filename)
-        lcmd_commands.append( Command.Command( str_cur_command = cmdstr,
-                                               lstr_cur_dependencies = [ trinity_fusion_trans_filename ],
-                                               lstr_cur_products = [ trinity_fusion_trans_bed_filename ] ) )
-
-        self.sort_and_index_bed(trinity_fusion_trans_bed_filename, lcmd_commands)
-
-        
-        
-        
-
-        return (trinity_fusion_trans_filename) # trinGG fusion gff3 file w/ breakpoints encoded
 
 
 def ensure_full_path(file_or_dir):

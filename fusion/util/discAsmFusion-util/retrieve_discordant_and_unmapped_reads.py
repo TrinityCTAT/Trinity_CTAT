@@ -28,8 +28,8 @@ def main():
             proper_pairs.add(read.query_name)
 
     
-    left_fq_extracted_filename = left_fq_filename + ".extracted.fq"
-    right_fq_extracted_filename = right_fq_filename + ".extracted.fq"
+    left_fq_extracted_filename = os.path.basename(left_fq_filename) + ".extracted.fq"
+    right_fq_extracted_filename = os.path.basename(right_fq_filename) + ".extracted.fq"
 
     left_fq_extraction_thread = Unkept_read_fq_extractor(proper_pairs, left_fq_filename, left_fq_extracted_filename)
     right_fq_extraction_thread = Unkept_read_fq_extractor(proper_pairs, right_fq_filename, right_fq_extracted_filename)
@@ -80,9 +80,9 @@ class Unkept_read_fq_extractor (threading.Thread):
             read_name = re.sub("/[12]$", "", read_name)
             if read_name not in self.keep_set:
                 ofh.write( "\n".join(["@" + fq_entry.name,
-                                      fq_entry.quality,
+                                      fq_entry.sequence,
                                       "+",
-                                      fq_entry.sequence]
+                                      fq_entry.quality]
                                      ) + "\n")
         
         ofh.close()
