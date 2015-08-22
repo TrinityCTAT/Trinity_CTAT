@@ -14,7 +14,7 @@ if not os.environ.has_key('STAR_FUSION_DIR'):
     print >> sys.stderr, "Error, need STAR_FUSION_DIR env var set to STAR-Fusion installation directory"
     sys.exit(3)
 
-        
+MAX_PCT_ALIGNED_OK = 80        
 
 
 class DiscordAFuse( ParentScript.ParentScript ):
@@ -158,13 +158,21 @@ class DiscordAFuse( ParentScript.ParentScript ):
         
 
         # filter those that map just fine
-        
-        
-        
 
+        candidate_transcripts_file = pct_alignment_stats_file + ".max_" + `MAX_PCT_ALIGNED_OK` + ".trans.fasta"
         
+        cmdstr = str(UTILDIR + "/get_partially_or_unmapped_transcripts.py " + pct_alignment_stats_file +
+                     " " + `MAX_PCT_ALIGNED_OK` + " " + assembled_transcripts_filename +
+                     " > " + candidate_transcripts_file)
 
+        lcmd_commands.append(Command.Command( str_cur_command = cmdstr,
+                                              lstr_cur_dependencies = [pct_alignment_stats_file, assembled_transcripts_filename],
+                                              lstr_cur_products = [candidate_transcripts_file] ) )
+        
+        
         # map to transcriptome the ones that dont align fine to the genome
+
+        
 
 
         # identify candidate fusion transcripts
