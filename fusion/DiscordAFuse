@@ -130,8 +130,38 @@ class DiscordAFuse( ParentScript.ParentScript ):
 
         # map to genome
 
+        trans_alignment_gff3 = "denovo_asm.gmap.gff3"
+        
+        cmdstr = str(TRINITY_HOME + "/util/misc/process_GMAP_alignments_gff3_chimeras_ok.pl  " +
+                     " --genome " + genome_fasta_filename +
+                     " --transcripts " + assembled_transcripts_filename + 
+                     " > " + trans_alignment_gff3)
+
+        lcmd_commands.append(Command.Command( str_cur_command = cmdstr,
+                                              lstr_cur_dependencies = [genome_fasta_filename, assembled_transcripts_filename],
+                                              lstr_cur_products = [trans_alignment_gff3] ) )
+
+
+        # compute percent length aligned
+
+        pct_alignment_stats_file = trans_alignment_gff3 + ".align_stats"
+        
+        cmdstr = str(TRINITY_HOME + "/util/misc/gmap_gff3_to_percent_length_stats.pl " +
+                     trans_alignment_gff3 + " " + assembled_transcripts_filename +
+                     " > " + pct_alignment_stats_file)
+
+        lcmd_commands.append(Command.Command( str_cur_command = cmdstr,
+                                              lstr_cur_dependencies = [trans_alignment_gff3, assembled_transcripts_filename],
+                                              lstr_cur_products = [pct_alignment_stats_file] ) )
+
+        
+        
 
         # filter those that map just fine
+        
+        
+        
+
         
 
         # map to transcriptome the ones that dont align fine to the genome
