@@ -187,6 +187,9 @@ class DiscordAFuse( ParentScript.ParentScript ):
 
         # identify candidate fusion transcripts
 
+        
+
+
 
         # filter these
         

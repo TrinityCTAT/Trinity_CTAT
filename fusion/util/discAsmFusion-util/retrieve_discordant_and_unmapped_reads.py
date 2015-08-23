@@ -15,6 +15,7 @@ alignments_bam = sys.argv[1]
 left_fq_filename = sys.argv[2]
 right_fq_filename = sys.argv[3]
 
+MIN_PCT_ALIGNED = float(80)
 
 
 def main():
@@ -22,12 +23,18 @@ def main():
     bam_reader = pysam.Samfile(alignments_bam)
 
     proper_pairs = set()
+    discounted_proper_pairs = set()
 
     for read in bam_reader:
-        if read.is_proper_pair:
-            proper_pairs.add(read.query_name)
+        if (not read.is_supplementary) and read.is_proper_pair:
+            pct_aligned = read.query_alignment_length / read.query_length * 100.0
+            if pct_aligned < MIN_PCT_ALIGNED:
+                discounted_proper_pairs.add(read.query_name)
+            else:
+                proper_pairs.add(read.query_name)
 
-    
+    proper_pairs -= discounted_proper_pairs
+
     left_fq_extracted_filename = os.path.basename(left_fq_filename) + ".extracted.fq"
     right_fq_extracted_filename = os.path.basename(right_fq_filename) + ".extracted.fq"
 
