@@ -135,7 +135,7 @@ class DiscordAFuse( ParentScript.ParentScript ):
         cmdstr = str(TRINITY_HOME + "/util/misc/process_GMAP_alignments_gff3_chimeras_ok.pl  " +
                      " --genome " + genome_fasta_filename +
                      " --transcripts " + assembled_transcripts_filename + 
-                     " --no_chimeras > " + trans_alignment_gff3)
+                     " --no_chimera > " + trans_alignment_gff3)
 
         lcmd_commands.append(Command.Command( str_cur_command = cmdstr,
                                               lstr_cur_dependencies = [genome_fasta_filename, assembled_transcripts_filename],
@@ -184,9 +184,18 @@ class DiscordAFuse( ParentScript.ParentScript ):
         
         
 
+        # retrieve chimeric gene pairs:
+        trans_chimera_pairs_file = trans_chimera_align_file + ".gene_pairs"
 
+        cmdstr = str(UTILDIR + "/identify_candidate_fusions_from_denovo_aligns.cdna_targets.py " +
+                     trans_chimera_align_file + " " + cdna_fasta_filename +
+                     " > " + trans_chimera_pairs_file)
 
-
+        lcmd_commands.append(Command.Command( str_cur_command = cmdstr,
+                                              lstr_cur_dependencies = [cdna_fasta_filename, trans_chimera_align_file],
+                                              lstr_cur_products = [trans_chimera_pairs_file] ) )
+        
+        
         # align to the mini genome
         trans_align_minigenome_file = candidate_transcripts_file + ".minigenome_gmap_chimallowed.gff3"
 
@@ -205,7 +214,15 @@ class DiscordAFuse( ParentScript.ParentScript ):
 
         # identify candidate fusion transcripts
 
-        
+        minigenome_chimera_pairs_file = trans_align_minigenome_file + ".gene_pairs"
+
+        cmdstr = str(UTILDIR + "/identify_candidate_fusions_from_denovo_aligns.minigenome.py " +
+                     trans_align_minigenome_file + 
+                     " > " + minigenome_chimera_pairs_file)
+
+        lcmd_commands.append(Command.Command( str_cur_command = cmdstr,
+                                              lstr_cur_dependencies = [trans_align_minigenome_file],
+                                              lstr_cur_products = [minigenome_chimera_pairs_file] ) )
 
 
 
