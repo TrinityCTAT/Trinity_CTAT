@@ -159,3 +159,47 @@ sub process_cmd {
 
     return;
 }
+
+
+__END__
+
+
+## BWA alignment
+
+# align end1
+/Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/bwa-0.5.7-mh/bwa aln -t 12 /RIS/home/verhaakgroup/PRADA/hg19broad/Ensembl64.transcriptome.plus.genome.fasta /Users/bhaas/BioIfx/PRADA/tmp/illumina.end1.fastq > illumina.end1.sai
+/Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/bwa-0.5.7-mh/bwa samse -s -n 100 /RIS/home/verhaakgroup/PRADA/hg19broad/Ensembl64.transcriptome.plus.genome.fasta illumina.end1.sai /Users/bhaas/BioIfx/PRADA/tmp/illumina.end1.fastq > illumina.end1.sam
+/Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/samtools-0.1.16/samtools view -bS -o illumina.end1.bam illumina.end1.sam
+/Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/samtools-0.1.16/samtools sort -n -m 1000000000 illumina.end1.bam illumina.end1.sorted
+
+# align end2
+/Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/bwa-0.5.7-mh/bwa aln -t 12 /RIS/home/verhaakgroup/PRADA/hg19broad/Ensembl64.transcriptome.plus.genome.fasta /Users/bhaas/BioIfx/PRADA/tmp/illumina.end2.fastq > illumina.end2.sai
+/Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/bwa-0.5.7-mh/bwa samse -s -n 100 /RIS/home/verhaakgroup/PRADA/hg19broad/Ensembl64.transcriptome.plus.genome.fasta illumina.end2.sai /Users/bhaas/BioIfx/PRADA/tmp/illumina.end2.fastq > illumina.end2.sam
+/Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/samtools-0.1.16/samtools view -bS -o illumina.end2.bam illumina.end2.sam
+/Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/samtools-0.1.16/samtools sort -n -m 1000000000 illumina.end2.bam illumina.end2.sorted
+
+# remap alignments end1
+java -Djava.io.tmpdir=tmp/ -cp /Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/GATK//RemapAlignments.jar -Xmx8g org.broadinstitute.cga.tools.gatk.rna.RemapAlignments M=/RIS/home/verhaakgroup/PRADA/hg19broad/Ensembl64.transcriptome.plus.genome.map IN=illumina.end1.sorted.bam OUT=illumina.end1.remapped.bam R=/RIS/home/verhaakgroup/PRADA/hg19broad/Homo_sapiens_assembly19.fasta REDUCE=TRUE
+/Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/samtools-0.1.16/samtools sort -n -m 1000000000 illumina.end1.remapped.bam illumina.end1.remapped.sorted
+
+# remap alignments end2
+java -Djava.io.tmpdir=tmp/ -cp /Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/GATK//RemapAlignments.jar -Xmx8g org.broadinstitute.cga.tools.gatk.rna.RemapAlignments M=/RIS/home/verhaakgroup/PRADA/hg19broad/Ensembl64.transcriptome.plus.genome.map IN=illumina.end2.sorted.bam OUT=illumina.end2.remapped.bam R=/RIS/home/verhaakgroup/PRADA/hg19broad/Homo_sapiens_assembly19.fasta REDUCE=TRUE
+/Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/samtools-0.1.16/samtools sort -n -m 1000000000 illumina.end2.remapped.bam illumina.end2.remapped.sorted
+
+# make paired-end alignments
+java -Djava.io.tmpdir=tmp/ -Xmx8g -jar /Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/GATK//PairMaker.jar IN1=illumina.end1.remapped.sorted.bam IN2=illumina.end2.remapped.sorted.bam OUTPUT=illumina.paired.bam TMP_DIR=tmp/
+/Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/samtools-0.1.16/samtools sort -m 1000000000 illumina.paired.bam illumina.paired.sorted
+
+
+# quality score recalibration        
+java -Xmx8g -jar /Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/Picard//AddOrReplaceReadGroups.jar I=illumina.paired.sorted.bam O=illumina.withRG.paired.sorted.bam RGLB=prada RGPL=illumina RGPU=prada RGSM=prada
+/Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/samtools-0.1.16/samtools index illumina.withRG.paired.sorted.bam
+java -Xmx8g -jar /Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/GATK//GenomeAnalysisTK.jar -l INFO -R /RIS/home/verhaakgroup/PRADA/hg19broad/Homo_sapiens_assembly19.fasta --default_platform illumina --knownSites /RIS/home/verhaakgroup/PRADA/hg19broad/dbsnp_135.b37.vcf -I illumina.withRG.paired.sorted.bam --downsample_to_coverage 10000 -T CountCovariates -cov ReadGroupCovariate -cov QualityScoreCovariate -cov CycleCovariate -cov DinucCovariate -nt 12 -recalFile illumina.orig.csv
+java -Xmx8g -jar /Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/GATK//GenomeAnalysisTK.jar -l INFO -R /RIS/home/verhaakgroup/PRADA/hg19broad/Homo_sapiens_assembly19.fasta --default_platform illumina -I illumina.withRG.paired.sorted.bam -T TableRecalibration --out illumina.withRG.GATKRecalibrated.bam -recalFile illumina.orig.csv
+
+# mark duplicates
+java -Xmx8g -jar /Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/Picard//MarkDuplicates.jar I=illumina.withRG.GATKRecalibrated.bam O=illumina.withRG.GATKRecalibrated.flagged.bam METRICS_FILE=illumina.Duplicates_metrics.txt VALIDATION_STRINGENCY=SILENT TMP_DIR=tmp/
+/Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/samtools-0.1.16/samtools index illumina.withRG.GATKRecalibrated.flagged.bam
+
+
+java -Xmx8g -jar /Users/bhaas/BioIfx/PRADA/pyPRADA_1.2/tools/RNA-SeQC_v1.1.7.jar -ttype 2 -t /RIS/home/verhaakgroup/PRADA/hg19broad/Homo_sapiens.GRCh37.64.gtf -r /RIS/home/verhaakgroup/PRADA/hg19broad/Homo_sapiens_assembly19.fasta -s 'illumina|illumina.withRG.GATKRecalibrated.flagged.bam|Disc' -o illumina/
