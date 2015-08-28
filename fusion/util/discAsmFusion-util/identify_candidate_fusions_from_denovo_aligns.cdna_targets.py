@@ -34,9 +34,9 @@ def main():
         gene_2_name = gene_hits_array[1][0]
         gene_2_orient = gene_hits_array[1][1]
 
-        print "\t".join(str(x) for x in [trans_acc, gene_1_name, gene_1_orient, gene_2_name, gene_2_orient])
+        #print "\t".join(str(x) for x in [trans_acc, gene_1_name, gene_1_orient, gene_2_name, gene_2_orient])
 
-        continue
+        #continue
         
         if gene_1_orient != gene_2_orient: continue
 
@@ -44,8 +44,8 @@ def main():
             # swap them
             (gene_1_name, gene_2_name) = (gene_2_name, gene_1_name)
 
-        print "\t".join([trans_acc, gene_1_name, gene_2_name])
-    
+        #print "\t".join([trans_acc, gene_1_name, gene_2_name])
+        print gene_1_name + "--" + gene_2_name + "\t" + trans_acc
 
     
 

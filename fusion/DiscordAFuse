@@ -185,7 +185,7 @@ class DiscordAFuse( ParentScript.ParentScript ):
         
 
         # retrieve chimeric gene pairs:
-        trans_chimera_pairs_file = trans_chimera_align_file + ".gene_pairs"
+        trans_chimera_pairs_file = trans_chimera_align_file + ".fusions.dat"
 
         cmdstr = str(UTILDIR + "/identify_candidate_fusions_from_denovo_aligns.cdna_targets.py " +
                      trans_chimera_align_file + " " + cdna_fasta_filename +
@@ -195,38 +195,46 @@ class DiscordAFuse( ParentScript.ParentScript ):
                                               lstr_cur_dependencies = [cdna_fasta_filename, trans_chimera_align_file],
                                               lstr_cur_products = [trans_chimera_pairs_file] ) )
         
+
+
+
+        # not including minigenome search for now, sensitivity may be lacking - but will explore it further later on.
+        '''
+        include_minigenome = False
+        if include_minigenome:
         
-        # align to the mini genome
-        trans_align_minigenome_file = candidate_transcripts_file + ".minigenome_gmap_chimallowed.gff3"
+            # align to the mini genome
+            trans_align_minigenome_file = candidate_transcripts_file + ".minigenome_gmap_chimallowed.gff3"
 
-        mini_genome = "/seq/regev_genome_portal/RESOURCES/FUSION_ANNOTATOR_LIB/geneContigs.miniNNN.fa"
+            mini_genome = "/seq/regev_genome_portal/RESOURCES/FUSION_ANNOTATOR_LIB/geneContigs.miniNNN.fa"
 
-        cmdstr = str(TRINITY_HOME + "/util/misc/process_GMAP_alignments_gff3_chimeras_ok.pl  " +
-                     " --genome " + mini_genome +
-                     " --transcripts " + candidate_transcripts_file + 
-                     " > " + trans_align_minigenome_file)
+            cmdstr = str(TRINITY_HOME + "/util/misc/process_GMAP_alignments_gff3_chimeras_ok.pl  " +
+                         " --genome " + mini_genome +
+                         " --transcripts " + candidate_transcripts_file + 
+                         " > " + trans_align_minigenome_file)
 
-        lcmd_commands.append(Command.Command( str_cur_command = cmdstr,
-                                              lstr_cur_dependencies = [mini_genome, candidate_transcripts_file],
-                                              lstr_cur_products = [trans_align_minigenome_file] ) )
+            lcmd_commands.append(Command.Command( str_cur_command = cmdstr,
+                                                  lstr_cur_dependencies = [mini_genome, candidate_transcripts_file],
+                                                  lstr_cur_products = [trans_align_minigenome_file] ) )
+
+
+
+            # identify candidate fusion transcripts
+
+            minigenome_chimera_pairs_file = trans_align_minigenome_file + ".gene_pairs"
+
+            cmdstr = str(UTILDIR + "/identify_candidate_fusions_from_denovo_aligns.minigenome.py " +
+                         trans_align_minigenome_file + 
+                         " > " + minigenome_chimera_pairs_file)
+
+            lcmd_commands.append(Command.Command( str_cur_command = cmdstr,
+                                                  lstr_cur_dependencies = [trans_align_minigenome_file],
+                                                  lstr_cur_products = [minigenome_chimera_pairs_file] ) )
+
+        '''
+
+        # filter the predictions
         
-        
-
-        # identify candidate fusion transcripts
-
-        minigenome_chimera_pairs_file = trans_align_minigenome_file + ".gene_pairs"
-
-        cmdstr = str(UTILDIR + "/identify_candidate_fusions_from_denovo_aligns.minigenome.py " +
-                     trans_align_minigenome_file + 
-                     " > " + minigenome_chimera_pairs_file)
-
-        lcmd_commands.append(Command.Command( str_cur_command = cmdstr,
-                                              lstr_cur_dependencies = [trans_align_minigenome_file],
-                                              lstr_cur_products = [minigenome_chimera_pairs_file] ) )
-
-
-
-        # filter these
         
 
 
