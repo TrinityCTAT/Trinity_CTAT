@@ -1,0 +1,19 @@
+#fileformat=VCFv4.1
+##FILTER=<ID=FS,Description="FS > 30.0">
+##FORMAT=<ID=AD,Number=.,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">
+##INFO=<ID=Keep3-35,Type=string,Description="Yes means this should be kept when filtering clusters in window of 35 and removing if there is 3 or more SNPs">
+##INFO=<ID=Keep2-100,Type=string,Description="Yes means this should be kept when filtering clusters in window of 100 and removing if there is 2 or more SNPs">
+##contig=<ID=chr1,length=303>
+##contig=<ID=chr2,length=3002>
+##contig=<ID=chr3,length=12599>
+##reference=file:///seq/regev_genome_portal/RESOURCES/human/Hg19/Hg19.fa
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	reads_testsample38_r1_fastq_P_qtrim
+chr1	50	id1	A	A	50	PASS	Keep2-35=Yes;Keep2-100=No
+chr1	51	id1	A	A	50	PASS	Keep2-35=Yes;Keep2-100=No
+chr1	110	id1	A	A	50	PASS	Keep2-35=Yes;Keep2-100=No
+chr1	260	id1	A	A	50	PASS	Keep2-35=Yes;Keep2-100=No
+chr2	1	id1	A	A	50	PASS	Keep2-35=Yes;Keep2-100=Yes
+chr2	1001	id1	A	A	50	PASS	Keep2-35=Yes;Keep2-100=Yes
+chr2	2001	id1	A	A	50	PASS	Keep2-35=Yes;Keep2-100=Yes
+chr2	3001	id1	A	A	50	PASS	Keep2-35=Yes;Keep2-100=Yes
+chr3	12598	id1	A	A	50	PASS	Keep2-35=Yes;Keep2-100=No

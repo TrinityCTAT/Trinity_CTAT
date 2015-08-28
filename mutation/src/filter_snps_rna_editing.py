@@ -40,15 +40,25 @@ dict_seq_interp = {"A":"A","C":"C","G":"G","T":"T","I":"G","U":"T"}
 if args.str_radar_db:
   with open( args.str_radar_db, "r" ) as hndl_radar:
     for lstr_line in csv.reader( hndl_radar, delimiter = STR_RADAR_DELIMITER ):
-      if lstr_line and lstr_line[ I_STRAND_RADAR ] == "+":
-        dict_radar[ lstr_line[ I_CHR_RADAR ].lower() + "-" + lstr_line[ I_POS_RADAR ] ] = [ "A", "G" ] 
+      if not lstr_line:
+        continue
+      if lstr_line[ I_STRAND_RADAR ] == "+":
+        dict_radar[ lstr_line[ I_CHR_RADAR ].lower() + "-" + lstr_line[ I_POS_RADAR ] ] = [ "A", dict_seq_interp[ "I" ] ] 
+      elif lstr_line[ I_STRAND_RADAR ] == "-":
+        dict_radar[ lstr_line[ I_CHR_RADAR ].lower() + "-" + lstr_line[ I_POS_RADAR ] ] = [ dict_seq_interp[ "I" ], "A" ] 
 
 # Read in the DARNED data if given
 if args.str_darned_db:
   with open( args.str_darned_db, "r" ) as hndl_darned:
-    for lstr_line in csv.reader( hndl_darned, delimiter = STR_DARNED_DELIMITER ):
-      if lstr_line and lstr_line[ I_STRAND_DARNED ] == "+":
-        dict_darned[ lstr_line[ I_CHR_DARNED ].lower() + "-" + lstr_line[ I_POS_DARNED ] ] = [ lstr_line[ I_INCHR_DARNED ], dict_seq_interp[ lstr_line[ I_INRNA_DARNED ] ] ]
+    csvr_darned = csv.reader( hndl_darned, delimiter = STR_DARNED_DELIMITER )
+    csvr_darned.next()
+    for lstr_line in csvr_darned:
+      if not lstr_line:
+        continue
+      if lstr_line[ I_STRAND_DARNED ] == "+":
+        dict_darned[ lstr_line[ I_CHR_DARNED ].lower() + "-" + lstr_line[ I_POS_DARNED ] ] = [ dict_seq_interp[ lstr_line[ I_INCHR_DARNED ] ], dict_seq_interp[ lstr_line[ I_INRNA_DARNED ] ] ]
+      elif lstr_line[ I_STRAND_DARNED ] == "-":
+        dict_darned[ lstr_line[ I_CHR_DARNED ].lower() + "-" + lstr_line[ I_POS_DARNED ] ] = [ dict_seq_interp[ lstr_line[ I_INRNA_DARNED ] ], dict_seq_interp[ lstr_line[ I_INCHR_DARNED ] ] ]
 
 # Stores the vcf info
 lstr_vcf = []
@@ -72,7 +82,6 @@ if args.str_input_file:
         str_id = lstr_line[ I_CHR_INDEX ].lower() + "-" + lstr_line[ I_POS_INDEX ]
 
         # Filter Darned
-        # TODO fix for commas
         if dict_darned:
           if str_id in dict_darned:
             lstr_rna_edit_entry = dict_darned[ str_id ]
@@ -80,7 +89,6 @@ if args.str_input_file:
               continue          
 
         # Filter Radar
-        # TODO fix for commas
         if dict_radar:
           if str_id in dict_radar:
             lstr_rna_edit_entry = dict_radar[ str_id ]

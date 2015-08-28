@@ -49,9 +49,14 @@ LSTR_VARIANT_FILTERING_CHOICES = [ STR_FILTERING_BCFTOOLS, STR_FILTERING_GATK, S
 # It is not intended to be ran on biological samples for studies.
 STR_DNASEQ_VALIDATION = "DNASEQ"
 
+# Terminal cancer tab file maded by pipeline
+C_STR_CANCER_TAB = "cancer.tab"
+C_STR_CANCER_ANNOTATED_VCF = "variants_annotated.vcf.gz"
+C_STR_CANCER_VCF = "cancer.vcf"
+
 # CRAVAT related
-I_CRAVAT_ATTEMPTS = 100
-I_CRAVAT_WAIT = 10
+I_CRAVAT_ATTEMPTS = 180
+I_CRAVAT_WAIT = 60
 STR_CRAVAT_CLASSIFIER_DEFAULT = "Other"
 STR_FDR_CUTTOFF = "0.3"
 
@@ -598,10 +603,9 @@ def func_do_rnaseq_caller_gatk( args_call, str_input_bam, str_unique_id, str_pro
         str_depth_compressed_file = os.path.basename( args_call.str_file_base ) + ".depth"
         str_depth_compressed_file = os.path.join( args_call.str_file_base, str_depth_compressed_file )
 #        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_input_bam + " | gzip > " + str_depth_compressed_file,
-        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_input_bam + " > " + str_depth_compressed_file,
+        cmd_depth =  Command.Command( str_cur_command = "samtools depth " + str_input_bam + " > " + str_depth_compressed_file,
                                                lstr_cur_dependencies = [ str_input_bam ],
-                                               lstr_cur_products = [ str_depth_compressed_file ] ) )
-    
+                                               lstr_cur_products = [ str_depth_compressed_file ] )
     # Variant calling
     cmd_haplotype_caller = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T HaplotypeCaller -R", args_call.str_genome_fa,
                                                            "-I", str_input_bam, "-recoverDanglingHeads -dontUseSoftClippedBases",
@@ -610,7 +614,7 @@ def func_do_rnaseq_caller_gatk( args_call, str_input_bam, str_unique_id, str_pro
                                             lstr_cur_products = [ str_variants_file ] )
     cmd_haplotype_caller.func_set_dependency_clean_level( [ str_input_bam, str_input_bai ], Command.CLEAN_NEVER )
 
-    return { INDEX_CMD : [ cmd_haplotype_caller ], INDEX_FILE : str_variants_file }
+    return { INDEX_CMD : [ cmd_depth, cmd_haplotype_caller ], INDEX_FILE : str_variants_file }
 
 
 def func_do_variant_calling_gatk( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur ):
@@ -761,7 +765,7 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
         str_depth_compressed_file = os.path.basename( args_call.str_file_base ) + ".depth"
         str_depth_compressed_file = os.path.join( args_call.str_file_base, str_depth_compressed_file )
 #        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_recal_snp_bam + " | gzip > " + str_depth_compressed_file,
-        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_recal_snp_bam + " > " + str_depth_compressed_file,
+        ls_cmds.append( Command.Command( str_cur_command = "samtools depth " + str_recal_snp_bam + " > " + str_depth_compressed_file,
                                                lstr_cur_dependencies = [ str_recal_snp_bam ],
                                                lstr_cur_products = [ str_depth_compressed_file ] ) )
 
@@ -774,15 +778,6 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
                                             lstr_cur_products = [ str_raw_vcf ] )
     cmd_haplotype_caller.func_set_dependency_clean_level( [ str_recal_snp_bam, str_recal_snp_bai ], Command.CLEAN_NEVER )
     
-#    # Hard filter like the RNA-seq
-#    cmd_variant_filteration = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T VariantFiltration -R", 
-#                                                                     args_call.str_genome_fa, "-V", str_raw_vcf, "-window 35",
-#                                                                     "-cluster 3 -filterName FS -filter \"FS > 30.0\" -filterName QD",
-#                                                                     "-filter \"QD < 2.0\" --out", str_filtered_variants_file ] ),
-#                                            lstr_cur_dependencies = [ args_call.str_genome_fa, str_raw_vcf ],
-#                                            lstr_cur_products = [ str_filtered_variants_file ] )
-#    cmd_variant_filteration.func_set_dependency_clean_level( [ str_filtered_variants_file ], Command.CLEAN_NEVER  )
-
     ls_cmds.extend( [ cmd_haplotype_caller ] ) #, cmd_variant_filteration ] )
     return { INDEX_CMD : ls_cmds, INDEX_FILE : str_raw_vcf }
 
@@ -813,7 +808,7 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
     # Index of the sorted bam file
     str_bam_sorted_index = ".".join( [ str_bam_sorted, "bai" ] )
     # Uncompressed variant calling file
-    str_variants_vcf = os.path.join( str_project_dir, ".".join( [ str_unique_id, "vcf" ] ) )
+    str_variants_vcf = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "vcf" ] ) )
 
     # Optional SAM to BAM
     if os.path.splitext( str_align_file )[1].lower() == ".sam":
@@ -958,7 +953,7 @@ def func_do_variant_filtering_none( args_call, str_variants_file, lstr_dependenc
     return { INDEX_CMD : [], INDEX_FILE : "" }
 
 
-def func_do_variant_filtering_cancer( args_call, str_variants_file, f_is_hg_18 ):
+def func_do_variant_filtering_cancer( args_call, str_variants_file, str_project_dir, f_is_hg_18 ):
     """
     
 
@@ -983,13 +978,13 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, f_is_hg_18 )
 
     # Files created
     str_vcf_base = os.path.splitext( str_variants_file )[ 0 ]
-    str_cancer_mutations_unfiltered = os.path.splitext( str_vcf_base )[0] + "_cosmic.vcf.gz"
+    str_cancer_mutations_unfiltered = str_project_dir + os.path.sep + C_STR_CANCER_ANNOTATED_VCF
     str_cancer_mutations_filtered = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered.vcf"
     str_cravat_annotated_coding_vcf = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravate_annotated_coding.vcf.gz"
     str_cravat_annotated_all_vcf = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravate_annotated_all.vcf.gz"
     str_cravat_filtered_vcf = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravate_annotated_filtered.vcf"
-    str_cravat_filtered_groom_vcf = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravate_annotated_filtered_groom.vcf"
-    str_cancer_tab = os.path.dirname( str_vcf_base ) + os.path.sep + "cancer.tab"
+    str_cravat_filtered_groom_vcf = str_project_dir + os.path.sep + C_STR_CANCER_VCF
+    str_cancer_tab = str_project_dir + os.path.sep + C_STR_CANCER_TAB
     str_cravat_result_dir = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravat_annotations.gz" 
     str_extracted_cravat_dir = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravat_annotations"   
     str_cravat_detail_coding = os.path.join( str_extracted_cravat_dir,"Variant.Result.tsv" )
@@ -1115,7 +1110,7 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, f_is_hg_18 )
 
     # Create index for the VCF file
     # tabix
-    return { INDEX_CMD : lcmd_cancer_filter, INDEX_FILE : str_cancer_mutations_filtered }
+    return { INDEX_CMD : lcmd_cancer_filter, INDEX_FILE : str_cravat_filtered_groom_vcf }
 
 
 def run( args_call, f_do_index = False ):
@@ -1359,7 +1354,10 @@ def run( args_call, f_do_index = False ):
           f_cravat_hg18 = True
         elif args_call.f_hg_19:
           f_cravat_hg18 = False
-        lcmd_commands.extend( func_do_variant_filtering_cancer( args_call=args_call, str_variants_file=str_annotated_vcf_file, f_is_hg_18=f_cravat_hg18 )[ INDEX_CMD ] )
+        lcmd_commands.extend( func_do_variant_filtering_cancer( args_call=args_call,
+                                                                str_variants_file=str_annotated_vcf_file, 
+                                                                str_project_dir=args_call.str_file_base,
+                                                                f_is_hg_18=f_cravat_hg18 )[ INDEX_CMD ] )
 
     # Run commands including variant calling
     if not pline_cur.func_run_commands( lcmd_commands = lcmd_commands, 

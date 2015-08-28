@@ -1,0 +1,164 @@
+# This file was produced by bcftools stats (1.1+htslib-1.1) and can be plotted using plot-vcfstats.
+# The command line was:	bcftools stats  /broad/sigmascratch/WU_CLL_PROJECT/rnaseq_snp_validation/snp_validation/input_resources/dbsnp_138.b37_Hg19.vcf
+#
+# Definition of sets:
+# ID	[2]id	[3]tab-separated file names
+ID	0	/broad/sigmascratch/WU_CLL_PROJECT/rnaseq_snp_validation/snp_validation/input_resources/dbsnp_138.b37_Hg19.vcf
+# SN, Summary numbers:
+# SN	[2]id	[3]key	[4]value
+SN	0	number of samples:	0
+SN	0	number of records:	61045456
+SN	0	number of SNPs:	53693953
+SN	0	number of MNPs:	78128
+SN	0	number of indels:	7381225
+SN	0	number of others:	235450
+SN	0	number of multiallelic sites:	1854124
+SN	0	number of multiallelic SNP sites:	365873
+# TSTV, transitions/transversions:
+# TSTV	[2]id	[3]ts	[4]tv	[5]ts/tv	[6]ts (1st ALT)	[7]tv (1st ALT)	[8]ts/tv (1st ALT)
+TSTV	0	35787603	18183249	1.97	35636109	17955883	1.98
+# Sis, Singleton stats:
+# SiS	[2]id	[3]allele count	[4]number of SNPs	[5]number of transitions	[6]number of transversions	[7]number of indels	[8]repeat-consistent	[9]repeat-inconsistent	[10]not applicable
+SiS	0	1	53970852	35787603	18183249	8661635	0	0	8661635
+# AF, Stats by non-reference allele frequency:
+# AF	[2]id	[3]allele frequency	[4]number of SNPs	[5]number of transitions	[6]number of transversions	[7]number of indels	[8]repeat-consistent	[9]repeat-inconsistent	[10]not applicable
+AF	0	0.000000	53970852	35787603	18183249	8661635	0	0	8661635
+# QUAL, Stats by quality:
+# QUAL	[2]id	[3]Quality	[4]number of SNPs	[5]number of transitions (1st ALT)	[6]number of transversions (1st ALT)	[7]number of indels
+QUAL	0	998	53693922	35636109	17955883	7381225
+# IDD, InDel distribution:
+# IDD	[2]id	[3]length (deletions negative)	[4]count
+IDD	0	-60	5474
+IDD	0	-59	84
+IDD	0	-58	89
+IDD	0	-57	94
+IDD	0	-56	91
+IDD	0	-55	113
+IDD	0	-54	79
+IDD	0	-53	102
+IDD	0	-52	90
+IDD	0	-51	66
+IDD	0	-50	69
+IDD	0	-49	62
+IDD	0	-48	219
+IDD	0	-47	121
+IDD	0	-46	199
+IDD	0	-45	350
+IDD	0	-44	361
+IDD	0	-43	249
+IDD	0	-42	442
+IDD	0	-41	310
+IDD	0	-40	593
+IDD	0	-39	399
+IDD	0	-38	703
+IDD	0	-37	469
+IDD	0	-36	1042
+IDD	0	-35	685
+IDD	0	-34	1310
+IDD	0	-33	700
+IDD	0	-32	1913
+IDD	0	-31	885
+IDD	0	-30	3019
+IDD	0	-29	1378
+IDD	0	-28	3835
+IDD	0	-27	1906
+IDD	0	-26	4011
+IDD	0	-25	2442
+IDD	0	-24	6326
+IDD	0	-23	2668
+IDD	0	-22	5763
+IDD	0	-21	3462
+IDD	0	-20	10321
+IDD	0	-19	4324
+IDD	0	-18	10514
+IDD	0	-17	5543
+IDD	0	-16	16954
+IDD	0	-15	10342
+IDD	0	-14	17381
+IDD	0	-13	10785
+IDD	0	-12	34230
+IDD	0	-11	17334
+IDD	0	-10	49748
+IDD	0	-9	26966
+IDD	0	-8	86420
+IDD	0	-7	32634
+IDD	0	-6	108428
+IDD	0	-5	120395
+IDD	0	-4	420254
+IDD	0	-3	297862
+IDD	0	-2	1178906
+IDD	0	-1	2176795
+IDD	0	1	1977735
+IDD	0	2	713685
+IDD	0	3	297525
+IDD	0	4	368044
+IDD	0	5	104605
+IDD	0	6	110016
+IDD	0	7	45102
+IDD	0	8	88644
+IDD	0	9	30200
+IDD	0	10	51781
+IDD	0	11	16641
+IDD	0	12	31442
+IDD	0	13	9880
+IDD	0	14	13596
+IDD	0	15	10825
+IDD	0	16	15389
+IDD	0	17	6213
+IDD	0	18	9244
+IDD	0	19	5551
+IDD	0	20	9417
+IDD	0	21	3966
+IDD	0	22	5170
+IDD	0	23	3292
+IDD	0	24	5895
+IDD	0	25	2779
+IDD	0	26	3436
+IDD	0	27	2241
+IDD	0	28	3459
+IDD	0	29	1720
+IDD	0	30	2690
+IDD	0	31	1553
+IDD	0	32	2333
+IDD	0	33	1020
+IDD	0	34	1676
+IDD	0	35	1013
+IDD	0	36	1846
+IDD	0	37	855
+IDD	0	38	1343
+IDD	0	39	813
+IDD	0	40	1538
+IDD	0	41	659
+IDD	0	42	1002
+IDD	0	43	524
+IDD	0	44	852
+IDD	0	45	508
+IDD	0	46	303
+IDD	0	47	228
+IDD	0	48	381
+IDD	0	49	213
+IDD	0	50	218
+IDD	0	51	125
+IDD	0	52	180
+IDD	0	53	97
+IDD	0	54	156
+IDD	0	55	111
+IDD	0	56	139
+IDD	0	57	71
+IDD	0	58	103
+IDD	0	59	83
+IDD	0	60	3200
+# ST, Substitution types:
+# ST	[2]id	[3]type	[4]count
+ST	0	A>C	2112079
+ST	0	A>G	7266219
+ST	0	A>T	2018802
+ST	0	C>A	2619644
+ST	0	C>G	2339354
+ST	0	C>T	10631742
+ST	0	G>A	10639124
+ST	0	G>C	2331852
+ST	0	G>T	2618124
+ST	0	T>A	2025233
+ST	0	T>C	7250518
+ST	0	T>G	2118161

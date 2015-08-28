@@ -110,7 +110,10 @@ if args.str_input_file:
 
       # If buffer is large enough, write to file
       if len( lstr_vcf ) >= i_write_amount:
-        hndl_out.write( "\n".join( lstr_vcf ) )
+        str_write = "\n".join( lstr_vcf )
+        if str_write:
+          str_write = str_write + "\n"
+        hndl_out.write( str_write )
         lstr_vcf = []
 
     # Last write of buffer
