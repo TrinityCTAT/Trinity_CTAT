@@ -19,6 +19,19 @@ my $chims_described = $ARGV[1] or die $usage;
 my $left_fq_file = $ARGV[2] or die $usage;
 my $right_fq_file = $ARGV[3] or die $usage;
 
+$trans_fasta = &ensure_full_path($trans_fasta);
+$chims_described = &ensure_full_path($chims_described);
+$left_fq_file = &ensure_full_path($left_fq_file);
+$right_fq_file = &ensure_full_path($right_fq_file);
+
+
+foreach my $file ($trans_fasta, $chims_described, $left_fq_file, $right_fq_file) {
+    unless (-s $file) {
+        confess "Error, cannot locate file $file";
+    }
+}
+
+
 main: {
 
     my %chims = &parse_chims($chims_described);
@@ -161,7 +174,7 @@ sub align_reads_using_bowtie2 {
     &process_cmd($cmd);
 
     my $pipeliner = new Pipeliner(-verbose=>1);
-    $cmd = "bowtie2-build bowtie2_target.fa bowtie2_target";
+    $cmd = "bowtie2-build bowtie2_target.fa bowtie2_target > /dev/null";
     $pipeliner->add_commands(new Command($cmd, "bowtie2_target.build.ok"));
 
     $cmd = "bash -c \"set pipefail -o && bowtie2 -k10 -p 4 --no-mixed --no-discordant --very-fast --local -x bowtie2_target -1 $left_fq_file -2 $right_fq_file "
