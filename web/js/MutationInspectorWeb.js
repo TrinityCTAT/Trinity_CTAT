@@ -1,304 +1,370 @@
-function createBrowser( inspectorView ){
-  // Create a browser with default (first listed sample in the sample menu)
-  var defaultSample = $("#sampleMenu li")[0].innerText;
-  var div = $("#igvDiv")[0],
+"use strict;"
+
+///////////////////////
+// Data
+//////////////////////
+
+/**
+ * A small cach of SNP related info
+ */
+var mutationInspectorState = {
+  cache : {}
+};
+
+
+///////////////////////
+// Mutation Table Associated
+//
+///////////////////////
+
+/**
+ * Read in the JSON object that points to the bams and variants of interest.
+ * @param {string} mutationTabFile - The path / URL to the JSON object
+ */
+function loadMutationTable( mutationTabFile ) {
+
+  // Holds all information about the mutation view
+  mutationInspectorView = {}
+
+  // Read in the JSON file
+  mutationInspectorView.json = dummy_data; // readMutationJSON( mutationTabFile )
+
+  // Create table from json file
+  // Get an array of the keys
+  mutationHeaderKeys = []
+  for( mutationHeader in mutationInspectorView.json.SNV[0] ) {
+    if( mutationInspectorView.json.SNV[0].hasOwnProperty( mutationHeader ) ) {
+      mutationHeaderKeys.push( mutationHeader );
+    }
+  }
+
+  // Store locations of certain key row elements used later
+  // These elements can be considered REQUIRED in the data
+  mutationInspectorView.headerKeys = mutationHeaderKeys
+  mutationInspectorView.chrKey = mutationHeaderKeys.indexOf( "CHROM" );
+  mutationInspectorView.posKey = mutationHeaderKeys.indexOf( "POS" );
+  mutationInspectorView.refKey = mutationHeaderKeys.indexOf( "REF" );
+  mutationInspectorView.altKey = mutationHeaderKeys.indexOf( "ALT" );
+
+  // Add header and footer elements to the table
+  var mutationTable = $('#mutationTable');
+  var mutationHeader = mutationHeaderKeys.map( toTableRowHeaderElement );
+  mutationTable.append( '<thead><tr>' + mutationHeader.join('') + '</tr></thead>' );
+  mutationTable.append( '<tfoot><tr>' + mutationHeader.join('') + '</tr></tfoot>' );
+
+  // Add table body
+  mutationTable.append( '<tbody>' );
+  for( snvIndex = 0; snvIndex < mutationInspectorView.json.SNV.length; snvIndex++ ){
+      snvEntry = mutationInspectorView.json.SNV[ snvIndex ];
+      mutationEntryValues = mutationHeaderKeys.map( function( key ){
+        return snvEntry[ key ]; } )
+      mutationTable.append( '<tr>' + mutationEntryValues.map( toTableRowBodyElement ) + '</tr>' );
+  }
+  mutationTable.append( '</tbody>' );
+
+  // Return the inspector
+  return mutationInspectorView;
+}
+
+/**
+ * Make a table header row containing a given value.
+ * Helper function for the map call.
+ * @param {string} tableRowValue - Value to put in the header row.
+ */
+function toTableRowHeaderElement( tableRowValue ){
+    return '<th>' + tableRowValue + '</th>';
+}
+
+/**
+ * Make a table row containing a given value.
+ * Helper function for the map call.
+ * @param {string} tableRowValue - Value to put in the row.
+ */
+function toTableRowBodyElement( tableRowValue ){
+    return '<td>' + tableRowValue + '</td>';
+}
+
+
+//////////////////////
+// Associated with the specific view tab.
+//
+//////////////////////
+
+/**
+ * Add a tab for a specific genomic location / SNP.
+ * Update the full UI to be consistent with selection.
+ * Populate the body of the table with specific information.
+ * @param {string} curRowChr - Chromsome location
+ * @param {string} curRowPos - Genomic position on chromosome
+ * @param {string} curRowRef - Reference base
+ * @param {string} curRowAlt - Alternative base
+ */
+function addSpecificTab( curRowChr, curRowPos, curRowRef, curRowAlt ){
+  var newTabName = curRowChr+"_"+curRowPos
+  var tabArea = $( '#tabContent' );
+  // If the the tab already exists, go to tab, do not make a new one.
+  if( isExistingSpecificTab( curRowChr, curRowPos )){
+    clickSpecificViewTab( newTabName )
+    retrieveCRAVATInfo( curRowChr, curRowPos, curRowRef, curRowAlt )
+    return;
+  }
+  // Make a new tab.
+  var tabDescArea = $( '#tabDescription' );
+  var chromLocation = curRowChr + ":" + curRowPos
+  var closeButton = newTabName + "_close"
+  var tabHeader = newTabName+"_tab"
+  tabDescArea.append( '<li id="'+tabHeader+'"><a href="#'+newTabName+'" data-toggle="tab"><button id="'+closeButton+'" class="close closeTab" type="button">x</button>'+chromLocation+'</a></li>' );
+  // Add in the tab area ( by default add in area for browser and cravat info )
+  tabArea.append( '<div id="'+newTabName+'" class="tab-pane fade"></div>' );
+  clickSpecificViewTab( newTabName );
+  // Update cache of SNP info per genomic location.
+  mutationInspectorState.cache[ chromLocation ] = { 
+    'Chromosome' : curRowChr,
+    'Position' : curRowPos,
+    'alt' : curRowRef,
+    'ref' : curRowAlt,
+  }
+  // MuPIT link will be added by an asynchronous call
+  mutationInspectorState.cache[ chromLocation ][ "MuPIT Link" ] = null
+  var currentCravatData = retrieveCRAVATInfo( curRowChr, curRowPos, curRowRef, curRowAlt );
+  // Add click event for close button and tab.
+  registerCloseEvent( closeButton, tabHeader, newTabName );
+  registerOnClickEvent( tabHeader, chromLocation );
+}
+
+/**
+ * Indicates if the tab already exists.
+ * @param {string} curCheckChr - Chromsome to check
+ * @param {string} curCheckPos - Postion on chromosome to check.
+ */
+function isExistingSpecificTab( curCheckChr, curCheckPos ){
+  var newTabName = curCheckChr+"_"+curCheckPos
+  var mutationTabs = $( '.tab-pane' );
+  for( var tabIndex = 0; tabIndex < mutationTabs.length; tabIndex++ ){
+    if( mutationTabs[ tabIndex ].id === newTabName ){
+      return true;
+    }
+  }
+  return false; 
+}
+
+/**
+ * clicks on a specific tab to make it active.
+ * @param {string} curSpecificViewTabId - The id of the tab to click and make active.
+ */
+function clickSpecificViewTab( curSpecificViewTabId ){
+  $('.nav-tabs a[href="#' + curSpecificViewTabId + '"]').tab('show');
+}
+
+/**
+ * Create custom close button event.
+ * Closes associated tab and changes the active tab to the browsing tab.
+ * @param {string } closeButtonId - Id of close button to which to add the event.
+ * @param {string } closeTabId - Id of tab header to remove.
+ * @param {string } closeBodyId - Id of tab content to remove.
+ */
+function registerCloseEvent( closeButtonId, closeTabId, closeBodyId ){
+  // Add close button solution from
+  // Hardcoded and not dynamic but works for now.
+  $( "#"+closeButtonId ).click( function() {
+    $( '#' + closeTabId ).remove();
+    $( '#' + closeBodyId ).remove();
+    $( '#tabDescription a[href="#tabBrowser"]' ).tab('show'); // Show the default tab body
+    $( "#tabBrowser_tab" ).click();
+  });
+}
+
+/**
+ * Create a custom click event for the tabs.
+ * Updates the page to be consistent with the active tab.
+ * @param {string} tabHeader - The id of the tab to which to add the click event.
+ * @param {string} registerChrLoc - The genomic location of the SNP being viewed (format= Chr:Pos)
+ */
+function registerOnClickEvent( tabHeader, registerChrLoc ){
+  $( "#" + tabHeader ).click( function() {
+    var currentState = mutationInspectorState.cache[ registerChrLoc ];
+    goToSNP( currentState.Chromosome, currentState.Position );
+    updateSNPInfo( currentState.Chromosome, currentState.Position, currentState.ref, currentState.alt );
+    updateMupitLink( currentState );
+  });
+}
+
+/**
+ * Create a custom click event for the default tab.
+ * This tab does not represent a specific location so some
+ * of the page is cleared of info. The browser is not removed but stays
+ * in it's last state.
+ * @param {string} tabHeader - The id of the tab to which to add the click event.
+ */
+function registerDefaultTabClick( tabHeader ){
+  $( "#"+tabHeader ).click( function() {
+    updateSNPInfo( "NA", "NA", "NA", "NA" );
+    updateMupitLink( { 'MuPIT Link' : null,
+                       'Chromosome' : null 
+    });
+  });
+}
+
+/**
+ * Update the top of the page with a summary of the location being viewed.
+ * Also set the MuPIT link to a spinner as it will be loading.
+ * @params {string} curSNPChr - Current view's chromosome.
+ * @params {string} curSNPChr - Current view's position.
+ * @params {string} curSNPChr - Current view's reference base.
+ * @params {string} curSNPChr - Current view's alternative base.
+ */
+function updateSNPInfo( curSNPChr, curSNPPos, curSNPRef, curSNPAlt ){
+  $( '#currentChr' ).text( curSNPChr );
+  $( '#currentPosition' ).text( curSNPPos );
+  $( '#currentRef' ).text( curSNPRef );
+  $( '#currentAlt' ).text( curSNPAlt );
+  $( '#currentMupit' ).text( '' );
+  $( '#currentMupit' ).append( '<div class=\"spinner-loader\">Loading...</div>' );
+}
+
+
+///////////////////////
+// IGV browser Associated
+//
+//////////////////////
+
+/**
+ * Initializes a IGV browser instance.
+ * @params {string} sampleInfo - Object holding the bam url/path, bam index url/path, and sample name.
+ */
+function createIGVBrowser( sampleInfo ){
+  // Create a browser
+  var div = $("#igvBrowser")[0],
   options = {
     showNavigation: true,
     genome: "hg19",
-    tracks: [{ url: inspectorView[ defaultSample ][ "DNA" ],
-               indexURL: inspectorView[ defaultSample ].DNA_INDEX,
+    tracks: [{ url: sampleInfo.BAM,
+               indexURL: sampleInfo.BAM_INDEX,
                type: "bam",
-               label: "Exome Sequencing (" + defaultSample + ")",
-               height: 150 },
-             { url: inspectorView[ defaultSample ][ "RNA" ],
-               indexURL: inspectorView[ defaultSample ].RNA_INDEX,
-               type: "bam",
-               label: "RNA-Seq Sequencing (" + defaultSample + ")",
-               color: "rgb( 102, 153, 255 )",
+               label: sampleInfo.SAMPLE,
                height: 150 }]
   };
   igv.createBrowser( div, options );
 }
 
-function createMenus( InspectorViewCurrent ){
-  // Make sample menu
-  var defaultSample = Object.keys( inspectorView )[ 0 ];
-  var sampleMenuDropdown =  $("#sampleMenu") 
-  for( var sample in inspectorView ){
-    if( inspectorView.hasOwnProperty( sample )){
-      sampleMenuDropdown.append( "<li><a href=\"#\">" + sample + "</a></li>" );
-    }
-  }
-  // Add sample menu event
-  // Trigger the event on the defaul sample menu
-  $("#sampleMenu li").click( function(){
-    switchSample( $(this).text() );
+/**
+ * Go to SNP location.
+ * @params {string} dataTableRowChr - Chromosomal location to which to move.
+ * @params {string} dataTableRowPos - Position of interest
+ */
+function goToSNP( dataTableRowChr, dataTableRowPos ){
+  // Move the igv browser to a specific location
+  // Example "chr1:181,413,875-181,413,925"
+  // The position needs to be a span so we are adding a window around the given position.
+  igv.browser.search( dataTableRowChr + ":" + Math.max( 0, parseInt( dataTableRowPos ) - 50 ) + "-" + ( parseInt( dataTableRowPos ) + 50 ) );
+}
+
+
+//////////////////////
+// Data IO
+//
+//////////////////////
+
+/**
+ * Reads in the mutation JSON file.
+ * @params {string} readInFile - Path or URL to file.
+ */
+function readMutationJSON( readInFile ){
+  $.getJSON( readInFile , function( jsonInfo ){
+    mutationInspectorView.json = jsonInfo
+  })
+  .done( function(){ console.log( 'Completed reading file:' + readInFile ); } )
+  .fail( function(){ console.log( 'Failed to read file:' + readInFile ); } )
+}
+
+
+//////////////////////
+// CRAVAT Associated
+//
+/////////////////////
+
+/**
+ * Sets the area to contain the detailed (CRAVAT) info to a spinner
+ * given we will wait for the associated asynchronous call.
+ * @params {string} retrieveAnnotationTabName - The id of the tab content div to set to a spinner as we wait.
+ */
+function setAnnotationTabToLoad( retrieveAnnotationTabName ){
+  $( '#' + retrieveAnnotationTabName ).html( "" );
+  $( '#' + retrieveAnnotationTabName ).append( "<div class=\"spinner-loader\">Loading...</div>" );
+}
+
+/**
+ * Query the CRAVAT web service for information about the genomic location of interest.
+ * Update the page when the data is recevied.
+ * Asyncronous call.
+ * @params {string} retrieveChr - Chromosome of interest, used in the cravat call.
+ * @params {string} retrievePos - Position of interest, used in the cravat call.
+ * @params {string} retrieveRef - Reference base of interest, used in the cravat call.
+ * @params {string} retrieveAlt - Alternative base of interest, used in the cravat call.
+ */
+function retrieveCRAVATInfo( retrieveChr, retrievePos, retrieveRef, retrieveAlt ){
+  // Performs an asynchronous call to the CRAVAT web service
+  // Updates both the CRAVAT info header and the info tab
+  // Puts a loading logo up while waiting
+  var positionKey = retrieveChr + "_" + retrievePos
+  setAnnotationTabToLoad( positionKey );
+  $.ajax({ type: 'GET',
+           dataType: 'json',
+           success: function( cravatData ){
+    if( cravatData ){
+      updateMupitLink( cravatData );
+      updateCravatTab( retrieveChr + "_" + retrievePos, cravatData );
+      mutationInspectorState.cache[ retrieveChr+':'+retrievePos ]["MuPIT Link"] = cravatData[ "MuPIT Link" ];
+      }
+    },
+           url: "http://staging.cravat.us/rest/service/query?mutation="+retrieveChr+"_"+retrievePos+"_+_"+retrieveRef+"_"+retrieveAlt
   });
-
-  // Update error class menus
-  updateErrorMenus( defaultSample );
+  return null;
 }
 
-function updateErrorMenus( sample ){
-  // Update the menus for the error classes based on the given sample.
-  var TPMenuDropdown =  $("#truePositive")
-  var FPMenuDropdown =  $("#falsePositive") 
-  var FNMenuDropdown =  $("#falseNegative") 
-
-  var TPObj = inspectorView[ sample ].TP;
-  var FPObj = inspectorView[ sample ].FP;
-  var FNObj = inspectorView[ sample ].FN;
-
-  // Clear the previous list entries
-  // This clears the event as well so you have to add them back
-  TPMenuDropdown.empty();
-  FPMenuDropdown.empty();
-  FNMenuDropdown.empty();
-  
-  // Make TP Menu
-  for( var TPLabel in TPObj ){
-    if( TPObj.hasOwnProperty( TPLabel )){
-      TPMenuDropdown.append("<li><a href=\"#\">"+TPLabel+"</a></li>" );
-    }
-  }
-  // Make FP Menu
-  for( var FPLabel in FPObj ){
-    if( FPObj.hasOwnProperty( FPLabel )){
-      FPMenuDropdown.append("<li><a href=\"#\">"+FPLabel+"</a></li>" );
-    }
-  }
-  // Make FN Menu
-  for( var FNLabel in FNObj ){
-    if( FNObj.hasOwnProperty( FNLabel )){
-      FNMenuDropdown.append("<li><a href=\"#\">"+FNLabel+"</a></li>" );
-    }
-  }
-
-  // Add click event to the error class locations
-  $("#truePositive li").click( function(){
-    moveToSNP( $(this).text(), TPObj[ $(this).text() ]);
-    snpClass.innerHTML = "<b>True Positive</b>"
-  });
-  $("#falsePositive li").click( function(){
-    moveToSNP( $(this).text(), FPObj[ $(this).text() ]);
-    snpClass.innerHTML = "<b>False Positive</b>";
-  });
-  $("#falseNegative li").click( function(){
-    moveToSNP( $(this).text(), FNObj[ $(this).text() ]);
-    snpClass.innerHTML = "<b>False Negative</b>";
-  });
-}
-
-function formatSNPLocationForBrowser( locationToFormat ){
-  // Changes the format of a SNP location from what is viewed to what is needed for the browser.
-  var SNPLocation = parseInt( getSNPLocation( locationToFormat ) );
-  return getChr( locationToFormat ) + ":" + Math.max( 0, SNPLocation - 30 ) + "-" + ( SNPLocation + 30 )
-}
-
-function getChrCoverage( locationToFormat ){
-  // Get Chr coverage from UI formated location
-  return locationToFormat.split(" ")[1].replace("(","").replace(")","");
-}
-
-function getChr( locationToFormat ){
-  // Get just the Chr location from UI formated location
-  chrTemp = locationToFormat.split(" ")[0].split("-")[0].toLowerCase();
-  if ( chrTemp[ 3 ] === "x" ){
-    chrTemp = chrTemp.substring( 0, 3 ) + "X" + chrTemp.substring( 4, chrTemp.length );
-  } else if ( chrTemp[ 3 ] === "y" ){
-    chrTemp = chrTemp.substring( 0, 3 ) + "Y" + chrTemp.substring( 4, chrTemp.length );
-  } else if ( chrTemp[ 3 ] === "m" ){
-    chrTemp = chrTemp.substring( 0, 3 ) + "M" + chrTemp.substring( 4, chrTemp.length );
-  }
-  return chrTemp;
-}
-
-function getChrLocation( locationToFormat ){
-  // Get the Chr location from UI formated location
-  return locationToFormat.split(" ")[0].replace("-",":");
-}
-
-function updateCRAVATAnnotationTable( cravatItem ){
+/**
+ * Write all information in a CRAVAT object received from the CRAVAT web service to a content tab /table.
+ * @params {string} updateTab - Tab to add content to from CRAVAT.
+ * @params {object} cravatItem - Obect of annotation, all members and value of the object are written to the table.
+ */
+function updateCravatTab( updateTab, cravatItem ){
   // Make CRAVAT annotation table for data
-
-  var annotationArea = $("#annotationTableDiv")
-  annotationArea.empty();
-
-  // Add table
-  var hugoSymbol = cravatItem["HUGO symbol"];
-  var thousandFreq = cravatItem["1000 Genomes allele frequency"];
-  var cosmic = cravatItem["Occurences in COSMIC [exact nucleotide change]"];
-  var mupit = cravatItem["MuPIT Link"];
-  var mupitButton = "";
-  var geneCards = cravatItem["GeneCards summary"];
-
-  //If there is a MuPIT link add as button and add to annotation header html
-  if( mupit ){
-    mupitButton = "<button id=\"mupitButton\" class=\"btn btn-info\"><span class=\"glyphicon glyphicon-eye-open\"></span> View in MuPIT</button>";
-  }
-  annotationArea.append(
-    "<div class=\"col-xs-3\"><div class=\"table-responsive\"><table class=\"table-hover\">" +
-      "<tr><td><b>HUGO Symbol:</b> " + ( hugoSymbol ? hugoSymbol : "Not Specified" ) + "</td></tr>" +
-      "<tr><td><b>1000 Genomes Freq:</b> " + parseFloat( thousandFreq ? thousandFreq : "Not Specified" ).toFixed(4) + "</td></tr>" +
-      "<tr><td><b>COSMIC Occurences:</b> " + ( cosmic ? cosmic : "Not Specified" ) + "</td></tr>" +
-    "</table></div></div>" +
-    "<div class=\"col-xs-6\"><div class=\"table-responsive\"><table class=\"table-hover\">" +
-      "<tr><td><b>MuPIT Link:</b> "+ ( mupitButton ? mupitButton : "Not Specified" )+"</td></tr>" +
-      "<tr><td><b>GeneCards Summary:</b> "+ ( geneCards ? geneCards : "Not Specified" ) +"</td></tr>" +
-    "</table></div></div>" );
-  //Add click event for MuPIT
-  if( mupit ){
-    $('#mupitButton').click( function(){
-      window.open( mupit );
-    });
-  }
-}
-
-function addCravatTab( inputCravatData ){
-  // Given an object form a CRAVAT reponse.
-  // Drop the contents of the CRAVAT object into a table
-  // and add it to the CRAVAT div. 
-  var cravatTab = $("#cravatTab");
-  cravatTab.empty()
-
-  // Make table from object
   var newTable = "<div class=\"table-responsive\"><table class=\"table-hover\">"
-  for( var cravatElement in inputCravatData ){
-    if( inputCravatData.hasOwnProperty( cravatElement ) ){
-      var curValue = inputCravatData[ cravatElement ]
+  for( var cravatElement in cravatItem ){
+    if( cravatItem.hasOwnProperty( cravatElement ) ){
+      var curValue = cravatItem[ cravatElement ]
       newTable = newTable + "<tr><td><b>" + cravatElement + ":</b> " + ( curValue ? curValue : "Not Specified" ) + "</td></tr>";
     }
   }
   newTable = newTable + "</table></div>"
-
-  // Add to div
-  cravatTab.append( newTable ); 
+  $( '#'+updateTab ).html( "" );
+  $( '#'+updateTab ).append( newTable );
 }
 
-function resetCRAVATArea(){
-  // Reset the content of the CRAVAT Tab and header
-  var cravatTab = $("#cravatTab");
-  var cravatHeader = $("#annotationTableDiv");
-  cravatTab.empty();
-  cravatHeader.empty();
 
-  cravatTab.append("<p>No Variant Annotation Loaded.</p>");
-  cravatHeader.append("<p>No Variant Annotation Loaded.</p>");
-}
+/////////////////////
+// MuPIT Link / Button
+//
+/////////////////////
 
-function setCRAVATAreaToLoading(){
-  // Set the CRAVAT area to loading
-
-  // Clear annotation area
-  var cravatTab = $("#cravatTab");
-  var cravatHeader = $("#annotationTableDiv");
-  cravatTab.empty();
-  cravatHeader.empty();
- 
-  cravatTab.append("<div class=\"spinner-loader\">Loading...</div>");
-  cravatHeader.append("<div class=\"spinner-loader\">Loading...</div>");
-}
-
-function getSNPLocation( locationToFormat ){
-  // Get the SNP location from UI formated location
-  return locationToFormat.split(" ")[0].split("-")[1];
-}
-
-function moveToSNP( location, SNPInfo ){
-  // Change the view on the genomic tracks to the selected location
-
-  // Update the location information
-  snpLocation.innerHTML = "<b>SNP Location:</b> " + getChrLocation( location );
-  snpCoverage.innerHTML = "<b>SNP Coverage:</b> " + SNPInfo[ "Cov_dna" ] + " (DNA) " + SNPInfo[ "Cov" ] + " (RNA)";
-  snpRef.innerHTML = "<b>Ref:</b> " + SNPInfo[ "Ref" ];
-  snpAlt.innerHTML = "<b>Alt:</b> " + SNPInfo[ "Alt" ];
-
-  // Move to the SNP in the track
-  // Incoming formate Chr#-loc# (coverage#)
-  // Chr1-34 (43)
-  // Needed format
-  // chr1:43
-  igv.browser.search( formatSNPLocationForBrowser( location ) );
-
-  // Update CRAVAT info
-  setCRAVATAreaToLoading();
-  // Retrieve and update CRAVAT areas 
-  retrieveCRAVATInfo( SNPInfo );
-}
-
-function readData( pipelineFile ){
-
-  $.getJSON( pipelineFile, function(jsonFile){
-
-    console.log( "Successfully read file.");
-    console.log( jsonFile );
-  
-    // Set the global inspector view 
-    inspectorView = jsonFile;
- 
-    // Initialize View
-    createMenus( jsonFile );
-    // Trigger the even on the default sample menu
-    $("#sampleMenu li")[0].click();
-
-    // Update the CRAVAT area
-    resetCRAVATArea();
-  })
-  .done( function(){ console.log( "Completed reading file:"+pipelineFile );})
-  .fail( function(){ console.log( "Failed to read file." );});
-}
-
-function retrieveCRAVATInfo( SNPinfo ){
-  // Performs an asynchronous call to the CRAVAT web service
-  // Updates both the CRAVAT info header and the info tab
-  // Puts a loading logo up while waiting.
-  // SNPInfo needs to be { chr: '22', Loc: '30421786', Ref: 'A', Alt: 'T', Strand: '+' }
-
-  $.ajax({ type: 'GET', 
-           dataType: 'json', 
-           success: function( cravatData ) {
-                                     if( cravatData ){
-                                       updateCRAVATAnnotationTable( cravatData );
-                                       addCravatTab( cravatData );
-                                                     }
-                                  }, 
-           url: "http://staging.cravat.us/rest/service/query?mutation=chr"+SNPinfo.Chr+"_"+SNPinfo.Loc+"_"+SNPinfo.Strand+"_"+SNPinfo.Ref+"_"+SNPinfo.Alt 
-        });
-}
-
-function switchSample( sampleName ){
-  // Switch the sample label to the given sample.
-  // Switch the samples in the browser.
-  activeSample.innerText = "Sample: " + sampleName
-
-  // Create browser
-  if(! igv.browser ){
-    createBrowser( inspectorView );
+/**
+ * Update the MuPIT link, handling cases where there was a link, there was no link, or a bad call occured.
+ * @param {object} cravatItem - Object from the CRAVAT web service.
+ */
+function updateMupitLink( cravatItem ){
+  var mupit = cravatItem[ "MuPIT Link" ];
+  // If there is a MuPIT link add as a button (update the label to a label)
+  if( mupit ){
+    $( '#currentMupit' ).html( "" );
+    $( '#currentMupit' ).append( '<button id=\"mupitButton\" class=\"btn btn-info\"> View in MuPIT</button>');
+    $( '#mupitButton' ).click( function() {
+      window.open( mupit );
+    });
+  } else if( cravatItem[ 'Chromosome' ] ){
+    $( '#currentMupit' ).html( "" );
+    $( '#currentMupit' ).html( 'No Link for '+cravatItem[ 'Chromosome' ]+':'+cravatItem[ 'Position' ] );
   } else {
-    // Switch sample
-    // Remove old tracks
-    igv.browser.removeTrack( igv.browser.trackViews[2].track)
-    igv.browser.removeTrack( igv.browser.trackViews[2].track)
-    // Add new tracks
-    sampleTrackOptionsRNA = { url: inspectorView[ sampleName ].RNA,
-                            indexURL: inspectorView[ sampleName ].RNA_INDEX,
-                            type: "bam",
-                            label: "RNA-Seq Sequencing (" + sampleName + ")",
-                            height: 150,
-                            color: "rgb( 102, 153, 255 )" }
-    sampleTrackOptionsDNA = { url: inspectorView[ sampleName ].DNA,
-                            indexURL: inspectorView[ sampleName ].DNA_INDEX,
-                            type: "bam",
-                            label: "exome Sequencing (" +sampleName + ")",
-                            height: 150 }
-    // Update the Genome
-    igv.browser.loadTrack( sampleTrackOptionsDNA );
-    igv.browser.loadTrack( sampleTrackOptionsRNA );
+    $( '#currentMupit' ).html( "" );
+    $( '#currentMupit' ).html( 'Please select a variant' );
   }
-  // Update True Positive 
-  // Update False Positive
-  // Update False Negative
-  console.log( "Switch sample" );
-  console.log( sampleName );
-  updateErrorMenus( sampleName );
 }
