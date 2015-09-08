@@ -242,7 +242,7 @@ function createIGVBrowser( sampleInfo ){
                indexURL: sampleInfo.BAM_INDEX,
                type: "bam",
                label: sampleInfo.SAMPLE,
-               height: 150 }]
+               maxHeight: 250 }]
   };
   igv.createBrowser( div, options );
 }
