@@ -5,6 +5,7 @@ CHR_COMMENT = "#"
 STR_TAB_DELIMITER = "\t"
 STR_CHROM = "Chromosome"
 STR_CHROM_UPDATE = "CHROM"
+STR_EMPTY_FILE = "No Data"
 STR_POS = "Position"
 STR_POS_UPDATE = "POS"
 STR_CHASM_PVALUE = "CHASM cancer driver p-value (missense)"
@@ -68,6 +69,11 @@ if args.str_input_file:
                                                     STR_CHASM_FDR_UPDATE, STR_VEST_PVALUE_UPDATE, STR_VEST_FDR_UPDATE ]) )
           continue
 
+        # Check to see if this is not a good run
+        if lstr_line[ 0 ] == STR_EMPTY_FILE:
+          lstr_tab.append( STR_TAB_DELIMITER.join( [ "NA" ] * len( lstr_header_order ) ) )
+          break
+ 
         # Shuffle to header index and reduce
         # And store
         lstr_tab.append( STR_TAB_DELIMITER.join( [ lstr_line[ i_index ] for i_index in lstr_header_order ] ) )
