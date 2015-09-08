@@ -101,8 +101,11 @@ sub __get_distance_annotation {
         
         if ($dist > 0 && $dist <= $MAX_NEIGHBOR_DIST) {
             
-            if ($orientA ne $orientB) { 
-                push(@annotations, "INVERSION:$orientA:$orientB:[$dist]");
+            if ($lendA < $rendB && $rendA > $lendB) {
+                push (@annotations, "NEIGHBORS_OVERLAP:$orientA:$orientB:[$dist]");
+            }
+            elsif ($orientA ne $orientB) { 
+                push(@annotations, "LOCAL_INVERSION:$orientA:$orientB:[$dist]");
             }
             elsif ($orientA eq '+' && $lendB < $rendA) { 
                 push (@annotations, "LOCAL_REARRANGEMENT:$orientA:[$dist]");

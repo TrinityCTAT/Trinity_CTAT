@@ -133,7 +133,7 @@ main: {
     ####################################################
 
     my $gmap_output_file = "gmap.map.gff3";
-    my $cmd = "gmap -D $GMAP_DB_DIR -d $GMAP_DB_NAME $transcripts_file -f 3 -n 0 -x $MIN_TRANS_LEN_TRY_CHIM -t $CPU  > $gmap_output_file 2>/dev/null";
+    my $cmd = "gmap -D $GMAP_DB_DIR -d $GMAP_DB_NAME $transcripts_file -f 3 -n 0 -x $MIN_TRANS_LEN_TRY_CHIM -t $CPU  > $gmap_output_file ";
     
     $pipeliner->add_commands(new Command($cmd, ".${gmap_output_file}.ok"));
 
