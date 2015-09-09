@@ -242,7 +242,12 @@ function createIGVBrowser( sampleInfo ){
                indexURL: sampleInfo.BAM_INDEX,
                type: "bam",
                label: sampleInfo.SAMPLE,
-               maxHeight: 250 }]
+               maxHeight: 250 },
+             { url: "hg19.refGene.bed",
+               name: "Genes",
+               order: Number.MAX_VALUE,
+               displayMode: "EXPANDED",
+               maxHeight: 75 }]
   };
   igv.createBrowser( div, options );
 }
