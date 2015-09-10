@@ -44,11 +44,11 @@ sub write_breakpoint_gff {
 
     foreach my $trans_acc (keys %$trans_breakpoint_href) {
         
-        my $breakpoint = $trans_breakpoint_href->{$trans_acc};
+        my ($breakpoint, $fusion_name) = split(/\t/, $trans_breakpoint_href->{$trans_acc});
         
         my ($brk_lend, $brk_rend) = split(/-/, $breakpoint);
 
-        print $ofh join("\t", $trans_acc, "breakpoint", "match", $brk_lend, $brk_rend, ".", "+", ".", "ID=\"$trans_acc.brkpt:$brk_lend-$brk_rend") . "\n";
+        print $ofh join("\t", $trans_acc, "breakpoint", "match", $brk_lend, $brk_rend, ".", "+", ".", "ID=\"$fusion_name|$trans_acc.brkpt:$brk_lend-$brk_rend") . "\n";
     }
 
     
@@ -125,7 +125,8 @@ sub parse_fusion_evidence {
         my $fusion_info = $x[3];
         my @pts = split(/;/, $fusion_info);
         my $brkpt = join("-", $pts[2], $pts[6]);
-        $trans_breakpoint_href->{$trans_acc} = $brkpt;
+        my $fusion_name = pop @pts;
+        $trans_breakpoint_href->{$trans_acc} = "$brkpt\t$fusion_name";
 
         my $junction_read_list = $x[6];
         my $spanning_frag_list = $x[7];
