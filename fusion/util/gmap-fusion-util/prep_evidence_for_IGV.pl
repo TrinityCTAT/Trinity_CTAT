@@ -46,7 +46,7 @@ sub write_breakpoint_gff {
         
         my ($breakpoint, $fusion_name) = split(/\t/, $trans_breakpoint_href->{$trans_acc});
         
-        my ($brk_lend, $brk_rend) = split(/-/, $breakpoint);
+        my ($brk_lend, $brk_rend) = sort {$a<=>$b} split(/-/, $breakpoint);
 
         print $ofh join("\t", $trans_acc, "breakpoint", "match", $brk_lend, $brk_rend, ".", "+", ".", "ID=\"$fusion_name|$trans_acc.brkpt:$brk_lend-$brk_rend\"") . "\n";
     }
