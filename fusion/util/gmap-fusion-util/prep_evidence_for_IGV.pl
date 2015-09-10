@@ -29,9 +29,34 @@ main: {
 
     &write_fusion_evidence_bams($chims_fasta, $bam_file, \%junction_reads, \%spanning_frags);
     
-    
+    &write_breakpoint_gff(\%trans_breakpoint);
+
+
+    exit(0);
 
 }
+
+####
+sub write_breakpoint_gff {
+    my ($trans_breakpoint_href) = @_;
+    
+    open (my $ofh, ">breakpoints.gff") or die $!;
+
+    foreach my $trans_acc (keys %$trans_breakpoint_href) {
+        
+        my $breakpoint = $trans_breakpoint_href->{$trans_acc};
+        
+        my ($brk_lend, $brk_rend) = split(/-/, $breakpoint);
+
+        print $ofh join("\t", $trans_acc, "breakpoint", "match", $brk_lend, $brk_rend, ".", "+", ".", "ID=\"$trans_acc.brkpt:$brk_lend-$brk_rend") . "\n";
+    }
+
+    
+    close $ofh;
+
+    return;
+}
+
 
 
 ####
@@ -64,10 +89,20 @@ sub write_fusion_evidence_bams {
 
     
     ## convert to coord-sorted bam files.
+    
+    my $cmd = "samtools view -T $chims_fasta -Sb $junction_frags_sam_file | samtools sort - $junction_frags_sam_file.csorted";
+    &process_cmd($cmd);
+    
+    &process_cmd("samtools index $junction_frags_sam_file.csorted.bam");
 
 
-
-
+    $cmd =  "samtools view -T $chims_fasta -Sb $spanning_frags_sam_file | samtools sort - $spanning_frags_sam_file.csorted"; 
+    &process_cmd($cmd);
+    
+    &process_cmd("samtools index $spanning_frags_sam_file.csorted.bam");
+    
+    unlink($junction_frags_sam_file, $spanning_frags_sam_file);
+    
     return;
 
 }
