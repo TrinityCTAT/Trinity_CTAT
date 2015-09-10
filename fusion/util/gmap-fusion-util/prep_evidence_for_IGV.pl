@@ -124,7 +124,7 @@ sub parse_fusion_evidence {
         
         my $fusion_info = $x[3];
         my @pts = split(/;/, $fusion_info);
-        my $brkpt = join("-", $pts[2], $pts[7]);
+        my $brkpt = join("-", $pts[2], $pts[6]);
         $trans_breakpoint_href->{$trans_acc} = $brkpt;
 
         my $junction_read_list = $x[6];
