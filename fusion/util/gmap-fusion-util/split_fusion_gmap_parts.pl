@@ -6,7 +6,7 @@ use warnings;
 use FindBin;
 use lib ("$FindBin::Bin/../../PerlLib");
 use Fasta_reader;
-
+use Pipeliner;
 
 my $usage = "\n\n\tusage: $0 gmap.map.gff3.chims_described gmap.map.gff3.chims_described.fasta\n\n";
 
@@ -33,13 +33,14 @@ main: {
 
     foreach my $trans (keys %transcript_to_breakpoint) {
         
-        my $sequence = $trans_seqs{$trans};
+        my $sequence = $trans_seqs{$trans} or die "Error, no sequence for trans: $trans";
         
-        my $breakpoint_range = $transcript_to_breakpoint{$trans};
+        my $breakpoint_range = $transcript_to_breakpoint{$trans} or die "Error, no breakpoint range for $trans";
+        
         my ($brk_left, $brk_right) = sort {$a<=>$b} split(/-/, $breakpoint_range);
 
-        my $seq_range_left = substr($sequence, 0, $brk_left);
-        my $seq_range_right = substr($sequence, $brk_right);
+        my $seq_range_left = substr($sequence, 0, $brk_left) or die "Error, no substr for range left";
+        my $seq_range_right = substr($sequence, $brk_right) or die "Error, no substr for range right";
 
         print $ofh ">$trans" . "____left\n"
             . "$seq_range_left\n"
@@ -51,9 +52,9 @@ main: {
 
     ## run GMAP, capture all top hits within reason.
     my $gmap_output_file = "$chim_frag_file.gmap.gff3";
-    my $cmd = "gmap -D $GMAP_DB_DIR -d $GMAP_DB_NAME $chim_frag_file -f 3 -n 10 -t 4  > $gmap_output_file";
+    my $cmd = "gmap -D $GMAP_DB_DIR -d $GMAP_DB_NAME $chim_frag_file -f 3 -n 10 -t 4 --min-identity 0.98 > $gmap_output_file";
     
-    my $pipeliner = new Pipeliner(-verbose => 2);
+    my $pipeliner = new Pipeliner(-verbose => 1);
     $pipeliner->add_commands(new Command($cmd, "gmap_output_file.ok"));
 
     $pipeliner->run();
@@ -71,10 +72,11 @@ sub parse_chimera_preds {
 
     open (my $fh, $chims_described_file) or die $!;
     while (<$fh>) {
+        if (/^\#/) { next; }
         chomp;
         my @x = split(/\t/);
         my $trans_acc = $x[0];
-        my $info = $x[2];
+        my $info = $x[3];
         my @pts = split(/;/, $info);
         my $brk_left = $pts[2];
         my $brk_right = $pts[6];
