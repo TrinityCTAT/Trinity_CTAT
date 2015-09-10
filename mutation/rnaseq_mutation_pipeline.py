@@ -434,16 +434,6 @@ def func_do_BWA_alignment( args_call, str_unique_id, pline_cur, f_index_only = F
                                             lstr_cur_products = [ str_sam ] )
     lcmd_dna_mapping_commands.append( cmd_bwa_sam )
     
-#    # java -jar SortSam.jar I=Input.sam O=output.bam SO=coordinate
-#    cmd_bwa_bam = Command.Command( str_cur_command = "".join( [ "java -jar SortSam.jar SO=coordinate I=", str_sam, " O=", str_bam ] ),
-#                                            lstr_cur_dependencies = [ str_sam ],
-#                                            lstr_cur_products = [ str_bam ] )
-#    lcmd_dna_mapping_commands.extend( [ cmd_bwa_sam, cmd_bwa_bam ] )
-#
-#    # Create bai
-#    lcmd_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools index", str_bam ] ),
-#                          lstr_cur_dependencies = [ str_bam ],
-#                          lstr_cur_products = [ str_bai ] ) )
 
     # SAM to BAM
     lcmd_dna_mapping_commands.append( Command.Command( str_cur_command = " ".join( [ "samtools view -b -S -o", str_bam, str_sam ] ),
@@ -593,6 +583,9 @@ def func_do_rnaseq_caller_gatk( args_call, str_input_bam, str_unique_id, str_pro
              : list
     """
 
+    # Commands
+    lcmd_gatk_rna_calling = []
+
     # Files 
     str_variants_file = os.path.join( str_project_dir, "variants.vcf" )
     str_input_bai = str_input_bam + ".bai"
@@ -606,6 +599,7 @@ def func_do_rnaseq_caller_gatk( args_call, str_input_bam, str_unique_id, str_pro
         cmd_depth =  Command.Command( str_cur_command = "samtools depth " + str_input_bam + " > " + str_depth_compressed_file,
                                                lstr_cur_dependencies = [ str_input_bam ],
                                                lstr_cur_products = [ str_depth_compressed_file ] )
+        lcmd_gatk_rna_calling.append( cmd_depth )
     # Variant calling
     cmd_haplotype_caller = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T HaplotypeCaller -R", args_call.str_genome_fa,
                                                            "-I", str_input_bam, "-recoverDanglingHeads -dontUseSoftClippedBases",
@@ -613,8 +607,9 @@ def func_do_rnaseq_caller_gatk( args_call, str_input_bam, str_unique_id, str_pro
                                             lstr_cur_dependencies = [ args_call.str_genome_fa, str_input_bam, str_input_bai ],
                                             lstr_cur_products = [ str_variants_file ] )
     cmd_haplotype_caller.func_set_dependency_clean_level( [ str_input_bam, str_input_bai ], Command.CLEAN_NEVER )
+    lcmd_gatk_rna_calling.append( cmd_haplotype_caller )
 
-    return { INDEX_CMD : [ cmd_depth, cmd_haplotype_caller ], INDEX_FILE : str_variants_file }
+    return { INDEX_CMD : lcmd_gatk_rna_calling, INDEX_FILE : str_variants_file }
 
 
 def func_do_variant_calling_gatk( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur ):
@@ -678,27 +673,39 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
     * return : List of commands
            : List of commands to run for BWA alignment
     """
-    
+
+    str_sorted_bam = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.bam" ] ) )
+    str_sorted_bam_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.bam.bai" ] ) )
     str_dedup_bam = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedupped.bam" ] ) )
     str_dedup_metrics = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.metrics" ] ) )
     str_filtered_variants_file = os.path.join( str_project_dir, ".".join( [ str_unique_id, "filtered.variants.vcf" ] ) )
     str_intervals = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "religner.intervals" ] ) )
     str_raw_vcf = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "variants.vcf" ] ) )
     str_realigned_bam = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.realigned.bam" ] ) )
-    str_realigned_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.realigned.bam.bai" ] ) )
+    str_realigned_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.realigned.bai" ] ) )
     str_recal_plot = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal.pdf" ] ) )
     str_recal_snp_bam = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal_snp.bam" ] ) )
-    str_recal_snp_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal_snp.bam.bai" ] ) )
+    str_recal_snp_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal_snp.bai" ] ) )
     str_recal_table = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal.table" ] ) )
     str_recal_table_2 = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "recal_2.table" ] ) )
     str_replace_bam = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.bam" ] ) )
-    str_replace_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.bam.bai" ] ) )
+    str_replace_bai = os.path.join( str_tmp_dir, ".".join( [ str_unique_id, "sorted.dedup.groups.bai" ] ) )
 
     # DNA-seq best practices
-    # java -jar MarkDuplicates.jar I=input.sam O=output.bam
-    cmd_dedup = Command.Command( str_cur_command = "".join( [ "java -jar MarkDuplicates.jar I=", str_align_file,
-                                                             " M=", str_dedup_metrics, " O=", str_dedup_bam ] ),
+    # java -jar SortSam.jar I=Input.sam O=output.bam SO=coordinate
+    cmd_sort_bam = Command.Command( str_cur_command = "".join( [ "java -jar SortSam.jar SO=coordinate I=", str_align_file, " O=", str_sorted_bam ] ),
                                             lstr_cur_dependencies = [ str_align_file ],
+                                            lstr_cur_products = [ str_sorted_bam ] )
+
+    # Create bai
+    cmd_sort_index_bam = Command.Command( str_cur_command = " ".join( [ "samtools index", str_sorted_bam ] ),
+                          lstr_cur_dependencies = [ str_sorted_bam ],
+                          lstr_cur_products = [ str_sorted_bam_bai ] )
+
+    # java -jar MarkDuplicates.jar I=input.sam O=output.bam
+    cmd_dedup = Command.Command( str_cur_command = "".join( [ "java -jar MarkDuplicates.jar I=", str_sorted_bam,
+                                                             " M=", str_dedup_metrics, " O=", str_dedup_bam ] ),
+                                            lstr_cur_dependencies = [ str_sorted_bam ],
                                             lstr_cur_products = [ str_dedup_metrics, str_dedup_bam ] )
     
     # java -jar AddOrReplaceReadGroups.jar I=input.bam O=output.bam RGID=x RGLB=x RGPL=x RGPU=x RGSM=x RGCN=x RGDT=x
@@ -747,7 +754,7 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
                                 lstr_cur_products = [ str_recal_table_2 ] )
 
     # Commands so far
-    ls_cmds = [ cmd_dedup, cmd_replace, cmd_create_target, cmd_realign, cmd_recalibrate, cmd_print, cmd_recalibrate_2 ] 
+    ls_cmds = [ cmd_sort_bam, cmd_sort_index_bam, cmd_dedup, cmd_replace, cmd_create_target, cmd_realign, cmd_recalibrate, cmd_print, cmd_recalibrate_2 ] 
 
     # Optional plotting of recalibration
     if args_call.f_optional_recalibration_plot:
