@@ -19,6 +19,9 @@ my $chims_described = $ARGV[1] or die $usage;
 my $left_fq_file = $ARGV[2] or die $usage;
 my $right_fq_file = $ARGV[3] or die $usage;
 
+my $ANCHOR = 12;
+
+
 $trans_fasta = &ensure_full_path($trans_fasta);
 $chims_described = &ensure_full_path($chims_described);
 $left_fq_file = &ensure_full_path($left_fq_file);
@@ -149,7 +152,15 @@ sub capture_fusion_support {
                 ## see if any alignment overlaps the point of the junction
                 foreach my $align_seg (@$trans_coords_A_aref, @$trans_coords_B_aref) {
                     my ($lend, $rend) = @$align_seg;
-                    if ($lend < $break_left && $rend > $break_right) {
+                    
+                    ## ensure the alignment meets the anchor requirement.
+
+                    #                     brktp
+                    #    ------------------|------------------------ 
+                    #           <-- anchor on each side --->
+                    
+                    
+                    if ($lend <= ($break_left - $ANCHOR) && $rend >= ($break_right + $ANCHOR)) {
                         # overlaps junction breakpoint
                         #print STDERR "Found a JUNCTION read for $target_trans_id\n";
                         $fusion_support{$target_trans_id}->{junction}->{$frag_name}++;
