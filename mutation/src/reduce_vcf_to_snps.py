@@ -49,14 +49,14 @@ if args.str_input_file:
               continue
           if f_found_mutation:
             lstr_vcf.append( STR_VCF_DELIMITER.join( lstr_line ) )
-            print "Found SNP info tag, stored."
+            #print "Found SNP info tag, stored."
             continue
 
         # If is not a reference file, there should be a call for passing or not.
         # Make sure the variant passes.
         elif not args.f_no_prefilter_mode:
           if not lstr_line[ I_FILTER_INDEX ].lower() == STR_PASS.lower():
-            print "Did not pass filter. "+lstr_line[ I_FILTER_INDEX ].lower()+"."
+            #print "Did not pass filter. "+lstr_line[ I_FILTER_INDEX ].lower()+"."
             continue
 
         # Get ALT / REF
@@ -65,7 +65,7 @@ if args.str_input_file:
 
         # Skip monomorphic sites
         if str_alt == CHR_MONOMORPHIC_REFERENCE or str_ref == CHR_MONOMORPHIC_REFERENCE:
-          print "Skip monomorph"
+          #print "Skip monomorph"
           continue
 
         # Skip if not SNPs
@@ -75,17 +75,17 @@ if args.str_input_file:
         # referring to the REF or ALT
         if "," in str_alt:
           if not min( [ len( str_alt_token ) for str_alt_token in str_alt.split( "," ) ] ) == 1:
-            print "Skip not snp ALT with comma"
+            #print "Skip not snp ALT with comma"
             continue
         elif len( str_alt ) > 1:
-            print "Skip not snp ALT"
+            #print "Skip not snp ALT"
             continue
         if "," in str_ref:
           if not min( [ len( str_ref_token ) for str_ref_token in str_ref.split( "," ) ] ) == 1:
-            print "Skip not snp REF with comma"
+            #print "Skip not snp REF with comma"
             continue
         elif len( str_ref ) > 1:
-          print "Skip not snp REF"
+          #print "Skip not snp REF"
           continue
 
         # Store SNP
