@@ -188,6 +188,9 @@ main: {
         
         @spans = sort {$a->{range_lend}<=>$b->{range_lend}} @spans; # order spans according to transcript coordinates
             
+        my @fusion_preds;
+
+
         foreach my $align (@spans) {
         
             my $chr = $align->{chr};
@@ -203,6 +206,7 @@ main: {
 
             my $align_text = "[$chr:($range_lend-$range_rend)$lend-$rend ($orient) $per_id\%]";
             $align->{align_text} = $align_text;
+
             
             if ($prev_align) {
                 
@@ -218,6 +222,9 @@ main: {
                         
                         my ($left_entry, $right_entry) = ($left_possibility, $right_possibility);
                         
+
+                        if ($left_entry->{gene_id} eq $right_entry->{gene_id}) { next; } # no selfies
+
                         unless ($left_entry->{sense_or_antisense} eq $right_entry->{sense_or_antisense}) {
                             next;
                         }
@@ -228,6 +235,7 @@ main: {
                         }
                     
                         
+
                         my @at_exon_junctions = ($left_entry->{gene_id}, $left_entry->{delta}, $left_entry->{trans_brkpt}, $left_entry->{chr} . ":" . $left_entry->{pt_align}, 
                                                  $right_entry->{gene_id}, $right_entry->{delta}, $right_entry->{trans_brkpt}, $right_entry->{chr} . ":" . $right_entry->{pt_align},
                                                  join("--", $left_entry->{gene_id}, $right_entry->{gene_id}));
@@ -236,16 +244,43 @@ main: {
                         
                         
                         
-                        print $outline_text . "\t" . join(";", @chim_align_descrs) . "\t" . join(";", @at_exon_junctions) . "\n";
-                    
+                        my $report_text = $outline_text . "\t" . join(";", @chim_align_descrs) . "\t" . join(";", @at_exon_junctions) . "\n";
+                        
+                        
+                        my $fusion_pred = { left_entry => $left_entry,
+                                            right_entry => $right_entry,
+                                            delta_sum => $left_entry->{delta} + $right_entry->{delta},
+                                            report_text => $report_text,
+                        };
+                        
+                        push (@fusion_preds, $fusion_pred);
+                                            
                     }
                 }
             }
             
             $prev_align = $align;
             
+        } # end for each align
+
+
+        ## Report a fusion
+        if (@fusion_preds) {
+            @fusion_preds = sort {$a->{delta_sum}<=>$b->{delta_sum}} @fusion_preds;
+            my $min_delta_sum = $fusion_preds[0]->{delta_sum};
+            while (@fusion_preds) {
+                my $pred = shift @fusion_preds;
+                if ($pred->{delta_sum} == $min_delta_sum) {
+                    print $pred->{report_text};
+                }
+                else {
+                    last;
+                }
+            }
         }
-    }
+        
+
+    } # end for each target
     
     
     exit(0);
