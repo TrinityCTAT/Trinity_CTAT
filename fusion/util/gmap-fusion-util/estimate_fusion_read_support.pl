@@ -19,6 +19,9 @@ my $chims_described = $ARGV[1] or die $usage;
 my $left_fq_file = $ARGV[2] or die $usage;
 my $right_fq_file = $ARGV[3] or die $usage;
 
+my $ANCHOR = 12;
+
+
 $trans_fasta = &ensure_full_path($trans_fasta);
 $chims_described = &ensure_full_path($chims_described);
 $left_fq_file = &ensure_full_path($left_fq_file);
@@ -48,9 +51,7 @@ main: {
     ## generate output, include junction and spanning frag support info:
     
     foreach my $target_trans_id (keys %chims) {
-        my $chim_info = $chims{$target_trans_id};
-        my $line = $chim_info->{line};
-
+       
         my @junction_reads;
         my @spanning_frags;
         
@@ -64,14 +65,22 @@ main: {
             }
 
         }
-        
+                
         my $spanning_frag_list = join(",", @spanning_frags) || ".";
         my $junction_frag_list = join(",", @junction_reads) || ".";
 
         my $J = scalar(@junction_reads);
         my $S = scalar(@spanning_frags);
 
-        print join("\t", $line, $J, $S, $junction_frag_list, $spanning_frag_list) . "\n";
+        
+        my $chim_info_aref = $chims{$target_trans_id};
+        
+        foreach my $chim_info (@$chim_info_aref) {
+
+            my $line = $chim_info->{line};
+                    
+            print join("\t", $line, $J, $S, $junction_frag_list, $spanning_frag_list) . "\n";
+        }
     }
     
     exit(0);
@@ -122,7 +131,7 @@ sub capture_fusion_support {
         }
         
         
-        my $brkpt_range = $chims_href->{$target_trans_id}->{brkpt_range};
+        my $brkpt_range = $chims_href->{$target_trans_id}->[0]->{brkpt_range}; # brkpt is constant for all annotated entries of this transcript
         my ($break_left, $break_right) = split(/-/, $brkpt_range);
 
 
@@ -149,7 +158,15 @@ sub capture_fusion_support {
                 ## see if any alignment overlaps the point of the junction
                 foreach my $align_seg (@$trans_coords_A_aref, @$trans_coords_B_aref) {
                     my ($lend, $rend) = @$align_seg;
-                    if ($lend < $break_left && $rend > $break_right) {
+                    
+                    ## ensure the alignment meets the anchor requirement.
+
+                    #                     brktp
+                    #    ------------------|------------------------ 
+                    #           <-- anchor on each side --->
+                    
+                    
+                    if ($lend <= ($break_left - $ANCHOR) && $rend >= ($break_right + $ANCHOR)) {
                         # overlaps junction breakpoint
                         #print STDERR "Found a JUNCTION read for $target_trans_id\n";
                         $fusion_support{$target_trans_id}->{junction}->{$frag_name}++;
@@ -249,9 +266,10 @@ sub parse_chims {
 
         my $brkpt_range = join("-", sort ($trans_brkptA, $trans_brkptB));
         
-        $chims{$trans_acc} = { line => $line,
-                               brkpt_range => $brkpt_range,
-        };
+        push (@{$chims{$trans_acc}}, { line => $line,
+                                       brkpt_range => $brkpt_range,
+              }
+            );
     }
     close $fh;
 
