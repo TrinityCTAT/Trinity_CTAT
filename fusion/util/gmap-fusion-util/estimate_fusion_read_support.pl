@@ -51,9 +51,7 @@ main: {
     ## generate output, include junction and spanning frag support info:
     
     foreach my $target_trans_id (keys %chims) {
-        my $chim_info = $chims{$target_trans_id};
-        my $line = $chim_info->{line};
-
+       
         my @junction_reads;
         my @spanning_frags;
         
@@ -67,14 +65,22 @@ main: {
             }
 
         }
-        
+                
         my $spanning_frag_list = join(",", @spanning_frags) || ".";
         my $junction_frag_list = join(",", @junction_reads) || ".";
 
         my $J = scalar(@junction_reads);
         my $S = scalar(@spanning_frags);
 
-        print join("\t", $line, $J, $S, $junction_frag_list, $spanning_frag_list) . "\n";
+        
+        my $chim_info_aref = $chims{$target_trans_id};
+        
+        foreach my $chim_info (@$chim_info_aref) {
+
+            my $line = $chim_info->{line};
+                    
+            print join("\t", $line, $J, $S, $junction_frag_list, $spanning_frag_list) . "\n";
+        }
     }
     
     exit(0);
@@ -125,7 +131,7 @@ sub capture_fusion_support {
         }
         
         
-        my $brkpt_range = $chims_href->{$target_trans_id}->{brkpt_range};
+        my $brkpt_range = $chims_href->{$target_trans_id}->[0]->{brkpt_range}; # brkpt is constant for all annotated entries of this transcript
         my ($break_left, $break_right) = split(/-/, $brkpt_range);
 
 
@@ -260,9 +266,10 @@ sub parse_chims {
 
         my $brkpt_range = join("-", sort ($trans_brkptA, $trans_brkptB));
         
-        $chims{$trans_acc} = { line => $line,
-                               brkpt_range => $brkpt_range,
-        };
+        push (@{$chims{$trans_acc}}, { line => $line,
+                                       brkpt_range => $brkpt_range,
+              }
+            );
     }
     close $fh;
 
