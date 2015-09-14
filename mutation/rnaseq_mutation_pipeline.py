@@ -1278,8 +1278,8 @@ def run( args_call, f_do_index = False ):
         # Currently edited VCF file
         str_annotated_vcf_file = ""
 
-        str_cancer_tab = str_project_dir + os.path.sep + C_STR_CANCER_TAB
-        str_json_inspector_file = str_project_dir + os.path.sep + C_STR_MUTATION_INSPECTOR
+        str_cancer_tab = args_call.str_file_base + os.path.sep + C_STR_CANCER_TAB
+        str_json_inspector_file = args_call.str_file_base + os.path.sep + C_STR_MUTATION_INSPECTOR
 
         # Add variant calling commands
         dict_ret_variant_calling =  dict_variant_calling_funcs[ args_call.str_variant_call_mode ]( args_call = args_call,
@@ -1381,7 +1381,7 @@ def run( args_call, f_do_index = False ):
                                             str_bam_called_from,
                                             str_bam_called_from+".bai",
                                             str_json_inspector_file ])
-        cmd_json_inpector = Command.Command( str_cur_command = str_cmd_json_inspector,
+        cmd_json_inspector = Command.Command( str_cur_command = str_cmd_json_inspector,
                                              lstr_cur_dependencies = [ str_cancer_tab, str_bam_called_from, str_bam_called_from + ".bai" ],
                                              lstr_cur_products = [ str_json_inspector_file ] )
         lcmd_commands.append( cmd_json_inspector )
