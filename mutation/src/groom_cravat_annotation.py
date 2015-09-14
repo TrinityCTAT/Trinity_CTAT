@@ -60,10 +60,10 @@ if args.str_input_file:
           f_header_read = True
           i_chrom_index = lstr_line.index( STR_CHROM )
           i_pos_index = lstr_line.index( STR_POS )
-          i_chasm_pvalue = lstr_line.index( STR_CHASM_PVALUE )
-          i_chasm_fdr = lstr_line.index( STR_CHASM_FDR )
-          i_vest_pvalue = lstr_line.index( STR_VEST_PVALUE )
-          i_vest_fdr = lstr_line.index( STR_VEST_FDR )
+          i_chasm_pvalue = lstr_line.index( STR_CHASM_PVALUE ) if STR_CHASM_PVALUE in lstr_line else -1
+          i_chasm_fdr = lstr_line.index( STR_CHASM_FDR ) if STR_CHASM_FDR in lstr_line else -1
+          i_vest_pvalue = lstr_line.index( STR_VEST_PVALUE ) if STR_VEST_PVALUE in lstr_line else -1
+          i_vest_fdr = lstr_line.index( STR_VEST_FDR ) if STR_VEST_FDR in lstr_line else -1
           lstr_header_order = [ i_chrom_index, i_pos_index, i_chasm_pvalue, i_chasm_fdr, i_vest_pvalue, i_vest_fdr ]
           lstr_tab.append( STR_TAB_DELIMITER.join([ STR_CHROM_UPDATE, STR_POS_UPDATE, STR_CHASM_PVALUE_UPDATE,
                                                     STR_CHASM_FDR_UPDATE, STR_VEST_PVALUE_UPDATE, STR_VEST_FDR_UPDATE ]) )
@@ -76,7 +76,7 @@ if args.str_input_file:
  
         # Shuffle to header index and reduce
         # And store
-        lstr_tab.append( STR_TAB_DELIMITER.join( [ lstr_line[ i_index ] for i_index in lstr_header_order ] ) )
+        lstr_tab.append( STR_TAB_DELIMITER.join( [ lstr_line[ i_index ] if i_index > 0 else "NA" for i_index in lstr_header_order ] ) )
 
     for str_out_line in lstr_tab:
       hndl_out.write( str_out_line + "\n" )

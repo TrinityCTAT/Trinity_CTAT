@@ -20,6 +20,7 @@ import sciedpiper.Pipeline as Pipeline
 INDEX_CMD = "cmd"
 INDEX_FILE = "out_file"
 INDEX_FOLDER = "align_folder"
+INDEX_BAM = "bam"
 
 # Choices for platform
 STR_ILLUMINA = "ILLUMINA"
@@ -59,6 +60,12 @@ I_CRAVAT_ATTEMPTS = 180
 I_CRAVAT_WAIT = 60
 STR_CRAVAT_CLASSIFIER_DEFAULT = "Other"
 STR_FDR_CUTTOFF = "0.3"
+
+# Directory structure
+STR_MISC_DIR = "misc"
+
+# Mutation Inspector file
+C_STR_MUTATION_INSPECTOR = "mutation_inspector.json"
 
 def func_do_star_alignment( args_call, str_unique_id, pline_cur, f_index_only = False ):
     """
@@ -645,7 +652,7 @@ def func_do_variant_calling_gatk( args_call, str_align_file, str_unique_id, str_
     dict_rnaseq_gatk = func_do_rnaseq_caller_gatk( args_call, dict_recalibration[ INDEX_FILE ], str_unique_id, str_project_dir, str_tmp_dir )    
     lcmd_gatk_variants_commands.extend( dict_rnaseq_gatk[ INDEX_CMD ]  )
 
-    return { INDEX_CMD : lcmd_gatk_variants_commands, INDEX_FILE : dict_rnaseq_gatk[ INDEX_FILE ] }
+    return { INDEX_CMD : lcmd_gatk_variants_commands, INDEX_FILE : dict_rnaseq_gatk[ INDEX_FILE ], INDEX_BAM : dict_recalibration[ INDEX_FILE ] }
 
 
 def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur ):
@@ -786,7 +793,7 @@ def func_call_dnaseq_like_rnaseq( args_call, str_align_file, str_unique_id, str_
     cmd_haplotype_caller.func_set_dependency_clean_level( [ str_recal_snp_bam, str_recal_snp_bai ], Command.CLEAN_NEVER )
     
     ls_cmds.extend( [ cmd_haplotype_caller ] ) #, cmd_variant_filteration ] )
-    return { INDEX_CMD : ls_cmds, INDEX_FILE : str_raw_vcf }
+    return { INDEX_CMD : ls_cmds, INDEX_FILE : str_raw_vcf, INDEX_BAM : str_recal_snp_bam }
 
 
 def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur ):
@@ -866,14 +873,14 @@ def func_do_variant_calling_samtools( args_call, str_align_file, str_unique_id, 
     cmd_sam_call.func_set_dependency_clean_level( [ str_bam_sorted ], Command.CLEAN_NEVER )
     lcmd_samtools_variants_commands.append( cmd_sam_call )
 
-    return { INDEX_CMD : lcmd_samtools_variants_commands, INDEX_FILE : str_variants_vcf }
+    return { INDEX_CMD : lcmd_samtools_variants_commands, INDEX_FILE : str_variants_vcf, INDEX_BAM : str_bam_sorted }
 
 
 def func_do_variant_calling_none( args_call, str_align_file, str_unique_id, str_project_dir, str_tmp_dir, lstr_dependencies, logr_cur ):
     """
     Does nothing, allows no calling
     """
-    return { INDEX_CMD : [], INDEX_FILE : "" }
+    return { INDEX_CMD : [], INDEX_FILE : "", INDEX_BAM : "" }
 
 
 def func_do_variant_filtering_bcftools( args_call, str_variants_file, lstr_dependencies, logr_cur ):
@@ -984,7 +991,7 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, str_project_
     str_vcf_to_filter = str_variants_file
 
     # Files created
-    str_vcf_base = os.path.splitext( str_variants_file )[ 0 ]
+    str_vcf_base = os.path.join( str_project_dir, STR_MISC_DIR, os.path.basename( os.path.splitext( str_variants_file )[0] ) )
     str_cancer_mutations_unfiltered = str_project_dir + os.path.sep + C_STR_CANCER_ANNOTATED_VCF
     str_cancer_mutations_filtered = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered.vcf"
     str_cravat_annotated_coding_vcf = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravate_annotated_coding.vcf.gz"
@@ -992,12 +999,12 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, str_project_
     str_cravat_filtered_vcf = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravate_annotated_filtered.vcf"
     str_cravat_filtered_groom_vcf = str_project_dir + os.path.sep + C_STR_CANCER_VCF
     str_cancer_tab = str_project_dir + os.path.sep + C_STR_CANCER_TAB
-    str_cravat_result_dir = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravat_annotations.gz" 
-    str_extracted_cravat_dir = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravat_annotations"   
+    str_cravat_result_dir = str_vcf_base + "_cosmic_filtered_cravat_annotations.gz" 
+    str_extracted_cravat_dir = str_vcf_base + "_cosmic_filtered_cravat_annotations"   
     str_cravat_detail_coding = os.path.join( str_extracted_cravat_dir,"Variant.Result.tsv" )
     str_cravat_detail_noncoding = os.path.join( str_extracted_cravat_dir,"Variant_Non-coding.Result.tsv" )
-    str_cravat_detail_coding_updated = os.path.join( os.path.dirname( str_vcf_base ), "Variant_result_updated.tsv" )
-    str_cravat_detail_noncoding_updated = os.path.join( os.path.dirname( str_vcf_base ), "Variant_non_coding_result_updated.tsv" )
+    str_cravat_detail_coding_updated = os.path.join( str_project_dir, STR_MISC_DIR, "Variant_result_updated.tsv" )
+    str_cravat_detail_noncoding_updated = os.path.join( str_project_dir, STR_MISC_DIR, "Variant_non_coding_result_updated.tsv" )
 
     # Index and bgzip vcf
     dict_csi = func_csi( str_vcf_to_filter )
@@ -1067,10 +1074,10 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, str_project_
       lcmd_cancer_filter.extend([ cmd_groom_cravat_tab_coding, cmd_groom_cravat_tab_noncoding ])
 
       # Tabix index the CRAVAT tsv files
-      dict_tabix = func_tabix( str_cravat_detail_coding_updated, str_output_dir = os.path.dirname( str_vcf_base ), str_tabix = "-s 1 -b 2 -e 2 -S 12" )
+      dict_tabix = func_tabix( str_cravat_detail_coding_updated, str_output_dir = os.path.join( str_project_dir, STR_MISC_DIR ), str_tabix = "-s 1 -b 2 -e 2 -S 12" )
       lcmd_cancer_filter.extend( dict_tabix[ INDEX_CMD ] )
       str_cravat_detail_coding_updated = str_cravat_detail_coding_updated +".gz"
-      dict_tabix = func_tabix( str_cravat_detail_noncoding_updated, str_output_dir = os.path.dirname( str_vcf_base ), str_tabix = "-s 1 -b 2 -e 2 -S 12" )
+      dict_tabix = func_tabix( str_cravat_detail_noncoding_updated, str_output_dir = os.path.join( str_project_dir, STR_MISC_DIR ), str_tabix = "-s 1 -b 2 -e 2 -S 12" )
       lcmd_cancer_filter.extend( dict_tabix[ INDEX_CMD ] )
       str_cravat_detail_noncoding_updated = str_cravat_detail_noncoding_updated +".gz"
 
@@ -1155,8 +1162,6 @@ def run( args_call, f_do_index = False ):
     if f_do_index:
         str_sample_postfix = os.path.splitext( os.path.basename( args_call.str_genome_fa ) )[ 0 ]
     str_sample_postfix = str_sample_postfix.replace(".","_")
-
-    STR_MISC_DIR = "misc"
 
     # Make the gtf files required for TOPHAT and GSNAP flows
     if args_call.str_alignment_mode in [ STR_ALIGN_GSNP, STR_ALIGN_TOPHAT ]:
@@ -1273,6 +1278,9 @@ def run( args_call, f_do_index = False ):
         # Currently edited VCF file
         str_annotated_vcf_file = ""
 
+        str_cancer_tab = str_project_dir + os.path.sep + C_STR_CANCER_TAB
+        str_json_inspector_file = str_project_dir + os.path.sep + C_STR_MUTATION_INSPECTOR
+
         # Add variant calling commands
         dict_ret_variant_calling =  dict_variant_calling_funcs[ args_call.str_variant_call_mode ]( args_call = args_call,
                                                                                         str_align_file = dict_align_info[ INDEX_FILE ],
@@ -1282,6 +1290,7 @@ def run( args_call, f_do_index = False ):
                                                                                         lstr_dependencies = [ dict_align_info[ INDEX_FOLDER ] ],
                                                                                         logr_cur = pline_cur.logr_logger )
         lcmd_commands.extend( dict_ret_variant_calling[ INDEX_CMD ] )
+        str_bam_called_from = dict_ret_variant_calling[ INDEX_BAM ]
 
         # Add variant filtering
         dict_ret_variant_filtration = dict_variant_filtering_funcs[ args_call.str_variant_filter_mode ]( args_call = args_call,
@@ -1292,7 +1301,7 @@ def run( args_call, f_do_index = False ):
         str_annotated_vcf_file = dict_ret_variant_filtration[ INDEX_FILE ]
 
         # Clean up VCF file after variant caller
-        str_clean_vcf = str_annotated_vcf_file.split(".")[0] + "_clean.vcf"
+        str_clean_vcf = os.path.join( str_misc_dir, os.path.basename( str_annotated_vcf_file ).split(".")[0] + "_clean.vcf" )
         str_clean_vcf_cmd = " ".join( [ "groom_vcf.py", str_annotated_vcf_file, str_clean_vcf ] )
         cmd_clean_vcf = Command.Command( str_cur_command = str_clean_vcf_cmd,
                                          lstr_cur_dependencies = [ str_annotated_vcf_file ],
@@ -1336,7 +1345,7 @@ def run( args_call, f_do_index = False ):
         lcmd_commands.extend( dict_sample_csi[ INDEX_CMD ] )
 
         # Tabix / gz DBSNP
-        dict_dbsnp_csi = func_csi( args_call.str_vcf_file, args_call.str_file_base )
+        dict_dbsnp_csi = func_csi( args_call.str_vcf_file )
         str_tbx_dbsnp = dict_dbsnp_csi[ INDEX_FILE ]
         lcmd_commands.extend( dict_dbsnp_csi[ INDEX_CMD ] )
         str_compressed_dbsnp = args_call.str_vcf_file + ".gz"
@@ -1346,7 +1355,7 @@ def run( args_call, f_do_index = False ):
         # bcftools annotate --annotations str_dbsnp_vcf -c
         # PM variant is clinicall precious (clinical and pubmed cited)
         # NSF, NSM, NSN, COMMON, SAO, KGPROD, KGVALIDATED, MUT, WTD, VLD, RS, PMC
-        str_dbsnp_annotated_vcf = str_annotated_vcf_file.split(".")[0] + "_dbsnp.vcf.gz"
+        str_dbsnp_annotated_vcf = os.path.splitext( str_annotated_vcf_file )[0] + "_dbsnp.vcf.gz"
         str_annotate_command = " ".join( [ "bcftools", "annotate", "--output-type", "z", "--annotations", str_compressed_dbsnp, "--columns", "INFO/COMMON,INFO/PM,INFO/NSF,INFO/NSM,INFO/NSN,INFO/SAO,INFO/KGPROD,INFO/KGValidated,INFO/MUT,INFO/WTD,INFO/VLD,INFO/RS,INFO/PMC", "--output", str_dbsnp_annotated_vcf, str_annotated_vcf_file ] )
         lcmd_commands.append( Command.Command( str_cur_command = str_annotate_command,
                                            lstr_cur_dependencies = [ str_compressed_dbsnp, str_annotated_vcf_file ],
@@ -1365,6 +1374,17 @@ def run( args_call, f_do_index = False ):
                                                                 str_variants_file=str_annotated_vcf_file, 
                                                                 str_project_dir=args_call.str_file_base,
                                                                 f_is_hg_18=f_cravat_hg18 )[ INDEX_CMD ] )
+
+        # Make JSON file for the inspector
+        str_cmd_json_inspector = " ".join([ "make_mutation_inspector_json.py",
+                                            str_cancer_tab,
+                                            str_bam_called_from,
+                                            str_bam_called_from+".bai",
+                                            str_json_inspector_file ])
+        cmd_json_inpector = Command.Command( str_cur_command = str_cmd_json_inspector,
+                                             lstr_cur_dependencies = [ str_cancer_tab, str_bam_called_from, str_bam_called_from + ".bai" ],
+                                             lstr_cur_products = [ str_json_inspector_file ] )
+        lcmd_commands.append( cmd_json_inspector )
 
     # Run commands including variant calling
     if not pline_cur.func_run_commands( lcmd_commands = lcmd_commands, 
