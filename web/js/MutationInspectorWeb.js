@@ -243,7 +243,7 @@ function createIGVBrowser( sampleInfo ){
                type: "bam",
                label: sampleInfo.SAMPLE,
                maxHeight: 250 },
-             { url: "hg19.refGene.bed",
+             { url: sampleInfo.BED,
                name: "Genes",
                order: Number.MAX_VALUE,
                displayMode: "EXPANDED",
