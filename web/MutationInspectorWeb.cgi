@@ -96,7 +96,8 @@ print( """<!DOCTYPE html>
         // Load mutation table
         var mutationInspector = loadMutationTable( "mutations.json" );
         var mutationTable = $('#mutationTable').DataTable({
-          'order': [[ 0, 'asc' ]]
+          'order': [[ 0, 'asc' ]],
+          'scrollX': true
         });
         // Add click events to the table rows
         $('#mutationTable tbody').on('click', 'tr', function() {
