@@ -104,7 +104,7 @@ function orderTableKeysBeginning( arrayToOrder, forcedOrder ){
  * @param {string} tableRowValue - Value to put in the header row.
  */
 function toTableRowHeaderElement( tableRowValue ){
-    return '<th><div><span class="glyphicon glyphicon-eye-open hide-glyph" data-column="'+tableRowValue+'">'+tableRowValue+'</span></div></th>';
+    return '<th><div><span class="glyphicon glyphicon-eye-open hide-glyph" data-column="'+tableRowValue+'"></span>' + tableRowValue + '</div></th>';
 }
 
 /**

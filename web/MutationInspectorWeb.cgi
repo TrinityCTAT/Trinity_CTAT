@@ -107,7 +107,18 @@ print( """<!DOCTYPE html>
         var mutationInspector = loadMutationTable( "mutations.json" );
         mutationInspectorState.cache.mutationTable = $('#mutationTable').DataTable({
           'order': [[ 0, 'asc' ]],
-          'scrollX': true
+          'scrollX': true,
+          'columnDefs': [{
+            'render': function( data, type, row ){
+              var rounded_value = Math.round( data * 1000 )/1000;
+              if( isNaN( rounded_value ) ){
+                return 'NA';
+              } else {
+                return Math.round( data * 1000 )/1000;
+              }
+            },
+            'targets': [5,6,7,9,21]
+          }]
         })
         // Add click events to the table rows
         $('#mutationTable tbody').on('click', 'tr', function() {
