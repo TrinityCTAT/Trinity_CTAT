@@ -76,6 +76,7 @@ print( """<!DOCTYPE html>
       <div role="tabpanel" id="tabBrowser" class="tab-pane fade in active">
         <div class="container-fluid" id="igvDiv" style="padding:5px; border:1px solid lightgray">
           <!-- Start data table -->
+            <div id="hidden_tabs"><p><b>Show Hidden Tab <span class='glyphicon glyphicon-eye-close'></span> :</b>Unknown</p></div>
             <table id="mutationTable" class="table table-striped table-bordered table-hover" cell spacing="0" width="100%">
             </table>
           <!-- End data table -->
@@ -90,18 +91,27 @@ print( """<!DOCTYPE html>
   <script src='cancer.json'></script>
   <script>
 
+    // OK so this is a hack but it works.
+    // Honestly affecting the data table so that
+    // the column headers and body are the same width.
+    // The side affect is that I am hiding some extranious columns
+    window.onload = function(){
+      var initially_hide_elements = ["CRAVAT_PVALUE","KGPROD","MQ","NSF","NSM","NSN","PMC","SAO","TISSUE","TUMOR","VEST_PVALUE"];
+      initially_hide_elements.map( hideVariantColumn );
+    }
+
     // Add entries to the table
     // Load Mutation table
     $(document).ready(function() {
         // Load mutation table
         var mutationInspector = loadMutationTable( "mutations.json" );
-        var mutationTable = $('#mutationTable').DataTable({
+        mutationInspectorState.cache.mutationTable = $('#mutationTable').DataTable({
           'order': [[ 0, 'asc' ]],
           'scrollX': true
-        });
+        })
         // Add click events to the table rows
         $('#mutationTable tbody').on('click', 'tr', function() {
-          curMutationRow = mutationTable.row( this ).data()
+          curMutationRow = mutationInspectorState.cache.mutationTable.row( this ).data()
           goToSNP( curMutationRow[ mutationInspectorView.chrKey ], curMutationRow[ mutationInspectorView.posKey ] );
           updateSNPInfo( curMutationRow[ mutationInspectorView.chrKey ],
                           curMutationRow[ mutationInspectorView.posKey ],
@@ -120,6 +130,10 @@ print( """<!DOCTYPE html>
 
         // Add state change event for default tab
         registerDefaultTabClick( "tabBrowser_tab" );
+
+        // Update the hidden columns message
+        updateHiddenColumns();
+
     } )
 
   </script>

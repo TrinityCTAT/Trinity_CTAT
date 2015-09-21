@@ -24,10 +24,19 @@ var mutationInspectorState = {
 function loadMutationTable( mutationTabFile ) {
 
   // Holds all information about the mutation view
-  mutationInspectorView = {}
+  mutationInspectorView = {};
+
+  // Hold the array of hidden columns in the data table
+  mutationInspectorState.cache.hiddenCols = [];
 
   // Read in the JSON file
   mutationInspectorView.json = dummy_data; // readMutationJSON( mutationTabFile )
+
+  // Forced order of the mutation table elements.
+  // Any element in the table and not in this array
+  // will be after these elements in the table and will
+  // be in no specific order
+  forceHeaderKeyOrder = ['CHROM', 'POS', 'GENE', 'REF', 'ALT', 'QUAL', 'CRAVAT_FDR', 'VEST_FDR']
 
   // Create table from json file
   // Get an array of the keys
@@ -37,18 +46,19 @@ function loadMutationTable( mutationTabFile ) {
       mutationHeaderKeys.push( mutationHeader );
     }
   }
+  mutationInspectorState.cache.mutationHeaderKeys = orderTableKeysBeginning( mutationHeaderKeys, forceHeaderKeyOrder);
 
   // Store locations of certain key row elements used later
   // These elements can be considered REQUIRED in the data
-  mutationInspectorView.headerKeys = mutationHeaderKeys
-  mutationInspectorView.chrKey = mutationHeaderKeys.indexOf( "CHROM" );
-  mutationInspectorView.posKey = mutationHeaderKeys.indexOf( "POS" );
-  mutationInspectorView.refKey = mutationHeaderKeys.indexOf( "REF" );
-  mutationInspectorView.altKey = mutationHeaderKeys.indexOf( "ALT" );
+  mutationInspectorView.headerKeys = mutationInspectorState.cache.mutationHeaderKeys
+  mutationInspectorView.chrKey = mutationInspectorState.cache.mutationHeaderKeys.indexOf( "CHROM" );
+  mutationInspectorView.posKey = mutationInspectorState.cache.mutationHeaderKeys.indexOf( "POS" );
+  mutationInspectorView.refKey = mutationInspectorState.cache.mutationHeaderKeys.indexOf( "REF" );
+  mutationInspectorView.altKey = mutationInspectorState.cache.mutationHeaderKeys.indexOf( "ALT" );
 
   // Add header and footer elements to the table
   var mutationTable = $('#mutationTable');
-  var mutationHeader = mutationHeaderKeys.map( toTableRowHeaderElement );
+  var mutationHeader = mutationInspectorState.cache.mutationHeaderKeys.map( toTableRowHeaderElement );
   mutationTable.append( '<thead><tr>' + mutationHeader.join('') + '</tr></thead>' );
   mutationTable.append( '<tfoot><tr>' + mutationHeader.join('') + '</tr></tfoot>' );
 
@@ -56,15 +66,37 @@ function loadMutationTable( mutationTabFile ) {
   mutationTable.append( '<tbody>' );
   for( snvIndex = 0; snvIndex < mutationInspectorView.json.SNV.length; snvIndex++ ){
       snvEntry = mutationInspectorView.json.SNV[ snvIndex ];
-      mutationEntryValues = mutationHeaderKeys.map( function( key ){
+      mutationEntryValues = mutationInspectorState.cache.mutationHeaderKeys.map( function( key ){
         return snvEntry[ key ]; } )
       mutationTable.append( '<tr>' + mutationEntryValues.map( toTableRowBodyElement ) + '</tr>' );
   }
   mutationTable.append( '</tbody>' );
 
+  // Add click event for column hiding
+  $(".hide-glyph").on("click", function(e){
+    e.preventDefault();
+    hideVariantColumn( $(this).attr("data-column") );
+  })
+
   // Return the inspector
   return mutationInspectorView;
 }
+
+/**
+ * Order the mutation table keys so certain element are in front in a specific order
+ * @param {array} ArrayToOrder - Array of elements to reorder.
+ * @param {array} forcedOrder - Array of elements that should be at the beginning and in this order.
+ */
+function orderTableKeysBeginning( arrayToOrder, forcedOrder ){
+  newArray = [];
+  for( arrayElement = 0; arrayElement < arrayToOrder.length; arrayElement++ ){
+    if( !( forcedOrder.indexOf( arrayToOrder[ arrayElement ] ) >= 0 )){
+      newArray.push( arrayToOrder[ arrayElement ] );
+    }
+  }
+  return( forcedOrder.concat( newArray ));
+}
+
 
 /**
  * Make a table header row containing a given value.
@@ -72,7 +104,7 @@ function loadMutationTable( mutationTabFile ) {
  * @param {string} tableRowValue - Value to put in the header row.
  */
 function toTableRowHeaderElement( tableRowValue ){
-    return '<th>' + tableRowValue + '</th>';
+    return '<th><div><span class="glyphicon glyphicon-eye-open hide-glyph" data-column="'+tableRowValue+'">'+tableRowValue+'</span></div></th>';
 }
 
 /**
@@ -84,6 +116,57 @@ function toTableRowBodyElement( tableRowValue ){
     return '<td>' + tableRowValue + '</td>';
 }
 
+/**
+ * Show a hidden column of the data table.
+ * @param {string} columnLabel - Data-column attribute of column to show.
+ */
+function showVariantColumn( columnLabel ){
+  if( mutationInspectorState.cache.hiddenCols.indexOf( columnLabel ) >= 0 && 
+      mutationInspectorState.cache.mutationHeaderKeys.indexOf( columnLabel >= 0 )){
+    // Remove from array of hidden columns
+    mutationInspectorState.cache.hiddenCols.splice( mutationInspectorState.cache.hiddenCols.indexOf( columnLabel ) , 1 );
+    // Make visible by index ( 0 based )
+    mutationInspectorState.cache.mutationTable.column( mutationInspectorState.cache.mutationHeaderKeys.indexOf( columnLabel ) ).visible( true );
+    // Update UI text
+    updateHiddenColumns();
+  }
+}
+
+/**
+ * Hide a visible column of the data table.
+ * @param {string} columnLabel - data-column attribute of column to hide.
+ */
+function hideVariantColumn( columnLabel ){
+  if( mutationInspectorState.cache.hiddenCols.indexOf( columnLabel ) < 0 &&
+      mutationInspectorState.cache.mutationHeaderKeys.indexOf( columnLabel >= 0 )){
+    // Add the column to the array of hidden columns
+    mutationInspectorState.cache.hiddenCols.push( columnLabel );
+    // Make invisible by index ( 0 based )
+    mutationInspectorState.cache.mutationTable.column( mutationInspectorState.cache.mutationHeaderKeys.indexOf( columnLabel ) ).visible( false );
+    // Update UI text
+    updateHiddenColumns();
+  }
+}
+
+/**
+ * Mange the UI text indicating which columns are hidden given the current state.
+ */
+function updateHiddenColumns(){
+  buildHiddenTabLinks = [];
+  if( mutationInspectorState.cache.hiddenCols.length === 0 ){
+    buildHiddenTabLinks.push( "None Hidden" );
+  } else {
+    for( hiddenCol = 0; hiddenCol < mutationInspectorState.cache.hiddenCols.length; hiddenCol++ ){
+      buildHiddenTabLinks.push( '<a class="hide-col" data-column="'+mutationInspectorState.cache.hiddenCols[ hiddenCol ]+'">'+mutationInspectorState.cache.hiddenCols[ hiddenCol ]+'</a>' );
+    }
+  }
+  $("#hidden_tabs").html( '<p><b>Show Hidden Tab <span class="glyphicon glyphicon-eye-close"></span> :</b>'+ buildHiddenTabLinks.join("-") + '</p>' );
+  // Add click event
+  $( "a.hide-col" ).on( 'click', function(e) {
+    e.preventDefault();
+    showVariantColumn( $(this).attr('data-column') );
+  })
+}
 
 //////////////////////
 // Associated with the specific view tab.
@@ -134,7 +217,7 @@ function addSpecificTab( curRowChr, curRowPos, curRowRef, curRowAlt ){
 
 /**
  * Indicates if the tab already exists.
- * @param {string} curCheckChr - Chromsome to check
+ * @param {string} curCheckChr - Chromsome to check.
  * @param {string} curCheckPos - Postion on chromosome to check.
  */
 function isExistingSpecificTab( curCheckChr, curCheckPos ){
@@ -149,7 +232,7 @@ function isExistingSpecificTab( curCheckChr, curCheckPos ){
 }
 
 /**
- * clicks on a specific tab to make it active.
+ * Clicks on a specific tab to make it active.
  * @param {string} curSpecificViewTabId - The id of the tab to click and make active.
  */
 function clickSpecificViewTab( curSpecificViewTabId ){
@@ -159,9 +242,9 @@ function clickSpecificViewTab( curSpecificViewTabId ){
 /**
  * Create custom close button event.
  * Closes associated tab and changes the active tab to the browsing tab.
- * @param {string } closeButtonId - Id of close button to which to add the event.
- * @param {string } closeTabId - Id of tab header to remove.
- * @param {string } closeBodyId - Id of tab content to remove.
+ * @param {string} closeButtonId - Id of close button to which to add the event.
+ * @param {string} closeTabId - Id of tab header to remove.
+ * @param {string} closeBodyId - Id of tab content to remove.
  */
 function registerCloseEvent( closeButtonId, closeTabId, closeBodyId ){
   // Add close button solution from
@@ -178,7 +261,7 @@ function registerCloseEvent( closeButtonId, closeTabId, closeBodyId ){
  * Create a custom click event for the tabs.
  * Updates the page to be consistent with the active tab.
  * @param {string} tabHeader - The id of the tab to which to add the click event.
- * @param {string} registerChrLoc - The genomic location of the SNP being viewed (format= Chr:Pos)
+ * @param {string} registerChrLoc - The genomic location of the SNP being viewed (format= Chr:Pos).
  */
 function registerOnClickEvent( tabHeader, registerChrLoc ){
   $( "#" + tabHeader ).click( function() {
@@ -208,10 +291,10 @@ function registerDefaultTabClick( tabHeader ){
 /**
  * Update the top of the page with a summary of the location being viewed.
  * Also set the MuPIT link to a spinner as it will be loading.
- * @params {string} curSNPChr - Current view's chromosome.
- * @params {string} curSNPChr - Current view's position.
- * @params {string} curSNPChr - Current view's reference base.
- * @params {string} curSNPChr - Current view's alternative base.
+ * @param {string} curSNPChr - Current view's chromosome.
+ * @param {string} curSNPChr - Current view's position.
+ * @param {string} curSNPChr - Current view's reference base.
+ * @param {string} curSNPChr - Current view's alternative base.
  */
 function updateSNPInfo( curSNPChr, curSNPPos, curSNPRef, curSNPAlt ){
   $( '#currentChr' ).text( curSNPChr );
@@ -230,7 +313,7 @@ function updateSNPInfo( curSNPChr, curSNPPos, curSNPRef, curSNPAlt ){
 
 /**
  * Initializes a IGV browser instance.
- * @params {string} sampleInfo - Object holding the bam url/path, bam index url/path, and sample name.
+ * @param {string} sampleInfo - Object holding the bam url/path, bam index url/path, and sample name.
  */
 function createIGVBrowser( sampleInfo ){
   // Create a browser
@@ -254,8 +337,8 @@ function createIGVBrowser( sampleInfo ){
 
 /**
  * Go to SNP location.
- * @params {string} dataTableRowChr - Chromosomal location to which to move.
- * @params {string} dataTableRowPos - Position of interest
+ * @param {string} dataTableRowChr - Chromosomal location to which to move.
+ * @param {string} dataTableRowPos - Position of interest
  */
 function goToSNP( dataTableRowChr, dataTableRowPos ){
   // Move the igv browser to a specific location
@@ -272,7 +355,7 @@ function goToSNP( dataTableRowChr, dataTableRowPos ){
 
 /**
  * Reads in the mutation JSON file.
- * @params {string} readInFile - Path or URL to file.
+ * @param {string} readInFile - Path or URL to file.
  */
 function readMutationJSON( readInFile ){
   $.getJSON( readInFile , function( jsonInfo ){
@@ -291,7 +374,7 @@ function readMutationJSON( readInFile ){
 /**
  * Sets the area to contain the detailed (CRAVAT) info to a spinner
  * given we will wait for the associated asynchronous call.
- * @params {string} retrieveAnnotationTabName - The id of the tab content div to set to a spinner as we wait.
+ * @param {string} retrieveAnnotationTabName - The id of the tab content div to set to a spinner as we wait.
  */
 function setAnnotationTabToLoad( retrieveAnnotationTabName ){
   $( '#' + retrieveAnnotationTabName ).html( "" );
@@ -300,12 +383,12 @@ function setAnnotationTabToLoad( retrieveAnnotationTabName ){
 
 /**
  * Query the CRAVAT web service for information about the genomic location of interest.
- * Update the page when the data is recevied.
+ * Update the page when the data is received.
  * Asyncronous call.
- * @params {string} retrieveChr - Chromosome of interest, used in the cravat call.
- * @params {string} retrievePos - Position of interest, used in the cravat call.
- * @params {string} retrieveRef - Reference base of interest, used in the cravat call.
- * @params {string} retrieveAlt - Alternative base of interest, used in the cravat call.
+ * @param {string} retrieveChr - Chromosome of interest, used in the cravat call.
+ * @param {string} retrievePos - Position of interest, used in the cravat call.
+ * @param {string} retrieveRef - Reference base of interest, used in the cravat call.
+ * @param {string} retrieveAlt - Alternative base of interest, used in the cravat call.
  */
 function retrieveCRAVATInfo( retrieveChr, retrievePos, retrieveRef, retrieveAlt ){
   // Performs an asynchronous call to the CRAVAT web service
@@ -329,8 +412,8 @@ function retrieveCRAVATInfo( retrieveChr, retrievePos, retrieveRef, retrieveAlt 
 
 /**
  * Write all information in a CRAVAT object received from the CRAVAT web service to a content tab /table.
- * @params {string} updateTab - Tab to add content to from CRAVAT.
- * @params {object} cravatItem - Obect of annotation, all members and value of the object are written to the table.
+ * @param {string} updateTab - Tab to add content to from CRAVAT.
+ * @param {object} cravatItem - Obect of annotation, all members and value of the object are written to the table.
  */
 function updateCravatTab( updateTab, cravatItem ){
   // Make CRAVAT annotation table for data
