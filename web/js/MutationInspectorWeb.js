@@ -327,6 +327,7 @@ function createIGVBrowser( sampleInfo ){
                label: sampleInfo.SAMPLE,
                maxHeight: 250 },
              { url: sampleInfo.BED,
+               indexURL: sampleInfo.BED_INDEX,
                name: "Genes",
                order: Number.MAX_VALUE,
                displayMode: "EXPANDED",

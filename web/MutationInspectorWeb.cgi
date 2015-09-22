@@ -20,7 +20,8 @@ print( """<!DOCTYPE html>
   <!-- Font Awesome CSS -->
   <link rel="stylesheet" type="text/css" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
   <!-- IGV CSS -->
-  <link rel="stylesheet" type="text/css" href="http://www.broadinstitute.org/igv/projects/igv-web/css/igv.css">
+  <!-- <link rel="stylesheet" type="text/css" href="http://www.broadinstitute.org/igv/projects/igv-web/css/igv.css"> -->
+  <link rel="stylesheet" type="text/css" href="http://igv.org/web/beta/igv.css">
   <!-- Spinner from http://www.css-spinners.com/spinner/spinner -->
   <link rel="stylesheet" href="css/spinner.css">
   <!-- Associated with the Data Table -->
@@ -35,7 +36,8 @@ print( """<!DOCTYPE html>
   <!-- Bootstrap -->
   <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
   <!-- IGV JS -->
-  <script type="text/javascript" src="http://www.broadinstitute.org/igv/projects/igv-web/dist/igv-all.js"></script>
+  <!-- <script type="text/javascript" src="http://www.broadinstitute.org/igv/projects/igv-web/dist/igv-all.js"></script> -->
+  <script type="text/javascript" src="http://igv.org/web/beta/igv-beta.js"></script>
   <!-- Data Table -->
   <script type="text/javascript" src="https://cdn.datatables.net/1.10.8/js/jquery.dataTables.min.js"></script>
   <script type="text/javascript" src="https://cdn.datatables.net/1.10.8/js/dataTables.bootstrap.min.js"></script>
@@ -104,7 +106,7 @@ print( """<!DOCTYPE html>
     // Load Mutation table
     $(document).ready(function() {
         // Load mutation table
-        var mutationInspector = loadMutationTable( "mutations.json" );
+        var mutationInspector = loadMutationTable( "cancer.json" );
         mutationInspectorState.cache.mutationTable = $('#mutationTable').DataTable({
           'order': [[ 0, 'asc' ]],
           'scrollX': true,
