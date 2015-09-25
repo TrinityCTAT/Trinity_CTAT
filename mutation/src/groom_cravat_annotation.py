@@ -20,13 +20,10 @@ STR_VEST_FDR_UPDATE = "VEST_FDR"
 import argparse
 import csv
 
-prsr_arguments = argparse.ArgumentParser( prog = "groom_cravat_annotation.py", description = "Formats Cravat annotation files so they are easily used with bcftools.", formatter_class = argparse.ArgumentDefaultsHelpFormatter )
+prsr_arguments = argparse.ArgumentParser( prog = "groom_cravat_annotation.py", description = "Formats Cravat annotation files so they are easily used with bcftools. Also sorta by coordinate order.", formatter_class = argparse.ArgumentDefaultsHelpFormatter )
 prsr_arguments.add_argument( "str_input_file", help = "Input tab file." )
 prsr_arguments.add_argument( "str_output_file", help = "Output groomed tab file." )
 args = prsr_arguments.parse_args()
-
-# Stores the tab info
-lstr_tab = []
 
 # Read header indicator
 f_header_read = False
@@ -38,20 +35,31 @@ i_vest_pvalue = -1
 i_vest_fdr = -1
 lstr_header_order = []
 
+# Cache tab file so it can be coordinate sorted
+lstr_comments = []
+llstr_tab = []
+
+def func_is_int( c_letter ):
+  try:
+    int( c_letter )
+    return True
+  except:
+    return False
+
 # Read in tab file
 if args.str_input_file:
   with open( args.str_output_file, "w" ) as hndl_out:
     with open( args.str_input_file, "r" ) as hndl_in:
       for lstr_line in csv.reader( hndl_in, delimiter = STR_TAB_DELIMITER ):
 
-        # Store blank lines
+        # Store blank lines (apart of the comment header)
         if not lstr_line:
-          lstr_tab.append( STR_TAB_DELIMITER.join( lstr_line ))
+          lstr_comments.append( STR_TAB_DELIMITER.join( lstr_line ))
           continue
 
         # Store comments
         if lstr_line[0][0] == CHR_COMMENT:
-          lstr_tab.append( STR_TAB_DELIMITER.join( lstr_line ) )
+          lstr_comments.append( STR_TAB_DELIMITER.join( lstr_line ) )
           continue
 
         # Work with the body of the file
@@ -65,18 +73,33 @@ if args.str_input_file:
           i_vest_pvalue = lstr_line.index( STR_VEST_PVALUE ) if STR_VEST_PVALUE in lstr_line else -1
           i_vest_fdr = lstr_line.index( STR_VEST_FDR ) if STR_VEST_FDR in lstr_line else -1
           lstr_header_order = [ i_chrom_index, i_pos_index, i_chasm_pvalue, i_chasm_fdr, i_vest_pvalue, i_vest_fdr ]
-          lstr_tab.append( STR_TAB_DELIMITER.join([ STR_CHROM_UPDATE, STR_POS_UPDATE, STR_CHASM_PVALUE_UPDATE,
+
+          # Sort for sorting
+          lstr_comments.append( STR_TAB_DELIMITER.join([ STR_CHROM_UPDATE, STR_POS_UPDATE, STR_CHASM_PVALUE_UPDATE,
                                                     STR_CHASM_FDR_UPDATE, STR_VEST_PVALUE_UPDATE, STR_VEST_FDR_UPDATE ]) )
           continue
 
         # Check to see if this is not a good run
         if lstr_line[ 0 ] == STR_EMPTY_FILE:
-          lstr_tab.append( STR_TAB_DELIMITER.join( [ "NA" ] * len( lstr_header_order ) ) )
+          llstr_tab.append( [ 0, 0, STR_TAB_DELIMITER.join( [ "NA" ] * len( lstr_header_order ) ) ] )
           break
  
         # Shuffle to header index and reduce
         # And store
-        lstr_tab.append( STR_TAB_DELIMITER.join( [ lstr_line[ i_index ] if i_index > 0 else "NA" for i_index in lstr_header_order ] ) )
+        str_chrom = lstr_line[ i_chrom_index ]
+        if not func_is_int( str_chrom[0] ):
+          if str_chrom[0] in ["c","C"]:
+            str_chrom = str_chrom[3:]
+        if func_is_int( str_chrom[0] ):
+          if len( str_chrom ) == 1:
+            str_chrom = "0" + str_chrom
+        i_pos = int( lstr_line[ i_pos_index ] )
+        llstr_tab.append( [ str_chrom, i_pos, STR_TAB_DELIMITER.join( [ lstr_line[ i_index ] if i_index > 0 else "NA" for i_index in lstr_header_order ] ) ] )
 
-    for str_out_line in lstr_tab:
-      hndl_out.write( str_out_line + "\n" )
+    # Sort by chr and pos
+    llstr_tab = sorted( llstr_tab, key = lambda x: ( x[0], x[1] ) )
+
+    # Write to file
+    hndl_out.write( "\n".join( lstr_comments ) )
+    hndl_out.write( "\n" )
+    hndl_out.write( "\n".join( [ lstr_tab_line[ 2 ] for lstr_tab_line in llstr_tab ] ) )
