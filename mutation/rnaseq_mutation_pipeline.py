@@ -1111,7 +1111,7 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, str_project_
 
       # Convert filtered VCF file to tab file.
       str_cmd_make_cravat_tab = " ".join( [ "java -jar GenomeAnalysisTK.jar", "-R", args_call.str_genome_fa, "-T", "VariantsToTable", "-V", str_cravat_filtered_groom_vcf, 
-                                            "-F", "CHROM", "-F", "POS", "-F", "REF", "-F", "ALT", "-F", "GENE",
+                                            "-F", "CHROM", "-F", "POS", "-F", "REF", "-F", "ALT", "-F", "Gene_Name",
                                             "-F", "DP", "-F", "QUAL", "-F", "MQ",
                                             "-F", "SAO", "-F", "NSF", "-F", "NSM", "-F", "NSN", "-F", "TUMOR", "-F", "TISSUE",
                                             "-F", "COSMIC_ID", "-F", "KGPROD", "-F", "RS", "-F", "PMC",
@@ -1362,6 +1362,23 @@ def run( args_call, f_do_index = False ):
                                            lstr_cur_products = [ str_dbsnp_annotated_vcf ] ) )
         str_annotated_vcf_file = str_dbsnp_annotated_vcf
 
+        # SNPeff java -jar /seq/regev_genome_portal/SOFTWARE/snpEff/snpEff.jar -nostats -noLof -no-downstream -no-upstream hg19 variants.vcf > new.vcf
+        str_snp_eff_annotated = os.path.split( str_annotated_vcf_file )[0] + "_snpeff.vcf"
+        str_snp_eff_cmd = " ".join( [ "java -jar /seq/regev_genome_portal/SOFTWARE/snpEff/snpEff.jar -nostats -noLof -no-downstream -no-upstream hg19",
+                                      "< bgzip -cd", str_annotated_vcf_file, ">", str_snp_eff_annotated ] )
+        lcmd_commands.append( Command.Command( str_cur_command = str_snp_eff_annotated,
+                                               lstr_cur_dependencies = [ str_annotated_vcf_file ],
+                                               lstr_cur_products = [ str_snp_eff_annotated ] ) )
+        str_annotated_vcf_file = str_snp_eff_annotated
+
+        # Update the SNPeff style annotations to the simple info column feature style
+        str_snp_eff_updated_file = os.path.split( str_annotated_vcf_file )[0] + "_updated.vcf"
+        str_snp_eff_update_cmd = " ".join([ "update_snpeff_annotations.py", str_annotated_vcf_file, str_snp_eff_updated_file ] )
+        lcmd_commands.append( Command.Command( str_cur_command = str_snp_eff_update_cmd,
+                                               lstr_cur_dependencies = [ str_annotated_vcf_file ],
+                                               lstr_cur_products = [ str_snp_eff_updated_file ] ) )
+        str_annotated_vcf_file = str_snp_eff_updated_file
+
         # Perform cancer filtering
         f_cravat_hg18 = None
         if args_call.str_email_contact is None or ( not args_call.f_hg_19 and not args_call.f_hg_18 ):
@@ -1470,7 +1487,6 @@ def func_plot_vcf( str_vcf ):
 
   lcmd_plot = []
 
-  st
   str_plot_location = os.path.join( os.path.dirname( str_vchk_stats ), os.path.basename( str_vchk_stats ) + "_plot" )
   str_vchk_stats_command = " ".join( [ "bcftools", "stats", str_vcf, ">", str_vchk_stats ] )
   str_vchk_plot_command = " ".join( [ "plot-vcfstats", str_vchk_stats, "-p", str_plot_location + os.path.sep ] )
