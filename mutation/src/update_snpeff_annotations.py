@@ -5,7 +5,8 @@ CHR_COMMENT = "#"
 C_STR_ANN_HEADER = "##INFO=<ID=ANN"
 C_STR_ANN_HEADER_PREFIX = "##INFO=<ID=ANN,Number=.,Type=String,Description=\"Functional annotations: '"
 STR_VCF_DELIMITER = "\t"
-C_GENE_NAME = "Gene_Name"
+C_GENE_NAME_SNPEFF = "Gene_Name"
+C_GENE_NAME = "GENE"
 C_STR_CHROM = "#CHROM"
 C_STR_GENE_NAME_HEADER = "##INFO=<ID="+C_GENE_NAME+",Number=.,Type=String,Description=\"The name of the gene/s in the genomic region of the SNP as annotated by SNPeff\">"
 C_STR_ANN = "ANN"
@@ -37,7 +38,7 @@ if args.str_input_file:
         # If the comment is the SNPEff ANN header element, find the location of the Gene_Name
         if str_current_comment_line.split(",")[0] == C_STR_ANN_HEADER:
           lstr_ann_tokens = [ str_token.strip() for str_token in str_current_comment_line[ len( C_STR_ANN_HEADER_PREFIX ) : ].split("|") ]
-          i_gene_name = lstr_ann_tokens.index( C_GENE_NAME )
+          i_gene_name = lstr_ann_tokens.index( C_GENE_NAME_SNPEFF )
 
         # Add the new Gene_name info line
         if str_current_comment_line.split(STR_VCF_DELIMITER)[0] == C_STR_CHROM:

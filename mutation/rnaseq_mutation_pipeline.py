@@ -1019,7 +1019,7 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, str_project_
         # Annotate cancer variants with COSMIC
         str_cancer_annotation_command = " ".join( [ "bcftools", "annotate", "--output-type", "z",
                                                     "--annotations", args_call.str_cosmic_coding_vcf,
-                                                    "--columns", "INFO/GENE,INFO/COSMIC_ID,INFO/TISSUE,INFO/TUMOR,INFO/FATHMM,INFO/SOMATIC",
+                                                    "--columns", "INFO/COSMIC_ID,INFO/TISSUE,INFO/TUMOR,INFO/FATHMM,INFO/SOMATIC",
                                                     "--output", str_cancer_mutations_unfiltered, str_variants_file ] )
         cmd_cosmic = Command.Command( str_cur_command = str_cancer_annotation_command,
                                       lstr_cur_dependencies = [ args_call.str_cosmic_coding_vcf, str_variants_file ],
@@ -1111,7 +1111,7 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, str_project_
 
       # Convert filtered VCF file to tab file.
       str_cmd_make_cravat_tab = " ".join( [ "java -jar GenomeAnalysisTK.jar", "-R", args_call.str_genome_fa, "-T", "VariantsToTable", "-V", str_cravat_filtered_groom_vcf, 
-                                            "-F", "CHROM", "-F", "POS", "-F", "REF", "-F", "ALT", "-F", "Gene_Name",
+                                            "-F", "CHROM", "-F", "POS", "-F", "REF", "-F", "ALT", "-F", "GENE",
                                             "-F", "DP", "-F", "QUAL", "-F", "MQ",
                                             "-F", "SAO", "-F", "NSF", "-F", "NSM", "-F", "NSN", "-F", "TUMOR", "-F", "TISSUE",
                                             "-F", "COSMIC_ID", "-F", "KGPROD", "-F", "RS", "-F", "PMC",

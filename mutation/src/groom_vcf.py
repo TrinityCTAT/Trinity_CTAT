@@ -100,8 +100,6 @@ if args.str_input_file:
           lstr_vcf.append( STR_VCF_DELIMITER.join( lstr_line ) )
           continue
 
-        # Work with the body of the file
-
         # Store
         lstr_vcf.append( STR_VCF_DELIMITER.join( lstr_line ) )
 
