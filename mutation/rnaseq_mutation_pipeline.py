@@ -1394,9 +1394,11 @@ def run( args_call, f_do_index = False ):
 
         # Make JSON file for the inspector
         str_cmd_json_inspector = " ".join([ "make_mutation_inspector_json.py",
-                                            str_cancer_tab,
-                                            str_bam_called_from,
-                                            str_bam_called_from+".bai",
+                                            "--tab", str_cancer_tab,
+                                            "--bam", str_bam_called_from,
+                                            "--bam_index", str_bam_called_from + ".bai",
+                                            "--bed", args_call.str_bed,
+                                            "--bed_index", args_call.str_bed + ".idx",
                                             str_json_inspector_file ])
         cmd_json_inspector = Command.Command( str_cur_command = str_cmd_json_inspector,
                                              lstr_cur_dependencies = [ str_cancer_tab, str_bam_called_from, str_bam_called_from + ".bai" ],
@@ -1550,6 +1552,7 @@ if __name__ == "__main__":
     args_group_resources.add_argument( "--vcf_snps", metavar="Reference_VCF_of_SNPs", dest="str_snp_vcf", default=None, help="The reference VCF including only SNP entries, if not given, will be generated from the file given with --vcf" )
     args_group_resources.add_argument( "--darned", metavar = "Darned_data", dest = "str_darned_data", default = None, help = "Darned data for RNA editing removal, if included will be used for RNA editing removal.")
     args_group_resources.add_argument( "--radar", metavar = "Radar_data", dest = "str_radar_data", default = None, help = "Radar data for RNA editing removal, if included will be used for RNA editing removal.")
+    args_group_resources.add_argument( "--bed", metavar = "Reference BED file", dest = "str_bed", default = None, help = "Bed file for reference genome, required only if making the mutation inspector json. If given the json file will be made. Please make sure the bed file is indexed and that bed.idx file is in the same folder with the same file basename as the related bed file.")
 
     # Cravat associated
     args_group_cravat = prsr_arguments.add_argument_group( "CRAVAT", "Associated with CRAVAT prioritization of variant calls." )
