@@ -995,7 +995,7 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, str_project_
     str_cancer_mutations_unfiltered = str_project_dir + os.path.sep + C_STR_CANCER_ANNOTATED_VCF
     str_cancer_mutations_filtered = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered.vcf"
     str_cravat_annotated_coding_vcf = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravate_annotated_coding.vcf.gz"
-    str_cravat_annotated_all_vcf = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravate_annotated_all.vcf.gz"
+    str_cravat_annotated_all_vcf = str_project_dir + os.path.sep + "annotated_min_filtered.vcf.gz"
     str_cravat_filtered_vcf = os.path.splitext( str_vcf_base )[0] + "_cosmic_filtered_cravate_annotated_filtered.vcf"
     str_cravat_filtered_groom_vcf = str_project_dir + os.path.sep + C_STR_CANCER_VCF
     str_cancer_tab = str_project_dir + os.path.sep + C_STR_CANCER_TAB
@@ -1393,17 +1393,25 @@ def run( args_call, f_do_index = False ):
                                                                 f_is_hg_18=f_cravat_hg18 )[ INDEX_CMD ] )
 
         # Make JSON file for the inspector
-        str_cmd_json_inspector = " ".join([ "make_mutation_inspector_json.py",
+        if args_call.str_bed:
+          str_cmd_json_inspector = " ".join([ "make_mutation_inspector_json.py",
                                             "--tab", str_cancer_tab,
                                             "--bam", str_bam_called_from,
                                             "--bam_index", str_bam_called_from + ".bai",
                                             "--bed", args_call.str_bed,
                                             "--bed_index", args_call.str_bed + ".idx",
                                             str_json_inspector_file ])
-        cmd_json_inspector = Command.Command( str_cur_command = str_cmd_json_inspector,
+          cmd_json_inspector = Command.Command( str_cur_command = str_cmd_json_inspector,
                                              lstr_cur_dependencies = [ str_cancer_tab, str_bam_called_from, str_bam_called_from + ".bai" ],
                                              lstr_cur_products = [ str_json_inspector_file ] )
-        lcmd_commands.append( cmd_json_inspector )
+          lcmd_commands.append( cmd_json_inspector )
+
+          # Copy bed to output to make it an output for Galaxy and allow it to be used in the inspector.
+          str_copied_bed = os.path.join( args_call.str_file_base, os.path.basename( args_call.str_bed ) )
+          str_cmd_copy_bed = " ".join(["cp", args_call.str_bed, str_copied_bed ])
+          lcmd_commands.append( Command.Command( str_cur_command = str_cmd_copy_bed,
+                                                 lstr_cur_dependencies = [ args_call.str_bed ],
+                                                 lstr_cur_products = [ str_copied_bed ] ) )
 
     # Run commands including variant calling
     if not pline_cur.func_run_commands( lcmd_commands = lcmd_commands, 
