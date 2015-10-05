@@ -1366,7 +1366,7 @@ def run( args_call, f_do_index = False ):
         str_snp_eff_annotated = os.path.split( str_annotated_vcf_file )[0] + "_snpeff.vcf"
         str_snp_eff_cmd = " ".join( [ "java -jar /seq/regev_genome_portal/SOFTWARE/snpEff/snpEff.jar -nostats -noLof -no-downstream -no-upstream hg19",
                                       "< bgzip -cd", str_annotated_vcf_file, ">", str_snp_eff_annotated ] )
-        lcmd_commands.append( Command.Command( str_cur_command = str_snp_eff_annotated,
+        lcmd_commands.append( Command.Command( str_cur_command = str_snp_eff_cmd,
                                                lstr_cur_dependencies = [ str_annotated_vcf_file ],
                                                lstr_cur_products = [ str_snp_eff_annotated ] ) )
         str_annotated_vcf_file = str_snp_eff_annotated
