@@ -572,6 +572,7 @@ def func_do_recalibration_gatk( args_call, str_align_file, str_unique_id, str_pr
                                                                         "-plots", str_recalibration_plots_pdf ] ),
                                               lstr_cur_dependencies = [ args_call.str_genome_fa, str_recalibrated_alignment_file ],
                                               lstr_cur_products = [ str_recalibration_plots_pdf ] )
+            cmd_analyse_covariates.func_set_dependency_clean_level( [ str_recalibrated_alignment_file ], Command.CLEAN_NEVER )
             lcmd_gatk_recalibration_commands.append( cmd_analyse_covariates )
 
     return { INDEX_CMD : lcmd_gatk_recalibration_commands, INDEX_FILE : str_return_bam, INDEX_FOLDER : str_tmp_dir }
@@ -608,9 +609,10 @@ def func_do_rnaseq_caller_gatk( args_call, str_input_bam, str_unique_id, str_pro
         str_depth_compressed_file = os.path.basename( args_call.str_file_base ) + ".depth"
         str_depth_compressed_file = os.path.join( args_call.str_file_base, str_depth_compressed_file )
 #        lcmd_samtools_variants_commands.append( Command.Command( str_cur_command = "samtools depth " + str_input_bam + " | gzip > " + str_depth_compressed_file,
-        cmd_depth =  Command.Command( str_cur_command = "samtools depth " + str_input_bam + " > " + str_depth_compressed_file,
+        cmd_depth = Command.Command( str_cur_command = "samtools depth " + str_input_bam + " > " + str_depth_compressed_file,
                                                lstr_cur_dependencies = [ str_input_bam ],
                                                lstr_cur_products = [ str_depth_compressed_file ] )
+        cmd_depth.func_set_dependency_clean_level( [ str_input_bam ], Command.CLEAN_NEVER )
         lcmd_gatk_rna_calling.append( cmd_depth )
     # Variant calling
     cmd_haplotype_caller = Command.Command( str_cur_command = " ".join( [ "java -jar GenomeAnalysisTK.jar -T HaplotypeCaller -R", args_call.str_genome_fa,
@@ -1069,10 +1071,10 @@ def func_do_variant_filtering_cancer( args_call, str_variants_file, str_project_
         str_groom_cravat_tab_coding = " ".join([ "groom_cravat_annotation.py", str_cravat_detail_coding, str_cravat_detail_coding_updated] )
         str_groom_cravat_tab_non_coding = " ".join([ "groom_cravat_annotation.py", str_cravat_detail_noncoding, str_cravat_detail_noncoding_updated] )
         cmd_groom_cravat_tab_coding = Command.Command( str_cur_command=str_groom_cravat_tab_coding,
-                                                     lstr_cur_dependencies=[ str_cravat_detail_coding ],
+                                                     lstr_cur_dependencies=[ str_extracted_cravat_dir, str_cravat_detail_coding ],
                                                      lstr_cur_products=[ str_cravat_detail_coding_updated ] )
         cmd_groom_cravat_tab_noncoding = Command.Command( str_cur_command=str_groom_cravat_tab_non_coding,
-                                                     lstr_cur_dependencies=[ str_cravat_detail_noncoding ],
+                                                     lstr_cur_dependencies=[ str_extracted_cravat_dir, str_cravat_detail_noncoding ],
                                                      lstr_cur_products=[str_cravat_detail_noncoding_updated ] )
         lcmd_cancer_filter.extend([ cmd_groom_cravat_tab_coding, cmd_groom_cravat_tab_noncoding ])
 
@@ -1347,12 +1349,11 @@ def run( args_call, f_do_index = False ):
         dict_sample_csi = func_csi( str_annotated_vcf_file, args_call.str_file_base )
         str_annotated_vcf_file = dict_sample_csi[ INDEX_FILE ]
         lcmd_commands.extend( dict_sample_csi[ INDEX_CMD ] )
+        str_compressed_dbsnp = args_call.str_vcf_file + ".gz"
 
         # Tabix / gz DBSNP
         dict_dbsnp_csi = func_csi( args_call.str_vcf_file, args_call.str_file_base )
-        str_tbx_dbsnp = dict_dbsnp_csi[ INDEX_FILE ]
         lcmd_commands.extend( dict_dbsnp_csi[ INDEX_CMD ] )
-        str_compressed_dbsnp = args_call.str_vcf_file + ".gz"
 
         # DBSNP annotation
         # Annotate combined sample vcf files
@@ -1407,7 +1408,7 @@ def run( args_call, f_do_index = False ):
           cmd_json_inspector = Command.Command( str_cur_command = str_cmd_json_inspector,
                                              lstr_cur_dependencies = [ str_cancer_tab, str_bam_called_from, str_bam_called_from + ".bai" ],
                                              lstr_cur_products = [ str_json_inspector_file ] )
-          cmd_json_inspector.func_set_dependency_clean_level( [ str_cancer_tab ], Command.CLEAN_NEVER )
+          cmd_json_inspector.func_set_dependency_clean_level( [ str_cancer_tab, str_bam_called_from, str_bam_called_from + ".bai" ], Command.CLEAN_NEVER )
           lcmd_commands.append( cmd_json_inspector )
 
           # Copy bed to output to make it an output for Galaxy and allow it to be used in the inspector.
@@ -1471,7 +1472,7 @@ def func_csi( str_vcf, str_output_dir = "" ):
   dict_gz = func_gz( str_vcf, str_output_dir ) 
   str_vcf = dict_gz[ INDEX_FILE ]
   if dict_gz[ INDEX_CMD ]:
-    lcmd_index.append( dict_gz[ INDEX_CMD ] )
+    lcmd_index.extend( dict_gz[ INDEX_CMD ] )
 
   if not os.path.exists( str_vcf + ".csi" ):
     # Create index for the VCF file
@@ -1499,18 +1500,18 @@ def func_tabix( str_vcf, str_output_dir = "", str_tabix = "" ):
   dict_gz = func_gz( str_vcf, str_output_dir ) 
   str_vcf = dict_gz[ INDEX_FILE ]
   if dict_gz[ INDEX_CMD ]:
-    lcmd_index.append( dict_gz[ INDEX_CMD ] )
+    lcmd_tabix.extend( dict_gz[ INDEX_CMD ] )
 
   if not os.path.exists( str_vcf + ".tbi" ):
     # Create index for the VCF file
     str_tbi = str_vcf + ".tbi"
     if str_output_dir:
       str_tbi = os.path.join( str_output_dir, os.path.basename( str_tbi ))
-    str_cmd_index_vcf = " ".join( [ "tabix -f",str_tabix, str_vcf ] )
-    cmd_index_vcf = Command.Command( str_cur_command = str_cmd_index_vcf,
+    str_cmd_tabix_vcf = " ".join( [ "tabix -f",str_tabix, str_vcf ] )
+    cmd_tabix_vcf = Command.Command( str_cur_command = str_cmd_tabix_vcf,
                                      lstr_cur_dependencies = [ str_vcf ],
                                      lstr_cur_products = [ str_tbi ] )
-    lcmd_tabix.append( cmd_index_vcf )
+    lcmd_tabix.append( cmd_tabix_vcf )
   return( { INDEX_CMD: lcmd_tabix, INDEX_FILE: str_vcf } )
 
 def func_plot_vcf( str_vcf ):
@@ -1547,7 +1548,12 @@ def func_replace_extension( str_file_path, str_new_extension ):
     if not ( str_new_extension[0] in [ "_", "." ] ):
         str_new_extension = "." + str_new_extension
 
-    return( str_file_path.split(".")[0] + str_new_extension )
+    str_dir = os.path.dirname( str_file_path )
+    str_file_name = os.path.basename( str_file_path )
+    if not str_dir:
+        return( str_file_name.split(".")[0] + str_new_extension )
+    else:
+        return( str_dir + os.sep + str_file_name.split(".")[0] + str_new_extension )
 
 if __name__ == "__main__":
 
