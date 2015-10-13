@@ -29,14 +29,14 @@ function loadFusionIGV( sampleInfo )
                      indexed: false,
                      order: 20
                  },
-                 {
-                     label: "Trinity_Fusion",
-                     url: sampleInfo.trinityBed,
-                     displayMode: "EXPANDED",
-                     color: "green",
-                     indexed: false,
-                     order: 30
-                 },
+//                 {
+//                     label: "Trinity_Fusion",
+//                     url: sampleInfo.trinityBed,
+//                     displayMode: "EXPANDED",
+//                     color: "green",
+//                     indexed: false,
+//                     order: 30
+//                 },
                  {
                      url: sampleInfo.junctionReads,
                      label: "Junction_Reads",
@@ -81,20 +81,56 @@ function loadFusionIGV( sampleInfo )
 /**
 * Move IGV browser to a fusion of choice by genomic location.
 */
-fuction goToFusion( fusionChr, fusionPos ){
-    igv.browser.search( fusionChr + ":" + Math.max( 0, parseInt( fusionPos ) - 50 ) + "-" + ( parseInt( fusionPos ) + 50 ) );
+function goToFusion( fusionChr, fusionInfo ){
+    var numBreakRight = parseInt( fusionInfo.breakRight )
+    var numBreakLeft = parseInt( fusionInfo.breakLeft )
+    var padLength = ( numBreakRight - numBreakLeft ) / 2
+    
+    igv.browser.search( fusionChr + ":" + Math.max( 0, numBreakLeft - padLength ) + "-" + ( numBreakRight + padLength ) );
+    setFusionDetails( fusionChr, fusionInfo );
+}
+
+function setFusionDetails( fusionName, fusionInfo ){
+    $( "#FusionNameDetail" ).html( "<p class='navbar-text'><b>Fusion Name:</b> " + fusionName + "</p>" );
+    $( "#FusionBreakLeftDetail" ).html( "<p class='navbar-text'><b>Left Break Position:</b> " + fusionInfo.breakLeft  + "</p>" );
+    $( "#FusionBreakRightDetail" ).html( "<p class='navbar-text'><b>Right Break Position:</b> " + fusionInfo.breakRight + "</p>" );
+    $( "#FusionJunctionDetail" ).html( "<p class='navbar-text'><b>Junction Read Count:</b> " + fusionInfo.numJunctionReads + "</p>" );
+    $( "#FusionSpanningDetail" ).html( "<p class='navbar-text'><b>Spanning Read Count:</b> " + fusionInfo.numSpanningFrags + "</p>" );
 }
 
 /** 
 * Change array of fusion names to a html list.
 */
 function toFusionList( fusionName ){
-    return '<il>' + fusionName + '</il>;
+    return '<li id='+fusionName+'><a href="#">' + fusionName + '</a></li>';
 } 
 
 /**
 * Load the fusion list from the json array to a html list
 */
 function loadFusionList( sampleInfo ){
-    $( "#fusionList" ).html( sampleInfo.fusionList.map( toFusionList ) );
+    var fusionList = []
+    for( var fusionName in sampleInfo.fusions ){
+        if( sampleInfo.fusions.hasOwnProperty( fusionName ) ){
+            fusionList.push( fusionName );
+        }
+    }
+    fusionInspectorState.cache[ "fusionList" ] = fusionList
+    $( "#fusionList" ).html( fusionInspectorState.cache.fusionList.map( toFusionList ) );
+    for( var fusionNameItr=0; fusionNameItr < fusionInspectorState.cache.fusionList.length; fusionNameItr ++ ){
+        registerClickFusionMenu( fusionInspectorState.cache.fusionList[ fusionNameItr ] );
+    }
+}
+
+/**
+ * Set sample name in header.
+ */
+function setSampleName( sampleInfo ){
+    $( "#sampleId" ).html( "<p class='navbar-text'><b>Sample:</b> "+sampleInfo.sampleName+"</p>" )
+}
+
+function registerClickFusionMenu( fusionId ){
+    $( "#" + fusionId ).click( function() {
+       goToFusion( fusionId, fusionInspectorState.cache.json.fusions[ fusionId ] );
+    })
 }

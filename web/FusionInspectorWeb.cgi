@@ -35,27 +35,32 @@ print( """<!DOCTYPE html>
 </head>    
 <body>
     <!-- Header (info) -->
-    <div class-"constainer-fluid" id="sampleHeader">
-        <div class="row" style="background-color: #E7E7EF">
-            <div class="col-xs-6" id="sampleId"><p>Sample:</p></div>
-            <div class="col=xs-6">
-                <ul id="fusionList">
-                    <li>No fusions loaded</li>
+    <div class="constainer-fluid" id="sampleHeader" style="background-color: #E7E7EF">
+        <nav class="navbar navbar-default" style="background-color: #E7E7EF">
+            <div class="navbar-header" id="sampleId"><p class="navbar-text"><b>Sample:</b></p></div>
+            <!-- Start fusion drop down -->
+            <div class="collapse navbar-collapse">
+                <ul class="nav navbar-nav">
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Select Fusion<span class="caret"></span></a>
+                        <ul class="dropdown-menu" id="fusionList">
+                            <li>No fusions loaded</li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
+            <!-- End fusion drop down -->
+        </nav>
+        <div class="row" style="background-color: #E7E7EF">
+            <div class="col-xs-3" id="FusionNameDetail"><p><b>Fusion Name:</b> Not Selected</p></div>
+            <div class="col-xs-2" id="FusionBreakLeftDetail"><p><b>Left Break Position:</b> Not Selected</p></div>
+            <div class="col-xs-2" id="FusionBreakRightDetail"><p><b>Right Break Position:</b> Not Selected</p></div>
+            <div class="col-xs-2" id="FusionJunctionDetail"><p><b>Junction Read Count:</b> Not Selected</p></div>
+            <div class="col-xs-3" id="FusionSpanningDetail"><p><b>Spanning Read Count:</b> Not Selected</p></div>
         </div>
     </div>
+    <!-- End fusion details -->
     <hr>
-    <!--- End header )info) -->
-
-
-    <!-- Start tabs header -->
-    
-    <!-- End tabs header -->
-    <!-- Start tabs content -->
-
-    <!-- End tabs content -->
-
 
     <!-- IGV browser area -->
     <div id="igvBrowser"></div>
@@ -64,7 +69,18 @@ print( """<!DOCTYPE html>
     <script src='fusion_inspector.json'></script>
     <script src='js/FusionInspector.js'></script>
     <script>
-    var igvBrowser = loadFusionIGV( fusionInspector )
+    // Load data (MOCKED)
+    fusionInspectorState.cache[ "json" ] = fusionInspector
+    // Set sample name in header
+    setSampleName( fusionInspectorState.cache.json );
+    // Load Fusion Names list in header menu
+    loadFusionList( fusionInspectorState.cache.json );
+    // Create Browser
+    var igvBrowser = loadFusionIGV( fusionInspectorState.cache.json );
+    // Move IGV browser to default
+    var defaultFusion = fusionInspectorState.cache.fusionList[ 0 ]
+    goToFusion( defaultFusion,
+                fusionInspectorState.cache.json.fusions[ defaultFusion ] );
     </script>
 </body>
 </html> """ )
