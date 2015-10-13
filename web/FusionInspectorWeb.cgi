@@ -37,14 +37,25 @@ print( """<!DOCTYPE html>
     <!-- Header (info) -->
     <div class-"constainer-fluid" id="sampleHeader">
         <div class="row" style="background-color: #E7E7EF">
-            <div class="col-xs-6"><p>Sample:</p></div>
+            <div class="col-xs-6" id="sampleId"><p>Sample:</p></div>
             <div class="col=xs-6">
-                <p>Fusion</p>
+                <ul id="fusionList">
+                    <li>No fusions loaded</li>
+                </ul>
             </div>
         </div>
     </div>
     <hr>
     <!--- End header )info) -->
+
+
+    <!-- Start tabs header -->
+    
+    <!-- End tabs header -->
+    <!-- Start tabs content -->
+
+    <!-- End tabs content -->
+
 
     <!-- IGV browser area -->
     <div id="igvBrowser"></div>

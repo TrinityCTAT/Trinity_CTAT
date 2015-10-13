@@ -1,3 +1,7 @@
+var fusionInspectorState = {
+  cache : {}
+}
+
 function loadFusionIGV( sampleInfo )
 {
     var div = $("#igvBrowser")[0],
@@ -72,4 +76,25 @@ function loadFusionIGV( sampleInfo )
                      order: 55
                  }]};
     igv.createBrowser(div, options);
+}
+
+/**
+* Move IGV browser to a fusion of choice by genomic location.
+*/
+fuction goToFusion( fusionChr, fusionPos ){
+    igv.browser.search( fusionChr + ":" + Math.max( 0, parseInt( fusionPos ) - 50 ) + "-" + ( parseInt( fusionPos ) + 50 ) );
+}
+
+/** 
+* Change array of fusion names to a html list.
+*/
+function toFusionList( fusionName ){
+    return '<il>' + fusionName + '</il>;
+} 
+
+/**
+* Load the fusion list from the json array to a html list
+*/
+function loadFusionList( sampleInfo ){
+    $( "#fusionList" ).html( sampleInfo.fusionList.map( toFusionList ) );
 }

@@ -149,7 +149,7 @@ function hideVariantColumn( columnLabel ){
 }
 
 /**
- * Mange the UI text indicating which columns are hidden given the current state.
+ * Manage the UI text indicating which columns are hidden given the current state.
  */
 function updateHiddenColumns(){
   buildHiddenTabLinks = [];
