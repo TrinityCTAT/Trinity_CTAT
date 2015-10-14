@@ -1305,116 +1305,119 @@ def run( args_call, f_do_index = False ):
         lcmd_commands.extend( dict_ret_variant_filtration[ INDEX_CMD ] )
         str_annotated_vcf_file = dict_ret_variant_filtration[ INDEX_FILE ]
 
-        # Clean up VCF file after variant caller
-        str_clean_vcf = os.path.join( str_misc_dir, func_replace_extension( os.path.basename( str_annotated_vcf_file ), "_clean.vcf" ) )
-        str_clean_vcf_cmd = " ".join( [ "groom_vcf.py", str_annotated_vcf_file, str_clean_vcf ] )
-        cmd_clean_vcf = Command.Command( str_cur_command = str_clean_vcf_cmd,
+        # If using the DNASEQ mode then stop,the rest is for RNASEQ.
+        if not args.f_validate_by_dnaseq:
+
+            # Clean up VCF file after variant caller
+            str_clean_vcf = os.path.join( str_misc_dir, func_replace_extension( os.path.basename( str_annotated_vcf_file ), "_clean.vcf" ) )
+            str_clean_vcf_cmd = " ".join( [ "groom_vcf.py", str_annotated_vcf_file, str_clean_vcf ] )
+            cmd_clean_vcf = Command.Command( str_cur_command = str_clean_vcf_cmd,
                                          lstr_cur_dependencies = [ str_annotated_vcf_file ],
                                          lstr_cur_products = [ str_clean_vcf ] )
-        cmd_clean_vcf.func_set_dependency_clean_level( [ str_annotated_vcf_file ], Command.CLEAN_NEVER )
-        str_annotated_vcf_file = str_clean_vcf
-        lcmd_commands.append( cmd_clean_vcf )
+            cmd_clean_vcf.func_set_dependency_clean_level( [ str_annotated_vcf_file ], Command.CLEAN_NEVER )
+            str_annotated_vcf_file = str_clean_vcf
+            lcmd_commands.append( cmd_clean_vcf )
 
-#        lcmd_commands.extend( func_plot_vcf( str_annotated_vcf_file )[ INDEX_CMD ] )
-
-        # Filter results to just SNPs
-        str_snp_filtered_vcf = func_replace_extension( str_annotated_vcf_file, "_snp.vcf" )
-        str_cmd_filter_snps = " ".join([ "reduce_vcf_to_snps.py", str_annotated_vcf_file, str_snp_filtered_vcf ])
-        cmd_snp_filter = Command.Command( str_cur_command = str_cmd_filter_snps,
-                                          lstr_cur_dependencies = [ str_annotated_vcf_file ],
-                                          lstr_cur_products = [ str_snp_filtered_vcf ] )
-        lcmd_commands.append( cmd_snp_filter )
-        str_annotated_vcf_file = str_snp_filtered_vcf
-#        lcmd_commands.extend( func_plot_vcf( str_annotated_vcf_file )[ INDEX_CMD ] )
-
-        # Filter RNA Editing
-        if args_call.str_darned_data or args_call.str_radar_data:
-            str_rna_edit_filtered_vcf = func_replace_extension( str_annotated_vcf_file, "_RNAedit.vcf" )
-            lstr_cmd_rna_editing_filter = [ "filter_snps_rna_editing.py" ]
-            if args_call.str_darned_data:
-                lstr_cmd_rna_editing_filter.extend([ "--darned", args_call.str_darned_data ])
-            if args_call.str_radar_data:
-                lstr_cmd_rna_editing_filter.extend([ "--radar", args_call.str_radar_data ])
-            lstr_cmd_rna_editing_filter.extend([ str_annotated_vcf_file, str_rna_edit_filtered_vcf ])
-            str_cmd_rna_editing_filter = " ".join( lstr_cmd_rna_editing_filter )
-            cmd_rna_editing_filter = Command.Command( str_cur_command = str_cmd_rna_editing_filter,
-                                                      lstr_cur_dependencies = [ str_annotated_vcf_file ],
-                                                      lstr_cur_products = [ str_rna_edit_filtered_vcf ] )
-            lcmd_commands.append( cmd_rna_editing_filter )
-            # Switch over the annotated VCF to this RNA-Edited annotated VCF
-            str_annotated_vcf_file = str_rna_edit_filtered_vcf
 #            lcmd_commands.extend( func_plot_vcf( str_annotated_vcf_file )[ INDEX_CMD ] )
 
-        # Tabix / gz file sample
-        dict_sample_csi = func_csi( str_annotated_vcf_file, args_call.str_file_base )
-        str_annotated_vcf_file = dict_sample_csi[ INDEX_FILE ]
-        lcmd_commands.extend( dict_sample_csi[ INDEX_CMD ] )
-        str_compressed_dbsnp = args_call.str_vcf_file + ".gz"
+            # Filter results to just SNPs
+            str_snp_filtered_vcf = func_replace_extension( str_annotated_vcf_file, "_snp.vcf" )
+            str_cmd_filter_snps = " ".join([ "reduce_vcf_to_snps.py", str_annotated_vcf_file, str_snp_filtered_vcf ])
+            cmd_snp_filter = Command.Command( str_cur_command = str_cmd_filter_snps,
+                                          lstr_cur_dependencies = [ str_annotated_vcf_file ],
+                                          lstr_cur_products = [ str_snp_filtered_vcf ] )
+            lcmd_commands.append( cmd_snp_filter )
+            str_annotated_vcf_file = str_snp_filtered_vcf
+#            lcmd_commands.extend( func_plot_vcf( str_annotated_vcf_file )[ INDEX_CMD ] )
 
-        # Tabix / gz DBSNP
-        dict_dbsnp_csi = func_csi( args_call.str_vcf_file, args_call.str_file_base )
-        lcmd_commands.extend( dict_dbsnp_csi[ INDEX_CMD ] )
+            # Filter RNA Editing
+            if args_call.str_darned_data or args_call.str_radar_data:
+                str_rna_edit_filtered_vcf = func_replace_extension( str_annotated_vcf_file, "_RNAedit.vcf" )
+                lstr_cmd_rna_editing_filter = [ "filter_snps_rna_editing.py" ]
+                if args_call.str_darned_data:
+                    lstr_cmd_rna_editing_filter.extend([ "--darned", args_call.str_darned_data ])
+                if args_call.str_radar_data:
+                    lstr_cmd_rna_editing_filter.extend([ "--radar", args_call.str_radar_data ])
+                lstr_cmd_rna_editing_filter.extend([ str_annotated_vcf_file, str_rna_edit_filtered_vcf ])
+                str_cmd_rna_editing_filter = " ".join( lstr_cmd_rna_editing_filter )
+                cmd_rna_editing_filter = Command.Command( str_cur_command = str_cmd_rna_editing_filter,
+                                                      lstr_cur_dependencies = [ str_annotated_vcf_file ],
+                                                      lstr_cur_products = [ str_rna_edit_filtered_vcf ] )
+                lcmd_commands.append( cmd_rna_editing_filter )
+                # Switch over the annotated VCF to this RNA-Edited annotated VCF
+                str_annotated_vcf_file = str_rna_edit_filtered_vcf
+#                lcmd_commands.extend( func_plot_vcf( str_annotated_vcf_file )[ INDEX_CMD ] )
 
-        # DBSNP annotation
-        # Annotate combined sample vcf files
-        # bcftools annotate --annotations str_dbsnp_vcf -c
-        # PM variant is clinicall precious (clinical and pubmed cited)
-        # NSF, NSM, NSN, COMMON, SAO, KGPROD, KGVALIDATED, MUT, WTD, VLD, RS, PMC
-        str_dbsnp_annotated_vcf = func_replace_extension( str_annotated_vcf_file, "_dbsnp.vcf.gz" )
-        str_annotate_command = " ".join( [ "bcftools", "annotate", "--output-type", "z", "--annotations", str_compressed_dbsnp, "--columns", "INFO/COMMON,INFO/PM,INFO/NSF,INFO/NSM,INFO/NSN,INFO/SAO,INFO/KGPROD,INFO/KGValidated,INFO/MUT,INFO/WTD,INFO/VLD,INFO/RS,INFO/PMC", "--output", str_dbsnp_annotated_vcf, str_annotated_vcf_file ] )
-        lcmd_commands.append( Command.Command( str_cur_command = str_annotate_command,
+            # Tabix / gz file sample
+            dict_sample_csi = func_csi( str_annotated_vcf_file, args_call.str_file_base )
+            str_annotated_vcf_file = dict_sample_csi[ INDEX_FILE ]
+            lcmd_commands.extend( dict_sample_csi[ INDEX_CMD ] )
+            str_compressed_dbsnp = args_call.str_vcf_file + ".gz"
+
+            # Tabix / gz DBSNP
+            dict_dbsnp_csi = func_csi( args_call.str_vcf_file, args_call.str_file_base )
+            lcmd_commands.extend( dict_dbsnp_csi[ INDEX_CMD ] )
+
+            # DBSNP annotation
+            # Annotate combined sample vcf files
+            # bcftools annotate --annotations str_dbsnp_vcf -c
+            # PM variant is clinicall precious (clinical and pubmed cited)
+            # NSF, NSM, NSN, COMMON, SAO, KGPROD, KGVALIDATED, MUT, WTD, VLD, RS, PMC
+            str_dbsnp_annotated_vcf = func_replace_extension( str_annotated_vcf_file, "_dbsnp.vcf.gz" )
+            str_annotate_command = " ".join( [ "bcftools", "annotate", "--output-type", "z", "--annotations", str_compressed_dbsnp, "--columns", "INFO/COMMON,INFO/PM,INFO/NSF,INFO/NSM,INFO/NSN,INFO/SAO,INFO/KGPROD,INFO/KGValidated,INFO/MUT,INFO/WTD,INFO/VLD,INFO/RS,INFO/PMC", "--output", str_dbsnp_annotated_vcf, str_annotated_vcf_file ] )
+            lcmd_commands.append( Command.Command( str_cur_command = str_annotate_command,
                                            lstr_cur_dependencies = [ str_compressed_dbsnp, str_annotated_vcf_file ],
                                            lstr_cur_products = [ str_dbsnp_annotated_vcf ] ) )
-        str_annotated_vcf_file = str_dbsnp_annotated_vcf
+            str_annotated_vcf_file = str_dbsnp_annotated_vcf
 
-        # SNPeff java -jar /seq/regev_genome_portal/SOFTWARE/snpEff/snpEff.jar -nostats -noLof -no-downstream -no-upstream hg19 variants.vcf > new.vcf
-        str_snp_eff_annotated = func_replace_extension( str_annotated_vcf_file, "_snpeff.vcf" )
-        str_snp_eff_cmd = " ".join( [ "bgzip -cd", str_annotated_vcf_file, "|", "java -jar /seq/regev_genome_portal/SOFTWARE/snpEff/snpEff.jar -nostats -noLof -no-downstream -no-upstream hg19", ">", str_snp_eff_annotated ] )
-        lcmd_commands.append( Command.Command( str_cur_command = str_snp_eff_cmd,
+            # SNPeff java -jar /seq/regev_genome_portal/SOFTWARE/snpEff/snpEff.jar -nostats -noLof -no-downstream -no-upstream hg19 variants.vcf > new.vcf
+            str_snp_eff_annotated = func_replace_extension( str_annotated_vcf_file, "_snpeff.vcf" )
+            str_snp_eff_cmd = " ".join( [ "bgzip -cd", str_annotated_vcf_file, "|", "java -jar /seq/regev_genome_portal/SOFTWARE/snpEff/snpEff.jar -nostats -noLof -no-downstream -no-upstream hg19", ">", str_snp_eff_annotated ] )
+            lcmd_commands.append( Command.Command( str_cur_command = str_snp_eff_cmd,
                                                lstr_cur_dependencies = [ str_annotated_vcf_file ],
                                                lstr_cur_products = [ str_snp_eff_annotated ] ) )
-        str_annotated_vcf_file = str_snp_eff_annotated
+            str_annotated_vcf_file = str_snp_eff_annotated
 
-        # Update the SNPeff style annotations to the simple info column feature style
-        str_snp_eff_updated_file = func_replace_extension( str_annotated_vcf_file, "_updated.vcf" )
-        str_snp_eff_update_cmd = " ".join([ "update_snpeff_annotations.py", str_annotated_vcf_file, str_snp_eff_updated_file ] )
-        lcmd_commands.append( Command.Command( str_cur_command = str_snp_eff_update_cmd,
+            # Update the SNPeff style annotations to the simple info column feature style
+            str_snp_eff_updated_file = func_replace_extension( str_annotated_vcf_file, "_updated.vcf" )
+            str_snp_eff_update_cmd = " ".join([ "update_snpeff_annotations.py", str_annotated_vcf_file, str_snp_eff_updated_file ] )
+            lcmd_commands.append( Command.Command( str_cur_command = str_snp_eff_update_cmd,
                                                lstr_cur_dependencies = [ str_annotated_vcf_file ],
                                                lstr_cur_products = [ str_snp_eff_updated_file ] ) )
-        str_annotated_vcf_file = str_snp_eff_updated_file
+            str_annotated_vcf_file = str_snp_eff_updated_file
 
-        # Perform cancer filtering
-        f_cravat_hg18 = None
-        if args_call.str_email_contact is None or ( not args_call.f_hg_19 and not args_call.f_hg_18 ):
-          pline_cur.logr_logger.warning( "CRAVAT analysis will not be ran. Please make sure to provide an email and indicate if hg18 or hg19 is being used." )
-        elif args_call.f_hg_18:
-          f_cravat_hg18 = True
-        elif args_call.f_hg_19:
-          f_cravat_hg18 = False
-        lcmd_commands.extend( func_do_variant_filtering_cancer( args_call=args_call,
+            # Perform cancer filtering
+            f_cravat_hg18 = None
+            if args_call.str_email_contact is None or ( not args_call.f_hg_19 and not args_call.f_hg_18 ):
+                pline_cur.logr_logger.warning( "CRAVAT analysis will not be ran. Please make sure to provide an email and indicate if hg18 or hg19 is being used." )
+            elif args_call.f_hg_18:
+                f_cravat_hg18 = True
+            elif args_call.f_hg_19:
+                f_cravat_hg18 = False
+            lcmd_commands.extend( func_do_variant_filtering_cancer( args_call=args_call,
                                                                 str_variants_file=str_annotated_vcf_file, 
                                                                 str_project_dir=args_call.str_file_base,
                                                                 f_is_hg_18=f_cravat_hg18 )[ INDEX_CMD ] )
 
-        # Make JSON file for the inspector
-        if args_call.str_bed:
-          str_cmd_json_inspector = " ".join([ "make_mutation_inspector_json.py",
+            # Make JSON file for the inspector
+            if args_call.str_bed:
+                str_cmd_json_inspector = " ".join([ "make_mutation_inspector_json.py",
                                             "--tab", str_cancer_tab,
                                             "--bam", str_bam_called_from,
                                             "--bam_index", str_bam_called_from + ".bai",
                                             "--bed", args_call.str_bed,
                                             "--bed_index", args_call.str_bed + ".idx",
                                             str_json_inspector_file ])
-          cmd_json_inspector = Command.Command( str_cur_command = str_cmd_json_inspector,
+                cmd_json_inspector = Command.Command( str_cur_command = str_cmd_json_inspector,
                                              lstr_cur_dependencies = [ str_cancer_tab, str_bam_called_from, str_bam_called_from + ".bai" ],
                                              lstr_cur_products = [ str_json_inspector_file ] )
-          cmd_json_inspector.func_set_dependency_clean_level( [ str_cancer_tab, str_bam_called_from, str_bam_called_from + ".bai" ], Command.CLEAN_NEVER )
-          lcmd_commands.append( cmd_json_inspector )
+                cmd_json_inspector.func_set_dependency_clean_level( [ str_cancer_tab, str_bam_called_from, str_bam_called_from + ".bai" ], Command.CLEAN_NEVER )
+                lcmd_commands.append( cmd_json_inspector )
 
-          # Copy bed to output to make it an output for Galaxy and allow it to be used in the inspector.
-          str_copied_bed = os.path.join( args_call.str_file_base, os.path.basename( args_call.str_bed ) )
-          str_cmd_copy_bed = " ".join(["cp", args_call.str_bed, str_copied_bed ])
-          lcmd_commands.append( Command.Command( str_cur_command = str_cmd_copy_bed,
+                # Copy bed to output to make it an output for Galaxy and allow it to be used in the inspector.
+                str_copied_bed = os.path.join( args_call.str_file_base, os.path.basename( args_call.str_bed ) )
+                str_cmd_copy_bed = " ".join(["cp", args_call.str_bed, str_copied_bed ])
+                lcmd_commands.append( Command.Command( str_cur_command = str_cmd_copy_bed,
                                                  lstr_cur_dependencies = [ args_call.str_bed ],
                                                  lstr_cur_products = [ str_copied_bed ] ) )
 
