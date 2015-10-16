@@ -354,9 +354,8 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
         ###############################
         # Run the truth runs if needed
         ###############################
-        #if args_parsed.str_truth_run_config:
-            # TODO Turn back on
-            # lcmd_commands_run.extend( self.func_run_truth_calling( args_parsed, dict_sample_study ) )
+        if args_parsed.str_truth_run_config:
+            lcmd_commands_run.extend( self.func_run_truth_calling( args_parsed, dict_sample_study ) )
 
         ############################################################
         # Make sample file for common alignment and snp calling
@@ -380,10 +379,9 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                             #"--memory 35 --run_on_grid --num_parallel_procs", str( args_parsed.i_jobs ) ] )
                                             "--memory 35 --num_parallel_procs", str( args_parsed.i_jobs ) ] )
 
-            # TODO turn back on
-            #lcmd_commands_run.append( Command.Command( str_cur_command = str_cmd_make_bam,
-            #                                       lstr_cur_dependencies = lstr_bam_dependencies + [ args_parsed.str_annot_config, args_parsed.str_align_run_config ],
-            #                                       lstr_cur_products = lstr_bam_products ) )
+            lcmd_commands_run.append( Command.Command( str_cur_command = str_cmd_make_bam,
+                                                   lstr_cur_dependencies = lstr_bam_dependencies + [ args_parsed.str_annot_config, args_parsed.str_align_run_config ],
+                                                   lstr_cur_products = lstr_bam_products ) )
 
             # For each conf file
             for str_call_run_conf in args_parsed.lstr_run_configs:
@@ -415,10 +413,9 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                 lstr_call_products = lstr_call_products + [ self.func_convert_fastq_left_cancer_vcf( lstr_sample[ 1 ], str_current_project_dir ) for lstr_sample in llstr_alignment_samples ]
                 lstr_call_products = lstr_call_products + [ self.func_convert_fastq_left_cancer_tab( lstr_sample[ 1 ], str_current_project_dir ) for lstr_sample in llstr_alignment_samples ]
 
-                # TODO turn back on
-                #lcmd_commands_run.append( Command.Command( str_cur_command = str_cmd_call_variants,
-                #                                   lstr_cur_dependencies = lstr_call_dependencies + [ args_parsed.str_annot_config, str_call_run_conf ],
-                #                                   lstr_cur_products = lstr_call_products ) )
+                lcmd_commands_run.append( Command.Command( str_cur_command = str_cmd_call_variants,
+                                                   lstr_cur_dependencies = lstr_call_dependencies + [ args_parsed.str_annot_config, str_call_run_conf ],
+                                                   lstr_cur_products = lstr_call_products ) )
 
                 ##########################################
                 # Make dna rna comparisons tab files
@@ -575,8 +572,6 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                     # Make figures for validation with a study
                     ############################################
                     
-                    #TODO remove, turning off the rest of the pipeline
-                    lstr_generated_dna_rna_tab = []
                     if len( lstr_generated_dna_rna_tab ) > 0:
 
                         # JSON object
