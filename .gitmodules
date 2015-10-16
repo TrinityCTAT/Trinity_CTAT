@@ -1,0 +1,12 @@
+[submodule "fusion/tools/star_fusion"]
+	path = fusion/tools/STAR-fusion
+	url = https://github.com/STAR-Fusion/STAR-Fusion.git
+[submodule "fusion/tools/discasm"]
+	path = fusion/tools/DISCASM
+	url = https://github.com/DISCASM/DISCASM.git
+[submodule "fusion/tools/gmap_fusion"]
+	path = fusion/tools/GMAP-fusion
+	url = https://github.com/GMAP-fusion/GMAP-fusion.git
+[submodule "fusion/tools/FusionInspector"]
+	path = fusion/tools/FusionInspector
+	url = https://github.com/FusionInspector/FusionInspector.git
