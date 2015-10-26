@@ -8,7 +8,8 @@
  * A small cach of SNP related info
  */
 var mutationInspectorState = {
-  cache : {}
+  cache : {},
+  abridged : true
 };
 
 
@@ -183,6 +184,11 @@ function updateHiddenColumns(){
  * @param {string} curRowAlt - Alternative base
  */
 function addSpecificTab( curRowChr, curRowPos, curRowRef, curRowAlt ){
+  // Turn off the additional tab creation
+  if ( mutationInspectorState.abridged ){
+    return( false );
+  }
+
   var newTabName = curRowChr+"_"+curRowPos
   var tabArea = $( '#tabContent' );
   // If the the tab already exists, go to tab, do not make a new one.
@@ -280,6 +286,14 @@ function registerOnClickEvent( tabHeader, registerChrLoc ){
  * @param {string} tabHeader - The id of the tab to which to add the click event.
  */
 function registerDefaultTabClick( tabHeader ){
+
+  // This is a hack added in after the fact. We needed to remove elements associated
+  // with webservices until they were resolved. This does not belong here but is a
+  // place that is called once. (Could not change the html as well).
+  if( mutationInspectorState.abridged ){
+    $("#sampleHeader").children().children()[5].remove();
+    $("#currentMupit").remove();
+  }
   $( "#"+tabHeader ).click( function() {
     updateSNPInfo( "NA", "NA", "NA", "NA" );
     updateMupitLink( { 'MuPIT Link' : null,
@@ -301,8 +315,10 @@ function updateSNPInfo( curSNPChr, curSNPPos, curSNPRef, curSNPAlt ){
   $( '#currentPosition' ).text( curSNPPos );
   $( '#currentRef' ).text( curSNPRef );
   $( '#currentAlt' ).text( curSNPAlt );
-  $( '#currentMupit' ).text( '' );
-  $( '#currentMupit' ).append( '<div class=\"spinner-loader\">Loading...</div>' );
+  if( ! mutationInspectorState.abridged ){
+    $( '#currentMupit' ).text( '' );
+    $( '#currentMupit' ).append( '<div class=\"spinner-loader\">Loading...</div>' );
+  }
 }
 
 
@@ -379,7 +395,9 @@ function readMutationJSON( readInFile ){
  */
 function setAnnotationTabToLoad( retrieveAnnotationTabName ){
   $( '#' + retrieveAnnotationTabName ).html( "" );
-  $( '#' + retrieveAnnotationTabName ).append( "<div class=\"spinner-loader\">Loading...</div>" );
+  if( ! mutationInspectorState.abridged ){
+    $( '#' + retrieveAnnotationTabName ).append( "<div class=\"spinner-loader\">Loading...</div>" );
+  }
 }
 
 /**
@@ -441,6 +459,11 @@ function updateCravatTab( updateTab, cravatItem ){
  * @param {object} cravatItem - Object from the CRAVAT web service.
  */
 function updateMupitLink( cravatItem ){
+
+  if( mutationInspectorState.abridged ){
+    return( false );
+  }
+
   var mupit = cravatItem[ "MuPIT Link" ];
   // If there is a MuPIT link add as a button (update the label to a label)
   if( mupit ){
