@@ -166,32 +166,32 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
     def func_convert_fastq_maf_dna_tab( self, str_fastq_left, str_output_dir ):
         # Convert the left fastq dna to the maf vs dna tab sample (ok)
         str_file_base = os.path.splitext( os.path.basename( str_fastq_left ) )[0]
-        return os.path.join( str_output_dir, "samples", str_file_base.replace(".","_"), "TABS_MAF_DNA", str_file_base + "_maf_dna.tab" )
+        return os.path.join( str_output_dir, "samples", str_file_base.replace(".","_"), "TABS_MAF_DNA", "maf_dna.tab" )
 
     def func_convert_fastq_maf_rna_tab( self, str_fastq_left, str_output_dir ):
         # Convert the left fastq rna to the maf vs rna tab sample (ok)
         str_file_base = os.path.splitext( os.path.basename( str_fastq_left ) )[0]
-        return os.path.join( str_output_dir, "samples", str_file_base.replace(".","_"), "TABS_MAF_RNA", str_file_base + "_maf_rna.tab" )
+        return os.path.join( str_output_dir, "samples", str_file_base.replace(".","_"), "TABS_MAF_RNA", "maf_rna.tab" )
 
     def func_convert_fastq_dna_rna_tab( self, str_fastq_left, str_output_dir ):
         # Convert the left fastq dna to the dna vs rna tab sample (ok)
         str_file_base = os.path.splitext( os.path.basename( str_fastq_left ) )[0]
-        return os.path.join( str_output_dir, "samples", str_file_base.replace(".","_"), "TABS_DNA_RNA", str_file_base + "_dna_rna.tab" )
+        return os.path.join( str_output_dir, "samples", str_file_base.replace(".","_"), "TABS_DNA_RNA", "dna_rna.tab" )
 
     def func_convert_fastq_dna_rna_edit_tab( self, str_fastq_left, str_output_dir ):
         # Convert the left fastq dna to the dna vs rna tab sample (ok)
         str_file_base = os.path.splitext( os.path.basename( str_fastq_left ) )[0]
-        return os.path.join( str_output_dir, "samples", str_file_base.replace(".","_"), "TABS_DNA_RNA", str_file_base + "_dna_rna_rnaedit.tab" )
+        return os.path.join( str_output_dir, "samples", str_file_base.replace(".","_"), "TABS_DNA_RNA_EDIT", "dna_rna_rnaedit.tab" )
 
     def func_convert_fastq_dna_rna_cosmic_tab( self, str_fastq_left, str_output_dir ):
         # Convert the left fastq dna to the dna vs rna tab sample (ok)
         str_file_base = os.path.splitext( os.path.basename( str_fastq_left ) )[0]
-        return os.path.join( str_output_dir, "samples", str_file_base.replace(".","_"), "TABS_DNA_RNA", str_file_base + "_dna_rna_cosmic.tab" )
+        return os.path.join( str_output_dir, "samples", str_file_base.replace(".","_"), "TABS_DNA_RNA_COSMIC", "dna_rna_cosmic.tab" )
 
     def func_convert_fastq_dna_rna_cancer_tab( self, str_fastq_left, str_output_dir ):
         # Convert the left fastq dna to the dna vs rna tab sample (ok)
         str_file_base = os.path.splitext( os.path.basename( str_fastq_left ) )[0]
-        return os.path.join( str_output_dir, "samples", str_file_base.replace(".","_"), "TABS_DNA_RNA", str_file_base + "_dna_rna_cancer.tab" )
+        return os.path.join( str_output_dir, "samples", str_file_base.replace(".","_"), "TABS_DNA_RNA_CANCER", "dna_rna_cancer.tab" )
 
     def func_convert_fastq_syn_rna_tab( self, str_fastq_left, str_output_dir ):
         # Convert the left fastq rna sample to the synthetic tab sample (ok)
@@ -254,9 +254,9 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                             "--project_base_dir", os.path.join( args_parsed.str_file_base, self.str_truth_runs ),
                                             "--memory 35 --num_parallel_procs", str( args_parsed.i_jobs ) ] )
                                             #"--memory 35 --run_on_grid --num_parallel_procs", str( args_parsed.i_jobs ) ] )
-            lcmd_truth_calling.append( Command.Command( str_cur_command = str_cmd_truth_call_variants,
-                                               lstr_cur_dependencies = lstr_truth_call_dependencies + [ args_parsed.str_annot_config, args_parsed.str_truth_run_config ],
-                                               lstr_cur_products = lstr_truth_call_products ) )
+            # TODO lcmd_truth_calling.append( Command.Command( str_cur_command = str_cmd_truth_call_variants,
+            # TODO                                   lstr_cur_dependencies = lstr_truth_call_dependencies + [ args_parsed.str_annot_config, args_parsed.str_truth_run_config ],
+            # TODO                                   lstr_cur_products = lstr_truth_call_products ) )
         return lcmd_truth_calling
 
     def func_prep_reference_vcf( self, args_parsed ):
@@ -354,8 +354,8 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
         ###############################
         # Run the truth runs if needed
         ###############################
-        if args_parsed.str_truth_run_config:
-            lcmd_commands_run.extend( self.func_run_truth_calling( args_parsed, dict_sample_study ) )
+        # TODO if args_parsed.str_truth_run_config:
+        # TODO     lcmd_commands_run.extend( self.func_run_truth_calling( args_parsed, dict_sample_study ) )
 
         ############################################################
         # Make sample file for common alignment and snp calling
@@ -379,9 +379,9 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                             #"--memory 35 --run_on_grid --num_parallel_procs", str( args_parsed.i_jobs ) ] )
                                             "--memory 35 --num_parallel_procs", str( args_parsed.i_jobs ) ] )
 
-            lcmd_commands_run.append( Command.Command( str_cur_command = str_cmd_make_bam,
-                                                   lstr_cur_dependencies = lstr_bam_dependencies + [ args_parsed.str_annot_config, args_parsed.str_align_run_config ],
-                                                   lstr_cur_products = lstr_bam_products ) )
+            # TODO lcmd_commands_run.append( Command.Command( str_cur_command = str_cmd_make_bam,
+            # TODO                                        lstr_cur_dependencies = lstr_bam_dependencies + [ args_parsed.str_annot_config, args_parsed.str_align_run_config ],
+            # TODO                                        lstr_cur_products = lstr_bam_products ) )
 
             # For each conf file
             for str_call_run_conf in args_parsed.lstr_run_configs:
@@ -400,6 +400,9 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                 lstr_generated_maf_rna_tab = []
                 lstr_generated_maf_dna_tab = []
                 lstr_generated_dna_rna_tab = []
+                lstr_generated_dna_rna_tab_cancer = []
+                lstr_generated_dna_rna_tab_cosmic = []
+                lstr_generated_dna_rna_tab_edit = []
                 lstr_generated_syn_rna_tab = []
 
                 #############################
@@ -413,9 +416,9 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                 lstr_call_products = lstr_call_products + [ self.func_convert_fastq_left_cancer_vcf( lstr_sample[ 1 ], str_current_project_dir ) for lstr_sample in llstr_alignment_samples ]
                 lstr_call_products = lstr_call_products + [ self.func_convert_fastq_left_cancer_tab( lstr_sample[ 1 ], str_current_project_dir ) for lstr_sample in llstr_alignment_samples ]
 
-                lcmd_commands_run.append( Command.Command( str_cur_command = str_cmd_call_variants,
-                                                   lstr_cur_dependencies = lstr_call_dependencies + [ args_parsed.str_annot_config, str_call_run_conf ],
-                                                   lstr_cur_products = lstr_call_products ) )
+                # TODO lcmd_commands_run.append( Command.Command( str_cur_command = str_cmd_call_variants,
+                # TODO                                    lstr_cur_dependencies = lstr_call_dependencies + [ args_parsed.str_annot_config, str_call_run_conf ],
+                # TODO                                    lstr_cur_products = lstr_call_products ) )
 
                 ##########################################
                 # Make dna rna comparisons tab files
@@ -432,11 +435,25 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                     str_dna_rna_cravat_tab_run_conf_file = os.path.join( args_parsed.str_tab_config_dir, os.path.basename( os.path.splitext( str_call_run_conf )[0] ) + "_dna_rna_cravat_tabs.conf" )
                     # Prod / Dep for str_dna_rna_tab_run_conf_file
                     lstr_dna_rna_tab_products = []
+                    lstr_dna_rna_tab_edit_products = []
+                    lstr_dna_rna_tab_cosmic_products = []
+                    lstr_dna_rna_tab_cancer_products = []
                     lstr_generic_tab_dependencies = []
                     lstr_dna_rna_dependencies = []
                     lstr_dna_rna_edit_dependencies = []
                     lstr_dna_rna_cosmic_dependencies = []
                     lstr_dna_rna_cravat_dependencies = []
+
+                    # Maf mapping info to make maf mapping files between vcf and maf keyword names
+                    lstr_maf_mapping_init = []
+                    lstr_maf_mapping_edit = []
+                    lstr_maf_mapping_cosmic = []
+                    lstr_maf_mapping_cancer = []
+                    str_maf_mapping_init_file = os.path.join( args_parsed.str_file_base, self.str_sample_files_dir, str_call_basename + "_maf_init.mapping_txt" )
+                    str_maf_mapping_edit_file = os.path.join( args_parsed.str_file_base, self.str_sample_files_dir, str_call_basename + "_maf_edit.mapping_txt" )
+                    str_maf_mapping_cosmic_file = os.path.join( args_parsed.str_file_base, self.str_sample_files_dir, str_call_basename + "_maf_cosmic.mapping_txt" )
+                    str_maf_mapping_cancer_file = os.path.join( args_parsed.str_file_base, self.str_sample_files_dir, str_call_basename + "_maf_cancer.mappig_txt" )
+
                     # JSON file prod/dep
                     lstr_dna_rna_file_info = []
                     lstr_dna_rna_json_file_dependencies = []
@@ -452,9 +469,9 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                         str_link_base = os.path.join( str_current_project_dir, "samples", str_cur_tab_sample, "reads." + str_cur_tab_sample )
                         # Tab file being made
                         str_cur_tab_file = self.func_convert_fastq_dna_rna_tab( dict_sample[ STR_RNA_LEFT ], str_current_project_dir )
-                        #str_cur_edit_tab_file = self.func_convert_fastq_dna_rna_edit_tab( dict_sample[ STR_RNA_LEFT ], str_current_project_dir )
-                        #str_cur_cosmic_tab_file = self.func_convert_fastq_dna_rna_cosmic_tab( dict_sample[ STR_RNA_LEFT ], str_current_project_dir )
-                        #str_cur_cancer_tab_file = self.func_convert_fastq_dna_rna_cancer_tab( dict_sample[ STR_RNA_LEFT ], str_current_project_dir )
+                        str_cur_edit_tab_file = self.func_convert_fastq_dna_rna_edit_tab( dict_sample[ STR_RNA_LEFT ], str_current_project_dir )
+                        str_cur_cosmic_tab_file = self.func_convert_fastq_dna_rna_cosmic_tab( dict_sample[ STR_RNA_LEFT ], str_current_project_dir )
+                        str_cur_cancer_tab_file = self.func_convert_fastq_dna_rna_cancer_tab( dict_sample[ STR_RNA_LEFT ], str_current_project_dir )
                         llstr_dna_rna_samples.append( "\t".join( [ str_cur_tab_sample,
                                                                  os.path.join( str_current_project_dir, str_cur_tab_sample ), 
                                                                  os.path.join( str_current_project_dir, str_cur_tab_sample ) + "\n" ] ) )
@@ -492,28 +509,40 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                         lcmd_commands_run.append( self.func_make_link_command( str_original_file, str_dna_rna_link_prod_vcf ) )
                         lstr_generated_rna_vcf_snps.append( str_dna_rna_link_prod_vcf )
                         lstr_dna_rna_dependencies.append( str_dna_rna_link_prod_vcf )
+                        lstr_maf_mapping_init.append( [ dict_sample[ STR_MAF_SAMPLE_NAME ], str_original_file ] )
 
                         # RNA SNP Editing filter VCF
                         str_original_file = self.func_make_rnaediting_filtered_vcf_path( str_calling_sample_dir, str_sample_link_prefix )
                         str_new_file = str_link_base + "_" + str_calling_link_prefix + "_dna_rna_rnaedit.vcf"
                         lcmd_commands_run.append( self.func_make_link_command( str_original_file, str_new_file ) )
                         lstr_dna_rna_edit_dependencies.append( str_new_file )
+                        lstr_maf_mapping_edit.append( [ dict_sample[ STR_MAF_SAMPLE_NAME ], str_original_file ] )
 
                         # RNA COSMIC filter VCF
                         str_original_file = self.func_make_cosmic_filtered_vcf_path( str_calling_sample_dir, str_sample_link_prefix )
                         str_new_file = str_link_base + "_" + str_calling_link_prefix + "_dna_rna_cosmic.vcf"
                         lcmd_commands_run.append( self.func_make_link_command( str_original_file, str_new_file ) )
                         lstr_dna_rna_cosmic_dependencies.append( str_new_file )
+                        lstr_maf_mapping_cosmic.append( [ dict_sample[ STR_MAF_SAMPLE_NAME ], str_original_file ] )
 
                         # RNA Cancer filter VCF
                         str_original_file = self.func_make_cancer_filtered_vcf_path( str_calling_sample_dir, str_cur_tab_sample )
                         str_new_file = str_link_base + "_" + str_calling_link_prefix + "_dna_rna_cancer.vcf"
                         lcmd_commands_run.append( self.func_make_link_command( str_original_file, str_new_file ) )
                         lstr_dna_rna_cravat_dependencies.append( str_new_file )
+                        lstr_maf_mapping_cancer.append( [ dict_sample[ STR_MAF_SAMPLE_NAME ], str_original_file ] )
                         
                         # Tab dependencies
                         lstr_dna_rna_tab_products.append( str_cur_tab_file )
+                        lstr_dna_rna_tab_edit_products.append(str_cur_edit_tab_file )
+                        lstr_dna_rna_tab_cosmic_products.append( str_cur_cosmic_tab_file )
+                        lstr_dna_rna_tab_cancer_products.append(str_cur_cancer_tab_file )
+
+                        # Tabs that will be made
                         lstr_generated_dna_rna_tab.append( str_cur_tab_file )
+                        lstr_generated_dna_rna_tab_edit.append( str_cur_edit_tab_file )
+                        lstr_generated_dna_rna_tab_cosmic.append( str_cur_cosmic_tab_file )
+                        lstr_generated_dna_rna_tab_cancer.append( str_cur_cancer_tab_file )
 
                         # Add file info for the inspector's json object
                         # test_sample,test_rna.bam,test_dna.bam,test_rna.vcf,test_dna.vcf,test_comparison.tab
@@ -536,63 +565,91 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                     "--run_conf", str_dna_rna_tab_run_conf_file, "--reads_list_file", str_dna_rna_tab_sample_file,
                                                     #"--project_base_dir", str_current_project_dir, "--memory 20 --num_parallel_procs", str( args_parsed.i_jobs ) ] )
                                                     "--project_base_dir", str_current_project_dir, "--memory 20 --run_on_grid --num_parallel_procs", str( args_parsed.i_jobs ) ] )
-                        cmd_dna_rna_tab = Command.Command( str_cur_command = str_cmd_make_dna_rna_tab,
-                                                           lstr_cur_dependencies = lstr_generic_tab_dependencies + lstr_dna_rna_dependencies + [ args_parsed.str_annot_config, str_dna_rna_tab_run_conf_file ],
-                                                           lstr_cur_products = lstr_dna_rna_tab_products )
-                        lcmd_commands_run.append( cmd_dna_rna_tab )
+                        #cmd_dna_rna_tab = Command.Command( str_cur_command = str_cmd_make_dna_rna_tab,
+                        #                                   lstr_cur_dependencies = lstr_generic_tab_dependencies + lstr_dna_rna_dependencies + [ args_parsed.str_annot_config, str_dna_rna_tab_run_conf_file ],
+                        #                                   lstr_cur_products = lstr_dna_rna_tab_products )
+                        #lcmd_commands_run.append( cmd_dna_rna_tab )
                         # RNAEdit tab
                         str_cmd_make_dna_rna_edit_tab = " ".join( [ "run_RNASEQ_pipeline_many_samples.pl --annot_conf", args_parsed.str_annot_config,
                                                     "--run_conf", str_dna_rna_edit_tab_run_conf_file, "--reads_list_file", str_dna_rna_tab_sample_file,
                                                     #"--project_base_dir", str_current_project_dir, "--memory 20 --num_parallel_procs", str( args_parsed.i_jobs ) ] )
                                                     "--project_base_dir", str_current_project_dir, "--memory 20 --run_on_grid --num_parallel_procs", str( args_parsed.i_jobs ) ] )
-                        cmd_dna_rna_edit_tab = Command.Command( str_cur_command = str_cmd_make_dna_rna_edit_tab,
-                                                           lstr_cur_dependencies = lstr_generic_tab_dependencies + lstr_dna_rna_edit_dependencies + [ args_parsed.str_annot_config, str_dna_rna_edit_tab_run_conf_file ],
-                                                           lstr_cur_products = lstr_dna_rna_tab_products )
-                        lcmd_commands_run.append( cmd_dna_rna_edit_tab )
+                        #cmd_dna_rna_edit_tab = Command.Command( str_cur_command = str_cmd_make_dna_rna_edit_tab,
+                        #                                   lstr_cur_dependencies = lstr_generic_tab_dependencies + lstr_dna_rna_edit_dependencies + [ args_parsed.str_annot_config, str_dna_rna_edit_tab_run_conf_file ],
+                        #                                   lstr_cur_products = lstr_dna_rna_tab_edit_products )
+                        #lcmd_commands_run.append( cmd_dna_rna_edit_tab )
                         # COSMIC tab
                         str_cmd_make_dna_rna_cosmic_tab = " ".join( [ "run_RNASEQ_pipeline_many_samples.pl --annot_conf", args_parsed.str_annot_config,
                                                     "--run_conf", str_dna_rna_cosmic_tab_run_conf_file, "--reads_list_file", str_dna_rna_tab_sample_file,
                                                     #"--project_base_dir", str_current_project_dir, "--memory 20 --num_parallel_procs", str( args_parsed.i_jobs ) ] )
                                                     "--project_base_dir", str_current_project_dir, "--memory 20 --run_on_grid --num_parallel_procs", str( args_parsed.i_jobs ) ] )
-                        cmd_dna_rna_cosmic_tab = Command.Command( str_cur_command = str_cmd_make_dna_rna_cosmic_tab,
-                                                           lstr_cur_dependencies = lstr_generic_tab_dependencies + lstr_dna_rna_cosmic_dependencies + [ args_parsed.str_annot_config, str_dna_rna_cosmic_tab_run_conf_file ],
-                                                           lstr_cur_products = lstr_dna_rna_tab_products )
-                        lcmd_commands_run.append( cmd_dna_rna_cosmic_tab )
+                        #cmd_dna_rna_cosmic_tab = Command.Command( str_cur_command = str_cmd_make_dna_rna_cosmic_tab,
+                        #                                   lstr_cur_dependencies = lstr_generic_tab_dependencies + lstr_dna_rna_cosmic_dependencies + [ args_parsed.str_annot_config, str_dna_rna_cosmic_tab_run_conf_file ],
+                        #                                   lstr_cur_products = lstr_dna_rna_tab_cosmic_products )
+                        #lcmd_commands_run.append( cmd_dna_rna_cosmic_tab )
                         # Cancer tab
                         str_cmd_make_dna_rna_cravat_tab = " ".join( [ "run_RNASEQ_pipeline_many_samples.pl --annot_conf", args_parsed.str_annot_config,
                                                     "--run_conf", str_dna_rna_cravat_tab_run_conf_file, "--reads_list_file", str_dna_rna_tab_sample_file,
                                                     #"--project_base_dir", str_current_project_dir, "--memory 20 --num_parallel_procs", str( args_parsed.i_jobs ) ] )
                                                     "--project_base_dir", str_current_project_dir, "--memory 20 --run_on_grid --num_parallel_procs", str( args_parsed.i_jobs ) ] )
-                        cmd_dna_rna_cravat_tab = Command.Command( str_cur_command = str_cmd_make_dna_rna_cravat_tab,
-                                                           lstr_cur_dependencies = lstr_generic_tab_dependencies + lstr_dna_rna_cravat_dependencies + [ args_parsed.str_annot_config, str_dna_rna_cravat_tab_run_conf_file ],
-                                                           lstr_cur_products = lstr_dna_rna_tab_products )
-                        lcmd_commands_run.append( cmd_dna_rna_cravat_tab )
+                        #cmd_dna_rna_cravat_tab = Command.Command( str_cur_command = str_cmd_make_dna_rna_cravat_tab,
+                        #                                   lstr_cur_dependencies = lstr_generic_tab_dependencies + lstr_dna_rna_cravat_dependencies + [ args_parsed.str_annot_config, str_dna_rna_cravat_tab_run_conf_file ],
+                        #                                   lstr_cur_products = lstr_dna_rna_tab_cancer_products )
+                        #lcmd_commands_run.append( cmd_dna_rna_cravat_tab )
 
                     ############################################
                     # Make figures for validation with a study
                     ############################################
-                    
-                    if len( lstr_generated_dna_rna_tab ) > 0:
+                    if ( len( lstr_generated_dna_rna_tab ) + 
+                         len( lstr_generated_dna_rna_tab_cosmic ) + 
+                         len( lstr_generated_dna_rna_tab_cancer ) + 
+                         len( lstr_generated_dna_rna_tab_edit ) +
+                         len( lstr_dna_rna_dependencies ) +
+                         len( lstr_dna_rna_edit_dependencies ) +
+                         len( lstr_dna_rna_cosmic_dependencies ) +
+                         len( lstr_dna_rna_cravat_dependencies ) ) > 0:
 
-                        # JSON object
+                        # If making figures, Write the maf mapping files to the project if workig with maf files.
+                        if args_parsed.str_maf_file:
+                            with open( str_maf_mapping_init_file, "w" ) as hndl_maf_init:
+                                csv.writer( hndl_maf_init, delimiter="\t" ).writerows( lstr_maf_mapping_init )
+                            with open( str_maf_mapping_edit_file, "w" ) as hndl_maf_edit:
+                                csv.writer( hndl_maf_edit, delimiter="\t" ).writerows( lstr_maf_mapping_edit )
+                            with open( str_maf_mapping_cosmic_file, "w" ) as hndl_maf_cosmic:
+                                csv.writer( hndl_maf_cosmic, delimiter="\t" ).writerows( lstr_maf_mapping_cosmic )
+                            with open( str_maf_mapping_cancer_file, "w" ) as hndl_maf_cancer:
+                                csv.writer( hndl_maf_cancer, delimiter="\t" ).writerows( lstr_maf_mapping_cancer )
+
+                        """ # JSON object
                         str_dna_rna_file_base = os.path.splitext( os.path.basename( str_call_run_conf ) )[ 0 ]
                         str_dna_rna_json_file = os.path.join( args_parsed.str_file_base, str_dna_rna_file_base, str_dna_rna_file_base + ".json" )
                         str_dna_rna_json_command = "make_inspector_json.py --output_file " + str_dna_rna_json_file + " " + " ".join( [ "--input_files " + str_dna_rna_file_info for str_dna_rna_file_info in lstr_dna_rna_file_info ] )
                         cmd_dna_rna_json = Command.Command( str_cur_command = str_dna_rna_json_command,
                                                     lstr_cur_dependencies = lstr_dna_rna_json_file_dependencies,
                                                     lstr_cur_products = str_dna_rna_json_file )
-                        lcmd_commands_run.append( cmd_dna_rna_json )
-
+                        lcmd_commands_run.append( cmd_dna_rna_json ) """
                         # Figures
-                        dict_validation_commands = self.func_validation_figure_commands( args_parsed = args_parsed, str_cur_project_dir = str_current_project_dir,
+                        dict_validation_commands = self.func_validation_figure_commands( args_parsed = args_parsed,
+                                                                        str_cur_project_dir = str_current_project_dir,
                                                                         lstr_dna_vcfs_snps = lstr_generated_dna_vcf_snps,
                                                                         lstr_rna_vcfs_snps = lstr_generated_rna_vcf_snps,
                                                                         lstr_maf_rna_tab = [],
                                                                         lstr_maf_dna_tab = [],
                                                                         lstr_dna_rna_tab = lstr_generated_dna_rna_tab,
-                                                                        lstr_syn_rna_tab = [] ) 
+                                                                        lstr_dna_rna_tab_cancer = lstr_generated_dna_rna_tab_cancer,
+                                                                        lstr_dna_rna_tab_cosmic = lstr_generated_dna_rna_tab_cosmic,
+                                                                        lstr_dna_rna_tab_edit = lstr_generated_dna_rna_tab_edit,
+                                                                        lstr_syn_rna_tab = [],
+                                                                        lstr_eval_init_vcf = lstr_dna_rna_dependencies,
+                                                                        lstr_eval_edit_vcf = lstr_dna_rna_edit_dependencies,
+                                                                        lstr_eval_cosmic_vcf = lstr_dna_rna_cosmic_dependencies, 
+                                                                        lstr_eval_cancer_vcf = lstr_dna_rna_cravat_dependencies,
+                                                                        str_mapping_init = str_maf_mapping_init_file,
+                                                                        str_mapping_edit = str_maf_mapping_edit_file,
+                                                                        str_mapping_cosmic = str_maf_mapping_cosmic_file,
+                                                                        str_mapping_cancer = str_maf_mapping_cancer_file )
                         lcmd_commands_run.extend( dict_validation_commands[ STR_CMDS ] )
-
+                    """
                     ######################################################
                     # Make synthetic comparisons tab files
                     # Make tabs for synthetic truth data and RNASEQ Data
@@ -736,10 +793,28 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                                         lstr_syn_rna_tab = lstr_generated_syn_rna_tab ) 
 
                         lcmd_commands_run.extend( dict_validation_commands[ STR_CMDS ] )
-
+                    """
         return( lcmd_commands_run )
 
-    def func_validation_figure_commands( self, args_parsed, str_cur_project_dir, lstr_dna_vcfs_snps = [], lstr_rna_vcfs_snps = [], lstr_maf_rna_tab = [], lstr_maf_dna_tab = [], lstr_dna_rna_tab = [], lstr_syn_rna_tab = [] ):
+    def func_validation_figure_commands( self, args_parsed,
+                                         str_cur_project_dir,
+                                         lstr_dna_vcfs_snps = [],
+                                         lstr_rna_vcfs_snps = [],
+                                         lstr_maf_rna_tab = [],
+                                         lstr_maf_dna_tab = [],
+                                         lstr_dna_rna_tab = [],
+                                         lstr_dna_rna_tab_cancer = [],
+                                         lstr_dna_rna_tab_cosmic = [],
+                                         lstr_dna_rna_tab_edit = [],
+                                         lstr_syn_rna_tab = [],
+                                         lstr_eval_init_vcf = [],
+                                         lstr_eval_edit_vcf = [],
+                                         lstr_eval_cosmic_vcf = [],
+                                         lstr_eval_cancer_vcf = [],
+                                         str_mapping_init = None,
+                                         str_mapping_edit = None,
+                                         str_mapping_cosmic = None,
+                                         str_mapping_cancer = None ):
         """
 
         * return : List of commands to be ran
@@ -753,16 +828,13 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
         str_jaccard_distance = os.path.join( "jaccard_distance.R" )
         str_jaccard_distance_restricted = os.path.join( "jaccard_distance_restricted.R" )
 
-        # Check to make sure directories exist
+        # Figure Directories
         STR_FIGURE_DIR = os.path.join( str_cur_project_dir, self.str_figure_dir )
-        STR_DNA_FIGURE = os.path.join( str_cur_project_dir, self.str_figure_dir, self.str_figure_dna )
-        STR_RNA_FIGURE = os.path.join( str_cur_project_dir, self.str_figure_dir, self.str_figure_rna )
-        STR_MAF_FIGURE = os.path.join( str_cur_project_dir, self.str_figure_dir, self.str_figure_maf )
-        STR_SYN_FIGURE = os.path.join( str_cur_project_dir, self.str_figure_dir, self.str_figure_syn )
+        STR_DNA_FIGURE = os.path.join( str_cur_project_dir, self.str_figure_dna )
+        STR_RNA_FIGURE = os.path.join( str_cur_project_dir, self.str_figure_rna )
+        STR_MAF_FIGURE = os.path.join( str_cur_project_dir, self.str_figure_maf )
+        STR_SYN_FIGURE = os.path.join( str_cur_project_dir, self.str_figure_syn )
 
-        # Plot the rate of mutation over a window.
-        # Mutation rates are often local.
-        # Would be interesting to filter on # of mutations in a gene given the mutation rates locally.
 #        if( len( lstr_dna_vcfs_snps ) > 1 and len( lstr_rna_vcfs_snps ) > 1 ):
 #            # Create genotype matrix and list
 #            ## DNA and RNA
@@ -817,17 +889,58 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
 #                                               lstr_cur_products = [ str_genotype_rna_matrix_pdf, str_genotype_rna_distance_matrix ] ) )
 
         # Explore false positive and negative rates
-        # DNA_RNA
-        if len( lstr_dna_rna_tab ):
-            str_DNA_RNA_figures = os.path.join( STR_FIGURE_DIR, "dna_rna" )
-            lstr_DNA_RNA_roc_1 = [ os.path.join( str_DNA_RNA_figures, "_".join( [ os.path.basename( str_file ), "roc_truth_10_pred_vary.pdf" ] ) ) for str_file in lstr_dna_rna_tab ]
-            lstr_DNA_RNA_roc_2 = [ os.path.join( str_DNA_RNA_figures, "_".join( [ os.path.basename( str_file ), "roc_truth_vary_pred_1.pdf" ] ) ) for str_file in lstr_dna_rna_tab ]
-            str_compare_DNA_RNA_cmd = "visualize_mutation_depth_tab_files.R" + " -o " + str_DNA_RNA_figures + " -k DNA_RNA --serial_plots " + " ".join( lstr_dna_rna_tab )
-            lcmd_commands.append( Command.Command( str_cur_command = str_compare_DNA_RNA_cmd,
-                                               lstr_cur_dependencies = lstr_dna_rna_tab,
-                                               lstr_cur_products = lstr_DNA_RNA_roc_1 + lstr_DNA_RNA_roc_2 ) )
+        # DNA_RnA for initial, cosmic, RNAediting, and cancer filtering
+        for str_keyword, str_dir, lstr_tabs, lstr_vcfs, str_mapping_file in zip( [ "DNA_RNA_INIT", "DNA_RNA_EDIT", "DNA_RNA_COSMIC", "DNA_RNA_CANCER" ],
+                                                    [ "dna_rna", "dna_rna_edit", "dna_rna_cosmic", "dna_rna_cancer" ],
+                                                    [ lstr_dna_rna_tab, lstr_dna_rna_tab_edit, lstr_dna_rna_tab_cosmic, lstr_dna_rna_tab_cancer ],
+                                                    [ lstr_eval_init_vcf, lstr_eval_edit_vcf, lstr_eval_cosmic_vcf, lstr_eval_cancer_vcf ],
+                                                    [ str_mapping_init, str_mapping_edit, str_mapping_cosmic, str_mapping_cancer ] ):
+            if len( lstr_tabs ):
+                str_DNA_RNA_figures = os.path.join( STR_FIGURE_DIR, str_dir )
+                for str_tab in lstr_tabs:
+                    str_cur_tab_sample = str_tab.split( os.path.sep )[ -3 ]
+                    str_roc_1 = os.path.join( str_DNA_RNA_figures, "_".join( [ str_cur_tab_sample, str_keyword, "roc_truth_10_pred_vary.pdf" ] ) )
+                    str_roc_2 = os.path.join( str_DNA_RNA_figures, "_".join( [ str_cur_tab_sample, str_keyword, "roc_truth_vary_pred_1.pdf" ] ) )
+                    str_compare_DNA_RNA_cmd = " ".join( [ "visualize_mutation_depth_tab_files.R",
+                                                  "-o", str_DNA_RNA_figures,
+                                                  "-k "+str_keyword,
+                                                  "-s "+str_cur_tab_sample,
+                                                  "--method "+str_keyword,
+                                                  str_tab ] )
+                    lcmd_commands.append( Command.Command( str_cur_command = str_compare_DNA_RNA_cmd,
+                                                           lstr_cur_dependencies = str_tab,
+                                                           lstr_cur_products = [ str_roc_1, str_roc_2 ] ) )
 
-        # SYNTHETIC
+            if args_parsed.str_maf_file and args_parsed.str_key_mutations:
+                if str_mapping_file and args_parsed.str_maf_file and args_parsed.str_key_mutations:
+                    str_output_compare_maf_file = os.path.join( STR_MAF_FIGURE, os.path.basename( os.path.splitext( str_mapping_file )[0]+"_confirm_mutations.pdf" ) )
+                    str_compare_maf_key_cmd = " ".join([ "confirm_maf_mutations.py",
+                                                     "--maf", args_parsed.str_maf_file,
+                                                     "--sample", str_mapping_file,
+                                                     "--key_genes",args_parsed.str_key_mutations,
+                                                     str_output_compare_maf_file ])
+                    lcmd_commands.append( Command.Command( str_cur_command = str_compare_maf_key_cmd,
+                                                           lstr_cur_dependencies = [ args_parsed.str_maf_file, str_mapping_file ] + lstr_vcfs,
+                                                           lstr_cur_products = [ str_output_compare_maf_file ]) )
+                    """# Count mutations and plot
+                    str_key_mutations_files = "".join( [ " -t " + str_cur_vcf for str_cur_vcf in lstr_vcfs ] )
+                    lstr_key_mutation_DNA_RNA_output_pdf = [ os.path.join( str_DNA_RNA_figures, "_".join([ "key_mutation_counts",str_dir + ".pdf" ]) )
+                                                             for str_tab in lstr_dna_rna_tab ]
+                    str_output_dir_base = os.path.join( str_DNA_RNA_figures, "key_mutation_counts" )
+                    str_key_mutations_cmd = " ".join([ "tabs_to_percent_mutations.py",
+                                                       "--gtf", args_parsed.str_annotation_gtf,
+                                                       "--key", args_parsed.str_key_mutations,
+                                                       "-o", str_output_dir_base,
+                                                       "--second",
+                                                       str_key_mutations_files ])
+                    print "#########"
+                    print str_key_mutations_cmd
+                    print lstr_vcfs + [ args_parsed.str_annotation_gtf ]
+                    print lstr_key_mutation_DNA_RNA_output_pdf
+                    #lcmd_commands.append( Command.Command( str_cur_command = str_key_mutations_cmd,
+                    #                                       lstr_cur_dependencies = lstr_vcfs + [ args_parsed.str_annotation_gtf ],
+                    #                                       lstr_cur_products = lstr_key_mutation_DNA_RNA_output_pdf ) ) """
+        """ # SYNTHETIC
         if len( lstr_syn_rna_tab ):
             str_SYN_RNA_figures = os.path.join( STR_FIGURE_DIR, "syn_rna" )
             lstr_SYN_RNA_roc_1 = [ os.path.join( str_SYN_RNA_figures, "_".join( [ os.path.basename( str_file ), "roc_truth_10_pred_vary.pdf" ] ) ) for str_file in lstr_syn_rna_tab ]
@@ -856,32 +969,7 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                    lstr_cur_dependencies = lstr_maf_rna_tab,
                                                    lstr_cur_products = lstr_MAF_RNA_roc_1 + lstr_MAF_RNA_roc_2 ) )
 
-#            if not f_synthetic and args_parsed.str_key_mutations:
-#                # MAF_DNA
-#                str_key_mutations_tab = "".join( [ " -t " + str_tab for str_tab in lstr_maf_dna_tab ] )
-#                str_key_mutation_MAF_DNA_output_pdf = os.path.join( STR_MAF_FIGURE, "key_mutation_counts.pdf" )
-#                str_key_mutations_cmd = "tab_to_percent_mutations.py" + " --gtf " + args_parsed.str_annotation_gtf + " --key " + args_parsed.str_key_mutations + " -o " + str_key_mutation_MAF_DNA_output_pdf + str_key_mutations_tab
-#                lcmd_commands.append( Command.Command( str_cur_command = str_key_mutations_cmd,
-#                                               lstr_cur_dependencies = lstr_maf_dna_tab + [ args_parsed.str_annotation_gtf ],
-#                                               lstr_cur_products = [ str_key_mutation_MAF_DNA_output_pdf ] ) )
-#                # MAF_RNA
-#                str_key_mutations_tab = "".join( [ " -t " + str_tab for str_tab in lstr_maf_rna_tab ] )
-#                str_key_mutation_MAF_RNA_output_pdf = os.path.join( STR_RNA_FIGURE, "key_mutation_counts.pdf" )
-#                str_key_mutations_cmd = "tab_to_percent_mutations.py" + " --second --gtf " + args_parsed.str_annotation_gtf + " --key " + args_parsed.str_key_mutations + " -o " + str_key_mutation_MAF_RNA_output_pdf + str_key_mutations_tab
-#                lcmd_commands.append( Command.Command( str_cur_command = str_key_mutations_cmd,
-#                                                   lstr_cur_dependencies = lstr_maf_rna_tab + [ args_parsed.str_annotation_gtf ],
-#                                                   lstr_cur_products = [ str_key_mutation_MAF_RNA_output_pdf ] ) )
-
-        if len( lstr_dna_rna_tab ) > 0 and args_parsed.str_annotation_gtf and args_parsed.str_key_mutations:
-            # Count mutations and plot
-            # DNA
-            str_key_mutations_tab = "".join( [ " -t " + str_tab for str_tab in lstr_dna_rna_tab ] )
-            lstr_key_mutation_DNA_RNA_output_pdf = [ os.path.join( STR_DNA_FIGURE, "key_mutation_counts_" + os.path.basename( str_tab ) + ".pdf" ) for str_tab in lstr_dna_rna_tab ]
-            str_output_dir_base = os.path.join( STR_DNA_FIGURE, "key_mutation_counts" )
-            str_key_mutations_cmd = "tabs_to_percent_mutations.py" + " --gtf " + args_parsed.str_annotation_gtf + " --key " + args_parsed.str_key_mutations + " -o " + str_output_dir_base + str_key_mutations_tab
-            lcmd_commands.append( Command.Command( str_cur_command = str_key_mutations_cmd,
-                                                   lstr_cur_dependencies = lstr_dna_rna_tab + [ args_parsed.str_annotation_gtf ],
-                                                   lstr_cur_products = [ lstr_key_mutation_DNA_RNA_output_pdf ] ) )
+        """
         return { STR_CMDS : lcmd_commands }
 
 if __name__ == "__main__":
