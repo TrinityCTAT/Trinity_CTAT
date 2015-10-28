@@ -10,6 +10,8 @@ __status__ = "Development"
 
 import argparse
 import csv
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import os
