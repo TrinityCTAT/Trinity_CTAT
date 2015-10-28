@@ -5,6 +5,7 @@ library( RColorBrewer )
 library( ggplot2 )
 library( optparse )
 
+# TAB file columns indices
 C_I_PRIMARY_POS = 1
 C_I_PRIMARY_REF = 2
 C_I_PRIMARY_GT = 3
@@ -14,11 +15,12 @@ C_I_SECONDARY_REF = 6
 C_I_SECONDARY_GT = 7
 C_I_SECONDARY_DEPTH = 8
 
-C_STR_DETAIL_FILE = "detail_validation.pdf"
+#C_STR_DETAIL_FILE = "detail_validation.pdf"
 
-C_I_MIN_PERCENT_FEATURES = .1
-C_I_INDIVIDUALS_PER_BIN = 5
+#C_I_MIN_PERCENT_FEATURES = .1
+#C_I_INDIVIDUALS_PER_BIN = 5
 
+# Settings for plotting ROCs
 VI_ROC_DEPTHS = c( 1:10, 20, 30, 40, 50, 60 )
 VI_ROC_PRED_MIN_DEPTH = c( 1, 3, 5, 10, 20 )
 VI_ROC_TRUTH_MIN_DEPTH = c( 1, 3, 5, 10, 20 )
@@ -28,11 +30,12 @@ I_SELECTED_TRUTH_MIN_COV = 10
 
 # Argument parsing
 pArgs = OptionParser( usage ="%prog -o output_dir file1.tab file2.tab" )
-pArgs = add_option( pArgs, c( "-c","--compare" ), type="character", action="store", dest="str_compare_file", default=NULL, help="Compares each of the given output files with the tab field given here as a reference.")
+pArgs = add_option( pArgs, c( "-c","--compare" ), type="character", action="store", dest="str_compare_file", default=NULL, help="Compares each of the given output files with the tab field given here as a reference. Used in side-by-side plots of two methods.")
 pArgs = add_option( pArgs, c( "-k","--title_key" ), type="character", action="store", dest="str_title_key", default="Primary vs Secondary", help="Key identifying the contrast being visualized (eg \"DNA vs RNA\")")
 pArgs = add_option( pArgs, c( "-o","--group_output_dir" ), type="character", action="store", dest="str_output_dir", default=NULL, help="Output directory (required).")
 pArgs = add_option( pArgs, c( "--method" ), type="character", action="store", dest="str_method_name", default=NULL, help="The name of the method being evaluated (Should match the input file.")
 pArgs = add_option( pArgs, c( "--method_compare" ), type="character", action="store", dest="str_method_name_compare", default=NULL, help="The name of the method that is used for comparison (should match the --compare file).")
+pArgs = add_option( pArgs, c( "-s", "--sample_tag" ), type="character", action="store", dest="str_sample_key", default=NULL, help="Adds this tag to the output pdf name." )
 pArgs = add_option( pArgs, c( "--serial_plots" ), type="logical", action="store_true", dest="f_make_serial_plots", default=FALSE, help="After the sample space is defined, additionally plots each depth as a seperate plot.")
 lsArgs = parse_args( pArgs, positional_arguments=TRUE )
 
@@ -205,7 +208,7 @@ func_calculate_roc_values = function( vi_primary_calls, vi_secondary_calls )
   return( list_return )
 }
 
-# Remove features that did not call the same genotype
+# Return features that did not call the same genotype
 # df_data: data frame with 8 entries
 # vi_indices, indices that are looked at
 func_filter_unequal_genotypes = function( df_data, vi_indicies )
@@ -231,6 +234,8 @@ func_vary_coverage_and_measure_classes = function( df_data, vi_vary_truth, vi_va
   {
     i_cur_truth_coverage = vi_vary_truth[ i_cur_index ]
     i_cur_pred_coverage = vi_vary_prediction[ i_cur_index ]
+
+    # Reduce the full data frame by requiring the DNA side down to be a min coverage
     # Set the initial problem state.
     # Min Exome coverage
     df_tab = df_data
@@ -240,8 +245,9 @@ func_vary_coverage_and_measure_classes = function( df_data, vi_vary_truth, vi_va
     {
       df_tab = df_tab[-1*vi_remove_calls,]
     }
+
     # Different measurements used later on
-    ### Primary calls
+    ### Primary calls ( not Na and atleast a minimim coverage given above )
     vi_primary_calls = which( !is.na(  df_tab[[ C_I_PRIMARY_GT ]] ) )
     ## Secondary
     ### Calls with or without depth
@@ -249,6 +255,12 @@ func_vary_coverage_and_measure_classes = function( df_data, vi_vary_truth, vi_va
     # Update the secondary calls, if the genotypes do no match the primary calls
     # Remove from the secondary calls
     vi_common_calls = intersect( vi_secondary_calls, vi_primary_calls )
+    # NOTE:
+    # Calls are removed from the secondary calls that do not have the same variant call
+    # This is because downstream the secondary calls are assumed to be not only called but correctly (matching the DNA).
+    # Removing the calls from scondary calls shuffles the false calls into:
+    # if called in the DNA: False Negatives
+    # if not called in the DNA: True Negatives, which are not used in calculations so far.
     vi_incorrect_common_calls = func_filter_unequal_genotypes( df_data=df_tab, vi_indicies=vi_common_calls )
     print( paste( "Percent of the commonly calls features which do NOT agree in genotype. ",length( vi_incorrect_common_calls )," / ",length( vi_common_calls )," = ", round( length( vi_incorrect_common_calls ) / length( vi_common_calls ), 4 ) * 100, sep="" ) )
     vi_secondary_calls = setdiff( vi_secondary_calls, vi_incorrect_common_calls )
@@ -260,6 +272,8 @@ func_vary_coverage_and_measure_classes = function( df_data, vi_vary_truth, vi_va
     vi_FP = c()
     vi_FN = c()
     vi_roc_secondary_calls = vi_secondary_calls
+    
+    # Do this for each depth of interest (given in constants).
     vi_roc_depths = sort( VI_ROC_DEPTHS, decreasing=FALSE )
     vNA_init = rep(NA,length( vi_roc_depths ))
     df_roc = data.frame( TPR=vNA_init, FDR=vNA_init, TP=vNA_init, FP=vNA_init, FN=vNA_init )
@@ -275,7 +289,8 @@ func_vary_coverage_and_measure_classes = function( df_data, vi_vary_truth, vi_va
         vi_FP = c( vi_FP, NA )
         vi_FN = c( vi_FN, NA )
       } else {
-        # Secondary calls that d not meet the depth criteria change
+        # NOTE:
+        # Secondary calls that do not meet the depth criteria change
         # TP -> FN, FN -> FN, FP -> TN
         # Easiest thing is to remove them from the secondary calls, then this happens automagically
         vi_roc_secondary_calls = intersect( vi_roc_secondary_calls, which( df_tab[[ C_I_SECONDARY_DEPTH ]] >= i_cur_roc_depth ) )
@@ -309,6 +324,10 @@ func_vary_coverage_and_measure_classes = function( df_data, vi_vary_truth, vi_va
   return( list( TPR=list_TPR, FDR=list_FDR, DEPTHS=vi_roc_depths ) )
 }
 
+# Read in tab data
+# Remove features that have NA in both DNA and RNA
+# Remove features that have no coverage in DNA and RNA
+# Fix the data modes just incase
 func_read_and_filter = function( str_input_file )
 {
   print( "Reading file:" )
@@ -344,6 +363,7 @@ func_read_and_filter = function( str_input_file )
 }
 
 # Handle arguments
+# Require the output directory
 v_str_files = lsArgs$args
 str_title_key = lsArgs$options$str_title_key
 str_output_dir = lsArgs$options$str_output_dir
@@ -368,15 +388,25 @@ if( ! is.null( lsArgs$options$str_compare_file ) )
 
   # Vary the problem space holding the pred min coverage at 1 and then varying the truth sample space
   # Then look at min coverage for the pred in the resulting sample space
+  # Add a base to the txt file that can have the sample and title keys for uniqueness
+  str_cur_base_name = gsub( "\\.", "_", basename( lsArgs$options$str_compare_file ) )
+  if( !is.null( lsArgs$options$str_sample_key ))
+  {
+    str_cur_base_name = paste( str_cur_base_name, lsArgs$options$str_sample_key, sep = "_" )
+  }
+  if( !is.null( str_title_key ))
+  {
+    str_cur_base_name = paste( str_cur_base_name, str_title_key, sep = "_" )
+  }
   ls_classes_compare_vary_min_truth = func_vary_coverage_and_measure_classes( df_data=df_compare, vi_vary_truth=VI_ROC_TRUTH_MIN_DEPTH,
                                           vi_vary_prediction=rep(I_SELECTED_PRED_MIN_COV,length(VI_ROC_TRUTH_MIN_DEPTH)),
-                                          str_file_base_name=basename( lsArgs$options$str_compare_file ))
+                                          str_file_base_name=str_cur_base_name )
 
   # Vary the problem space holding truth at 10 min coverage and vary pred min coverage
   # then investigate each pred min coverage in the resulting sample space
   ls_classes_compare_vary_min_pred = func_vary_coverage_and_measure_classes( df_data=df_compare, vi_vary_truth=rep(I_SELECTED_TRUTH_MIN_COV,length(VI_ROC_PRED_MIN_DEPTH)),
                                           vi_vary_prediction=VI_ROC_PRED_MIN_DEPTH,
-                                          str_file_base_name=basename( lsArgs$options$str_compare_file ))
+                                          str_file_base_name=str_cur_base_name )
 }
 
 # Process each file
@@ -387,15 +417,31 @@ for( str_file in v_str_files )
   # Mean after minimal filtering
   i_mean_depth=round( mean( df_orig[[ C_I_SECONDARY_DEPTH ]] ),2 )
 
+  # Add a base to the txt file that can have the sample and title keys for uniqueness
+  str_cur_base_name = gsub( "\\.", "_", basename( str_file ) )
+  if( !is.null( lsArgs$options$str_sample_key ))
+  {
+    str_cur_base_name = paste( str_cur_base_name, lsArgs$options$str_sample_key, sep = "_" )
+  }
+  if( !is.null( str_title_key ))
+  {
+    str_cur_base_name = paste( str_cur_base_name, str_title_key, sep = "_" )
+  }
+
   # Vary the problem space holding the pred min coverage at 1 and then varying the truth sample space
   # Then look at min coverage for the pred in the resulting sample space
   ls_classes_vary_min_truth = func_vary_coverage_and_measure_classes( df_data=df_orig, vi_vary_truth=VI_ROC_TRUTH_MIN_DEPTH,
                                           vi_vary_prediction=rep(I_SELECTED_PRED_MIN_COV,length(VI_ROC_TRUTH_MIN_DEPTH)),
-                                          str_file_base_name=basename( str_file ), 
+                                          str_file_base_name=str_cur_base_name,
                                           f_vary_truth=TRUE ) 
 
   # Go through indices for each ROC line, filter at depth in RNASEQ
-  str_file_roc_rnaseq = file.path( str_output_dir, paste( basename( str_file ), "_roc_truth_vary_pred_", I_SELECTED_PRED_MIN_COV, ".pdf", sep="") )
+  # Create file name with optional sample tag if given
+  str_file_roc_rnaseq = file.path( str_output_dir, paste( str_title_key, "_roc_truth_vary_pred_", I_SELECTED_PRED_MIN_COV, ".pdf", sep="") )
+  if( !is.null( lsArgs$options$str_sample_key ) )
+  {
+      str_file_roc_rnaseq = file.path( str_output_dir, paste( lsArgs$options$str_sample_key, "_", str_title_key, "_roc_truth_vary_pred_", I_SELECTED_PRED_MIN_COV, ".pdf", sep="") )
+  }
   func_plot_roc( list_TPR=ls_classes_vary_min_truth[[ "TPR" ]], list_FDR=ls_classes_vary_min_truth[[ "FDR" ]], vi_depths=ls_classes_vary_min_truth[[ "DEPTHS" ]],
                  list_TPR_compare=ls_classes_compare_vary_min_truth[["TPR"]], list_FDR_compare=ls_classes_compare_vary_min_truth[["FDR"]],
                  vi_depths_compare=ls_classes_compare_vary_min_truth[["DEPTHS"]],
@@ -418,7 +464,12 @@ for( str_file in v_str_files )
       lvf_serial_FDR_compare=list()
       lvf_serial_FDR[[ str_name ]] = ls_classes_vary_min_truth[["FDR"]][[ str_name ]]
       lvf_serial_FDR_compare[[ str_name ]] = ls_classes_compare_vary_min_truth[["FDR"]][[ str_name ]]
-      str_file_roc_rnaseq = file.path( str_output_dir, paste( basename( str_file ), "_roc_truth_", str_name,"_pred_",I_SELECTED_PRED_MIN_COV,".pdf",sep="") )
+      # Create file name with optional sample tag if given
+      str_file_roc_rnaseq = file.path( str_output_dir, paste( str_title_key,  "_roc_truth_", str_name,"_pred_",I_SELECTED_PRED_MIN_COV,".pdf",sep="") )
+      if( !is.null( lsArgs$options$str_sample_key ) )
+      {
+          str_file_roc_rnaseq = file.path( str_output_dir, paste( lsArgs$options$str_sample_key, "_", str_title_key, "_roc_truth_", str_name,"_pred_",I_SELECTED_PRED_MIN_COV,".pdf", sep="") )
+      }
       func_plot_roc( list_TPR=lvf_serial_TPR, list_FDR=lvf_serial_FDR, vi_depths=ls_classes_vary_min_truth[[ "DEPTHS" ]],
                  list_TPR_compare=lvf_serial_TPR_compare, list_FDR_compare=lvf_serial_FDR_compare, vi_depths_compare=ls_classes_compare_vary_min_truth[["DEPTHS"]],
                  i_mean_depth=i_mean_depth, str_method_name=lsArgs$options$str_method_name, str_method_name_compare=lsArgs$options$str_method_name_compare,
@@ -432,11 +483,16 @@ for( str_file in v_str_files )
   # then investigate each pred min coverage in the resulting sample space
   ls_classes_vary_min_pred = func_vary_coverage_and_measure_classes( df_data=df_orig, vi_vary_truth=rep(I_SELECTED_TRUTH_MIN_COV,length(VI_ROC_PRED_MIN_DEPTH)),
                                           vi_vary_prediction=VI_ROC_PRED_MIN_DEPTH,
-                                          str_file_base_name=basename( str_file ),
+                                          str_file_base_name=str_cur_base_name,
                                           f_vary_truth=FALSE )
 
   # Go through indices for each ROC line, filter at depth in RNASEQ
-  str_file_roc_rnaseq = file.path( str_output_dir, paste( basename( str_file ),"_roc_truth_",I_SELECTED_TRUTH_MIN_COV,"_pred_vary.pdf",sep="") )
+  # Create file name with optional sample tag if given
+  str_file_roc_rnaseq = file.path( str_output_dir, paste( str_title_key,"_roc_truth_",I_SELECTED_TRUTH_MIN_COV,"_pred_vary.pdf",sep="") )
+  if( !is.null( lsArgs$options$str_sample_key ) )
+  {
+      str_file_roc_rnaseq = file.path( str_output_dir, paste( lsArgs$options$str_sample_key, "_", str_title_key, "_roc_truth_",I_SELECTED_TRUTH_MIN_COV,"_pred_vary.pdf", sep="") )
+  }
   func_plot_roc( list_TPR=ls_classes_vary_min_pred[[ "TPR" ]], list_FDR=ls_classes_vary_min_pred[[ "FDR" ]], vi_depths=ls_classes_vary_min_pred[[ "DEPTHS" ]],
                  list_TPR_compare=ls_classes_compare_vary_min_pred[["TPR"]], list_FDR_compare=ls_classes_compare_vary_min_pred[["FDR"]],
                  vi_depths_compare=ls_classes_compare_vary_min_pred[["DEPTHS"]],
@@ -459,8 +515,12 @@ for( str_file in v_str_files )
       lvf_serial_FDR_compare=list()
       lvf_serial_FDR[[ str_name ]] = ls_classes_vary_min_truth[["FDR"]][[ str_name ]]
       lvf_serial_FDR_compare[[ str_name ]] = ls_classes_compare_vary_min_truth[["FDR"]][[ str_name ]]
-      str_file_roc_rnaseq = file.path( str_output_dir, paste( basename( str_file ), "_roc_truth_", str_name,"_pred_",I_SELECTED_PRED_MIN_COV,".pdf",sep="") )
-
+      # Create file name with optional sample tag if given
+      str_file_roc_rnaseq = file.path( str_output_dir, paste( basename( str_file ), "_", str_title_key, "_roc_truth_", str_name,"_pred_",I_SELECTED_PRED_MIN_COV,".pdf",sep="") )
+      if( !is.null( lsArgs$options$str_sample_key ) )
+      {
+          str_file_roc_rnaseq = file.path( str_output_dir, paste( lsArgs$options$str_sample_key, "_", basename( str_file ), "_", str_title_key, "_roc_truth_", str_name,"_pred_",I_SELECTED_PRED_MIN_COV,".pdf", sep="") )
+      }
       func_plot_roc( list_TPR=lvf_serial_TPR, list_FDR=lvf_serial_FDR, vi_depths=ls_classes_vary_min_truth[[ "DEPTHS" ]],
                  list_TPR_compare=lvf_serial_TPR_compare, list_FDR_compare=lvf_serial_FDR_compare, vi_depths_compare=ls_classes_compare_vary_min_truth[["DEPTHS"]],
                  i_mean_depth=i_mean_depth, str_method_name=lsArgs$options$str_method_name, str_method_name_compare=lsArgs$options$str_method_name_compare,
@@ -472,17 +532,21 @@ for( str_file in v_str_files )
       # Plot for each setting (vary pred)
       for( str_name_pred in names( ls_classes_vary_min_pred[[ "TPR" ]] ))
       {
-        lvf_serial_TPR=list()
-        lvf_serial_TPR_compare=list()
-        lvf_serial_TPR[[ str_name_pred ]]=ls_classes_vary_min_pred[["TPR"]][[ str_name_pred ]]
-        lvf_serial_TPR_compare[[ str_name_pred ]]=ls_classes_compare_vary_min_pred[["TPR"]][[ str_name_pred ]]
-        lvf_serial_FDR=list()
-        lvf_serial_FDR_compare=list()
-        lvf_serial_FDR[[ str_name_pred ]]=ls_classes_vary_min_pred[["FDR"]][[ str_name_pred ]]
-        lvf_serial_FDR_compare[[ str_name_pred ]]=ls_classes_compare_vary_min_pred[["FDR"]][[ str_name_pred ]]
-        str_file_roc_rnaseq = file.path( str_output_dir, paste( basename( str_file ), "_roc_truth_",I_SELECTED_TRUTH_MIN_COV,"_pred_",str_name_pred,".pdf",sep="") )
-
-        func_plot_roc( list_TPR=lvf_serial_TPR, list_FDR=lvf_serial_FDR, vi_depths=ls_classes_vary_min_pred[[ "DEPTHS" ]],
+          lvf_serial_TPR=list()
+          lvf_serial_TPR_compare=list()
+          lvf_serial_TPR[[ str_name_pred ]]=ls_classes_vary_min_pred[["TPR"]][[ str_name_pred ]]
+          lvf_serial_TPR_compare[[ str_name_pred ]]=ls_classes_compare_vary_min_pred[["TPR"]][[ str_name_pred ]]
+          lvf_serial_FDR=list()
+          lvf_serial_FDR_compare=list()
+          lvf_serial_FDR[[ str_name_pred ]]=ls_classes_vary_min_pred[["FDR"]][[ str_name_pred ]]
+          lvf_serial_FDR_compare[[ str_name_pred ]]=ls_classes_compare_vary_min_pred[["FDR"]][[ str_name_pred ]]
+          # Create file name with optional sample tag if given
+          str_file_roc_rnaseq = file.path( str_output_dir, paste( basename( str_file ), "_", str_title_key, "_roc_truth_",I_SELECTED_TRUTH_MIN_COV,"_pred_",str_name_pred,".pdf",sep="") )
+          if( !is.null( lsArgs$options$str_sample_key ) )
+          {
+              str_file_roc_rnaseq = file.path( str_output_dir, paste( lsArgs$options$str_sample_key, "_", basename( str_file ), "_", str_title_key, "_roc_truth_",I_SELECTED_TRUTH_MIN_COV,"_pred_",str_name_pred,".pdf", sep="") )
+          }
+          func_plot_roc( list_TPR=lvf_serial_TPR, list_FDR=lvf_serial_FDR, vi_depths=ls_classes_vary_min_pred[[ "DEPTHS" ]],
                  list_TPR_compare=lvf_serial_TPR_compare, list_FDR_compare=lvf_serial_FDR_compare,
                  vi_depths_compare=ls_classes_compare_vary_min_pred[["DEPTHS"]],
                  i_mean_depth=i_mean_depth, str_method_name=lsArgs$options$str_method_name, str_method_name_compare=lsArgs$options$str_method_name_compare,
