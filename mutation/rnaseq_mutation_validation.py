@@ -620,14 +620,18 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                             with open( str_maf_mapping_cancer_file, "w" ) as hndl_maf_cancer:
                                 csv.writer( hndl_maf_cancer, delimiter="\t" ).writerows( lstr_maf_mapping_cancer )
 
-                        """ # JSON object
+                        # JSON object
                         str_dna_rna_file_base = os.path.splitext( os.path.basename( str_call_run_conf ) )[ 0 ]
                         str_dna_rna_json_file = os.path.join( args_parsed.str_file_base, str_dna_rna_file_base, str_dna_rna_file_base + ".json" )
-                        str_dna_rna_json_command = "make_inspector_json.py --output_file " + str_dna_rna_json_file + " " + " ".join( [ "--input_files " + str_dna_rna_file_info for str_dna_rna_file_info in lstr_dna_rna_file_info ] )
+                        str_dna_rna_json_command = " ".join( [ "make_inspector_json.py",
+                                                               "--output_file", str_dna_rna_json_file ] +
+                                                             [ "--input_files " + str_dna_rna_file_info 
+                                                               for str_dna_rna_file_info in lstr_dna_rna_file_info ] )
                         cmd_dna_rna_json = Command.Command( str_cur_command = str_dna_rna_json_command,
                                                     lstr_cur_dependencies = lstr_dna_rna_json_file_dependencies,
                                                     lstr_cur_products = str_dna_rna_json_file )
-                        lcmd_commands_run.append( cmd_dna_rna_json ) """
+                        lcmd_commands_run.append( cmd_dna_rna_json )
+
                         # Figures
                         dict_validation_commands = self.func_validation_figure_commands( args_parsed = args_parsed,
                                                                         str_cur_project_dir = str_current_project_dir,
