@@ -34,6 +34,10 @@ i_gtf_mutation = 1
 i_gtf_start_index = 3
 i_gtf_stop_index = 4
 
+# Tab related
+# Number of columns between the first and second evidence group in the TAB
+# (between DNA and RNA columns of the same data)
+I_TAB_SECOND_SHIFT = 4
 
 ######## functions
 def func_get_key_gene_locations( str_gtf_file, lstr_target_genes ):
@@ -42,6 +46,7 @@ def func_get_key_gene_locations( str_gtf_file, lstr_target_genes ):
       { chr--loc: str_gene_name }
   """
 
+  print "func_get_key_gene_locations"
   # Read the GTF file
   # Get the locations from the GFT file that match the gene names in the key mutations list
   dict_target_genes = {}
@@ -62,6 +67,8 @@ def func_plot_one( str_file_output, lstr_write_genes, li_write_mutations, lstr_m
   """
   Plot a single file.
   """
+
+  print "func_plot_one"
   # Get order of key mutations
   lstr_gene_names = [ str_name.split(" " )[0] for str_name in lstr_write_genes ]
   li_index = [ lstr_mutation_order.index( str_key_name ) for str_key_name in lstr_gene_names ]
@@ -89,6 +96,7 @@ def func_read_tab( str_file, lstr_target_genes, dict_target_genes_tab ):
   Read in a tab file.
   """
 
+  print "func_read_tab"
   # Initialize mutation counts mutation counts
   # { str_gene_name: 0 }
   dict_mutation_counts = dict( [ [ str_key_gene_name, 0 ] for str_key_gene_name in lstr_target_genes ] )
@@ -100,7 +108,7 @@ def func_read_tab( str_file, lstr_target_genes, dict_target_genes_tab ):
     for lstr_tab_line in csv.reader( hndl_tab, delimiter = "\t" ):
       # Make sure the entry is not NA (only in the tab file because there is an entry in the comparison sample
       if lstr_tab_line[ i_tab_location ] in dict_target_genes_tab:
-        if lstr_tab_line[ i_tab_mutation ].lower() == "na":
+        if lstr_tab_line[ i_tab_mutation ].lower() in [ "na", "0" ]:
           pass
         # Get the associated gene for the feature
         str_cur_gene = dict_target_genes_tabs[ lstr_tab_line[ i_tab_location ] ]
@@ -118,6 +126,7 @@ def func_read_vcf( str_file, lstr_target_genes, dict_target_genes_vcf ):
   Parse a VCF file.
   """
 
+  print "func_read_vcf"
   # Initialize mutation counts mutation counts
   # { str_gene_name: 0 }
   dict_mutation_counts = dict( [ [ str_key_gene_name, 0 ] for str_key_gene_name in lstr_target_genes ] )
@@ -191,6 +200,8 @@ def func_write_data_to_file( str_data_file, dict_mutation_samples, dict_mutation
   """
   Write details to file.
   """
+
+  print "func_write_data_to_file"
   # Write to file
   lstr_write_genes = []
   li_write_mutations = []
@@ -231,15 +242,16 @@ if len( args_call.lstr_tab_files ) == 0:
   exit( 99 )
 
 # Shift reading if looking at the second entry in the tab file.
-i_tab_second_shift = 4
 if args_call.f_second_entry:
-  i_tab_location = i_tab_location + i_tab_second_shift
-  i_tab_mutation = i_tab_mutation + i_tab_second_shift
+  i_tab_location = i_tab_location + I_TAB_SECOND_SHIFT
+  i_tab_mutation = i_tab_mutation + I_TAB_SECOND_SHIFT
 
 # Split the list of key mutations and normalize to lower case
 lstr_target_genes = [ str_target.lower() for str_target in args_call.str_key_genes.split( "," ) ]
+
 # Text file for output
 str_output_text_file = os.path.splitext( args_call.str_output_file )[ 0 ] + ".txt"
+
 # Number of samples
 i_samples = len( args_call.lstr_tab_files )
 
@@ -258,14 +270,18 @@ dict_mutation_samples_total = dict( [ [ str_key_gene_name, [] ] for str_key_gene
 f_single_plots = len( args_call.lstr_tab_files ) < 2
 for str_file in args_call.lstr_tab_files:
   # Print cur file
-  print str_file
+  print "Reading input file:" + str_file
   # Per file view output file name
   str_per_file_text_file = os.path.splitext( str_output_text_file )[ 0 ] + "_" + os.path.basename( str_file ) + ".txt"
   str_per_file_pdf_file = os.path.splitext( str_per_file_text_file )[ 0 ] + ".pdf"
+  print str_per_file_text_file
+  print str_per_file_pdf_file
 
   # Read table and count key mutations
   dict_mutation_samples, dict_mutation_counts = func_read_vcf( str_file=str_file, lstr_target_genes=lstr_target_genes, dict_target_genes_vcf=dict_target_genes ) if os.path.splitext( str_file )[ 1 ] == ".vcf" else func_read_tab( str_file=str_file, lstr_target_genes=lstr_target_genes, dict_target_genes_tab=dict_taget_genes )
 
+  print dict_mutation_samples
+  print dict_mutation_counts
   if f_single_plots:
     # Write to file
     lstr_write_genes, li_write_mutations = func_write_data_to_file( str_data_file = str_per_file_text_file, 
@@ -291,5 +307,10 @@ lstr_write_genes_total, li_write_mutations_total = func_write_data_to_file( str_
                                                                             dict_mutation_samples = dict_mutation_samples_total,
                                                                             dict_mutation_counts = dict_mutation_counts_total )
 
+print "*********"
+print str_total_pdf_file
+print lstr_write_genes_total
+print li_write_mutations_total
+print lstr_target_genes 
 # Plot the combined results
 func_plot_one( str_file_output = str_total_pdf_file, lstr_write_genes = lstr_write_genes_total, li_write_mutations = li_write_mutations_total, lstr_mutation_order = lstr_target_genes )
