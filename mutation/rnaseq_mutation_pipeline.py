@@ -1402,6 +1402,7 @@ def run( args_call, f_do_index = False ):
             # Make JSON file for the inspector
             if args_call.str_bed:
                 str_cmd_json_inspector = " ".join([ "make_mutation_inspector_json.py",
+                                            "--sample", args_call.str_file_base,
                                             "--tab", str_cancer_tab,
                                             "--bam", str_bam_called_from,
                                             "--bam_index", str_bam_called_from + ".bai",
@@ -1517,21 +1518,21 @@ def func_tabix( str_vcf, str_output_dir = "", str_tabix = "" ):
     lcmd_tabix.append( cmd_tabix_vcf )
   return( { INDEX_CMD: lcmd_tabix, INDEX_FILE: str_vcf } )
 
-def func_plot_vcf( str_vcf ):
-
-  lcmd_plot = []
-
-  str_plot_location = os.path.join( os.path.dirname( str_vchk_stats ), os.path.basename( str_vchk_stats ) + "_plot" )
-  str_vchk_stats_command = " ".join( [ "bcftools", "stats", str_vcf, ">", str_vchk_stats ] )
-  str_vchk_plot_command = " ".join( [ "plot-vcfstats", str_vchk_stats, "-p", str_plot_location + os.path.sep ] )
-  lcmd_plot.append( Command.Command( str_cur_command = str_vchk_stats_command,
-                                      lstr_cur_dependencies = [ str_vcf ],
-                                      lstr_cur_products = [ str_vchk_stats ] ) )
-  lcmd_plot.append( Command.Command( str_cur_command = str_vchk_plot_command,
-                                      lstr_cur_dependencies = [ str_vchk_stats ],
-                                      lstr_cur_products = [ str_plot_location ] ) )
-
-  return( { INDEX_CMD: lcmd_plot, INDEX_FILE: str_plot_location } )
+#def func_plot_vcf( str_vcf ):
+#
+#  lcmd_plot = []
+#
+#  str_plot_location = os.path.join( os.path.dirname( str_vchk_stats ), os.path.basename( str_vchk_stats ) + "_plot" )
+#  str_vchk_stats_command = " ".join( [ "bcftools", "stats", str_vcf, ">", str_vchk_stats ] )
+#  str_vchk_plot_command = " ".join( [ "plot-vcfstats", str_vchk_stats, "-p", str_plot_location + os.path.sep ] )
+#  lcmd_plot.append( Command.Command( str_cur_command = str_vchk_stats_command,
+#                                      lstr_cur_dependencies = [ str_vcf ],
+#                                      lstr_cur_products = [ str_vchk_stats ] ) )
+#  lcmd_plot.append( Command.Command( str_cur_command = str_vchk_plot_command,
+#                                      lstr_cur_dependencies = [ str_vchk_stats ],
+#                                      lstr_cur_products = [ str_plot_location ] ) )
+#
+#  return( { INDEX_CMD: lcmd_plot, INDEX_FILE: str_plot_location } )
 
 def func_replace_extension( str_file_path, str_new_extension ):
     """

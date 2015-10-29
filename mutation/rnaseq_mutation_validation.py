@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-
 __author__ = "Timothy Tickle"
 __copyright__ = "Copyright 2015"
 __credits__ = [ "Timothy Tickle", "Brian Haas" ]
@@ -915,6 +914,7 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                                                            lstr_cur_dependencies = str_tab,
                                                            lstr_cur_products = [ str_roc_1, str_roc_2 ] ) )
 
+            # Check the percent mutations
             if args_parsed.str_maf_file and args_parsed.str_key_mutations:
                 if str_mapping_file and args_parsed.str_maf_file and args_parsed.str_key_mutations:
                     str_output_compare_maf_file = os.path.join( STR_MAF_FIGURE, os.path.basename( os.path.splitext( str_mapping_file )[0]+"_confirm_mutations.pdf" ) )
@@ -926,24 +926,28 @@ class RNASEQ_mutation_validation( ParentScript.ParentScript ):
                     lcmd_commands.append( Command.Command( str_cur_command = str_compare_maf_key_cmd,
                                                            lstr_cur_dependencies = [ args_parsed.str_maf_file, str_mapping_file ] + lstr_vcfs,
                                                            lstr_cur_products = [ str_output_compare_maf_file ]) )
-                    """# Count mutations and plot
-                    str_key_mutations_files = "".join( [ " -t " + str_cur_vcf for str_cur_vcf in lstr_vcfs ] )
-                    lstr_key_mutation_DNA_RNA_output_pdf = [ os.path.join( str_DNA_RNA_figures, "_".join([ "key_mutation_counts",str_dir + ".pdf" ]) )
-                                                             for str_tab in lstr_dna_rna_tab ]
-                    str_output_dir_base = os.path.join( str_DNA_RNA_figures, "key_mutation_counts" )
-                    str_key_mutations_cmd = " ".join([ "tabs_to_percent_mutations.py",
-                                                       "--gtf", args_parsed.str_annotation_gtf,
-                                                       "--key", args_parsed.str_key_mutations,
-                                                       "-o", str_output_dir_base,
-                                                       "--second",
-                                                       str_key_mutations_files ])
-                    print "#########"
-                    print str_key_mutations_cmd
-                    print lstr_vcfs + [ args_parsed.str_annotation_gtf ]
-                    print lstr_key_mutation_DNA_RNA_output_pdf
-                    #lcmd_commands.append( Command.Command( str_cur_command = str_key_mutations_cmd,
-                    #                                       lstr_cur_dependencies = lstr_vcfs + [ args_parsed.str_annotation_gtf ],
-                    #                                       lstr_cur_products = lstr_key_mutation_DNA_RNA_output_pdf ) ) """
+
+            # Make vchk files for the vcf files
+            if lstr_vcfs:
+                lstr_vcf_cur = []
+                for str_cur_vcf in  lstr_vcfs:
+                    str_summary = os.path.join( STR_RNA_FIGURE, str_dir, os.path.basename( str_cur_vcf ) + "_plot.vchk" )
+                    str_summary_dir = str_summary + "_dir" + os.path.sep
+                    str_cur_vchk_command = " ".join([ "bcftools", "stats", str_cur_vcf, ">", str_summary ])
+                    str_cur_vchk_plot_command = " ".join([ "plot-vcfstats", str_summary, "-p", str_summary_dir ])
+                    lcmd_commands.append( Command.Command( str_cur_command = str_cur_vchk_command,
+                                                           lstr_cur_dependencies = [ str_cur_vcf ],
+                                                           lstr_cur_products = [ str_summary ] ) )
+                    lcmd_commands.append( Command.Command( str_cur_command = str_cur_vchk_plot_command,
+                                                           lstr_cur_dependencies = [ str_summary ],
+                                                           lstr_cur_products = [ str_summary_dir ] ) )
+                str_input_dir = os.path.join( STR_RNA_FIGURE, str_dir )
+                str_output_dir = os.path.join( STR_RNA_FIGURE, str_dir, "group_vchk" )
+                str_cmd_group_vchk = " ".join([ "combine_vchk.py", "--input_dir", str_input_dir, "--output_dir", str_output_dir ])
+                lcmd_commands.append( Command.Command( str_cur_command = str_cmd_group_vchk,
+                                                       lstr_cur_dependencies = [ str_input_dir ],
+                                                       lstr_cur_products = [ str_output_dir ] ) )
+
         """ # SYNTHETIC
         if len( lstr_syn_rna_tab ):
             str_SYN_RNA_figures = os.path.join( STR_FIGURE_DIR, "syn_rna" )
