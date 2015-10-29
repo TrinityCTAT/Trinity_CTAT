@@ -6,6 +6,7 @@ import json
 import os
 
 prsr_arguments = argparse.ArgumentParser( prog = "make_mutation_inspector_json.py", description = "Creates a json object for the mutation pipeline to be displayed in the mutation inspector app.", formatter_class = argparse.ArgumentDefaultsHelpFormatter )
+prsr_arguments.add_argument( "--sample", dest="str_sample_name", required=True, help = "Name to display for sample or run." )
 prsr_arguments.add_argument( "--tab", dest="str_cancer_tab", required=True, help = "Path to cancer tab file (Holds variants of interest)." )
 prsr_arguments.add_argument( "--bam", dest="str_bam", required=True, help = "Path to bam that variants were called from." )
 prsr_arguments.add_argument( "--bam_index", dest="str_bai", required=True, help = "Path to bai for bam that variants were called from." )
@@ -27,7 +28,7 @@ dict_json = { C_STR_BAM : args.str_bam,
               C_STR_BAM_INDEX : args.str_bai,
               C_STR_BED : args.str_bed,
               C_STR_BED_INDEX : args.str_bed_index,
-              C_STR_SAMPLE : os.path.splitext( os.path.basename(args.str_bam) )[0] }
+              C_STR_SAMPLE : args.str_sample_name }
 ldict_entries = []
 
 lstr_header = None
