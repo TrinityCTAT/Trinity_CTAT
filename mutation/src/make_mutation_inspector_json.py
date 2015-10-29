@@ -28,7 +28,7 @@ dict_json = { C_STR_BAM : args.str_bam,
               C_STR_BAM_INDEX : args.str_bai,
               C_STR_BED : args.str_bed,
               C_STR_BED_INDEX : args.str_bed_index,
-              C_STR_SAMPLE : args.str_sample_name }
+              C_STR_SAMPLE : os.path.basename( args.str_sample_name ) }
 ldict_entries = []
 
 lstr_header = None
