@@ -88,10 +88,11 @@ function goToFusion( fusionChr ){ //, fusionBreakRight, fusionBreakLeft ){
     //var numBreakLeft = parseInt( fusionBreakLeft )
     //var padLength = ( numBreakRight - numBreakLeft ) / 2
     //fusionInspectorState.cache.curBrowser.search( fusionChr + ":" + Math.max( 0, numBreakLeft - padLength ) + "-" + ( numBreakRight + padLength ) );
+    var location = fusionChr
     $('.nav-tabs a[href="#igvBrowser"]').tab('show');
-    var location = fusionChr + ":1-100";
-    console.log( location );
-    fusionInspectorState.cache.curBrowser.search( location );
+    setTimeout(function(){
+        fusionInspectorState.cache.curBrowser.search( location );
+    }, 2000);
 }
 
 function setFusionDetails( fusionName, fusionJunctReads, fusionSpanFrags ){
