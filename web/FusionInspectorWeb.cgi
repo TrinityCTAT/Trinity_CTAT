@@ -20,7 +20,7 @@ print( """<!DOCTYPE html>
     <!-- Font Awesome CSS -->
     <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
     <!-- IGV CSS -->
-    <link rel="stylesheet" type="text/css" href="//igv.org/web/beta/igv.css">
+    <link rel="stylesheet" type="text/css" href="http://igv.org/web/beta/igv.css">
     <!-- inspector css -->
     <link rel="stylesheet" type="text/css" href="css/inspector.css">
     <!-- Spinner from http://www.css-spinners.com/spinner/spinner -->
@@ -32,8 +32,10 @@ print( """<!DOCTYPE html>
     <!-- jQuery JS -->
     <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.3/jquery-ui.min.js"></script>
-    <!-- IGV JS-->
-    <script type="text/javascript" src="//igv.org/web/beta/igv-all.min.js"></script>
+    <!-- IGV JS prod but does not work with Galaxy-->
+    <script type="text/javascript" src="http://igv.org/web/beta/igv-beta.js"></script>
+    <!-- IGV JS depricated but does work with Galaxy -->
+    <script type="text/javascript" src="http://igv.org/web/beta/igv-all.min.js"></script>
     <!-- Data Table -->
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.8/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.8/js/dataTables.bootstrap.min.js"></script>
