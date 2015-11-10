@@ -31,14 +31,6 @@ function loadIGVBrowser()
                      indexed: false,
                      order: 20
                  },
-//                 {
-//                     label: "Trinity_Fusion",
-//                     url: fusionInspectorState.cache.json.trinityBed,
-//                     displayMode: "EXPANDED",
-//                     color: "green",
-//                     indexed: false,
-//                     order: 30
-//                 },
                  {
                      url: fusionInspectorState.cache.json.junctionReads,
                      label: "Junction_Reads",
@@ -53,6 +45,7 @@ function loadIGVBrowser()
                      url: fusionInspectorState.cache.json.junctionReadsBam,
                      indexURL: fusionInspectorState.cache.json.junctionReadsBai,
                      label: "Junction_Reads_Alignments",
+                     type: "bam",
                      height: 100,
                      indexed: true,
                      visibilityWindow: 2000000,
@@ -71,12 +64,23 @@ function loadIGVBrowser()
                  {
                      url: fusionInspectorState.cache.json.spanningReadsBam,
                      indexURL: fusionInspectorState.cache.json.spanningReadsBai,
+                     type: "bam",
                      label: "Spanning_Reads_Alignments",
                      height: 100,
                      indexed: true,
                      visibilityWindow: 2000000,
                      order: 55
                  }]};
+    if( ! ( fusionInspectorState.cache.json.trinityBed === "NA" ) ){
+        options.tracks.push({
+            label: "Trinity_Fusion",
+            url: fusionInspectorState.cache.json.trinityBed,
+            displayMode: "EXPANDED",
+            color: "green",
+            indexed: false,
+            order: 30
+        });
+    }
     fusionInspectorState.cache[ "curBrowser" ] = igv.createBrowser(divBrowser, options);
 }
 
