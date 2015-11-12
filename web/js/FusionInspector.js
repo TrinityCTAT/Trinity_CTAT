@@ -1,17 +1,26 @@
 "use strict;"
 
+/**
+ * State of the page.
+ */
 var fusionInspectorState = {
-  cache : { tabs : [] }
+  cache : { tabs : [] },
+  browserMade : false
 }
 
-function loadIGVBrowser()
+/**
+ * Make the IGVBrowser and dispay at a certain loci.
+ */
+function makeIGVBrowser( curFusion )
 {
+    // Load browser
     var divBrowser = $("#igvBrowser")[0],
     options = {
         showKaryo: false,
         showNavigation: true,
         fastaURL: fusionInspectorState.cache.json.reference,
         cytobandURL: fusionInspectorState.cache.json.cytoband,
+        locus: curFusion,
         tracks: [{
                      type: "sequence",
                      order: 1
@@ -82,6 +91,33 @@ function loadIGVBrowser()
         });
     }
     fusionInspectorState.cache[ "curBrowser" ] = igv.createBrowser(divBrowser, options);
+    fusionInspectorState.browserMade = true;
+}
+
+/**
+ * If the IGV browser is not made then add a tab and load the igv browser.
+ * Then update the position of the browser if needed and update the header information.
+ */
+function loadIGVBrowser( curFusion, curJunctionReads, curSpanningReads, curLeftPos, curRightPos )
+{
+    // Update header no matter if the browser is being made.
+    setFusionDetails( curFusion, curJunctionReads, curSpanningReads );
+    // Do not remake browser.
+    if( ! fusionInspectorState.browserMade ){
+
+        // Add tab for IGV and click on tab
+        $('#tabDescription').append('<li role="presentation" id="igvTab"><a href="#igvBrowser" data-toggle="tab">IGV Detail</a></li>')
+        $('#tabContent').append('<div role="tabpanel" id="igvBrowser" class="tab-pane fade"></div>')
+        $('.nav-tabs a[href="#igvBrowser"]').tab('show');
+ 
+        // Need a wait to make sure the tabs have switched.
+        setTimeout(function(){
+            makeIGVBrowser( curFusion );
+        }, 1000);
+
+    } else {
+        goToFusion( curFusion, curRightPos, curLeftPos );
+    }
 }
 
 /**
@@ -96,21 +132,17 @@ function goToFusion( fusionChr ){ //, fusionBreakRight, fusionBreakLeft ){
     $('.nav-tabs a[href="#igvBrowser"]').tab('show');
     setTimeout(function(){
         fusionInspectorState.cache.curBrowser.search( location );
-    }, 2000);
+    }, 1000);
 }
 
+/**
+ * Update the header information on the page.
+ */
 function setFusionDetails( fusionName, fusionJunctReads, fusionSpanFrags ){
     $( "#FusionNameDetail" ).html( "<p class='navbar-text'><b>Fusion Name:</b> " + fusionName + "</p>" );
     $( "#FusionJunctionDetail" ).html( "<p class='navbar-text'><b>Junction Read Count:</b> " + fusionJunctReads + "</p>" );
     $( "#FusionSpanningDetail" ).html( "<p class='navbar-text'><b>Spanning Read Count:</b> " + fusionSpanFrags + "</p>" );
 }
-
-/** 
-* Change array of fusion names to a html list.
-*/
-//function toFusionList( fusionName ){
-//    return '<li id='+fusionName+'><a href="#">' + fusionName + '</a></li>';
-//} 
 
 /**
  * Order the mutation table keys so certain element are in front in a specific order
@@ -136,6 +168,9 @@ function toTableRowHeaderElement( tableRowValue ){
     return '<th>' + tableRowValue + '</th>';
 }
 
+/**
+ * Makes a table row from fusion information, making usre to order the data as given.
+ */
 function toTableBodyElement( fusionEntry, orderedHeaderKeys ){
   var bodyRow = '<tr>';
   for( var headerKeyIndex = 0; headerKeyIndex < orderedHeaderKeys.length; headerKeyIndex++ ){
@@ -144,6 +179,9 @@ function toTableBodyElement( fusionEntry, orderedHeaderKeys ){
   return( bodyRow + '</tr>');
 }
 
+/**
+ * Get the annotation info form the data table row.
+ */
 function getFusionAnnotationFromRow( infoHeader, dataRow ){
   var index = fusionInspectorState.cache.fusionKeys.indexOf( infoHeader );
   if( index == -1 ){
@@ -151,50 +189,6 @@ function getFusionAnnotationFromRow( infoHeader, dataRow ){
   }
   return( dataRow[ index ] );
 }
-
-//TODO
-//function addFusionTab( leftGene, rightGene, leftChr, rightChr, leftPos, rightPos ){
-//  var tabName = leftGene + "_" + rightGene + "_" + leftChr + "_" + rightChr + "_" + leftPos + "_" + rightPos;
-//  if( fusionInspectorState.cache.tabs.indexOf( tabName ) < 0 ){
-//    // Add tab name to list
-//    fusionInspectorState.cache.tabs.push( tabName );
-//    // Make tab
-//    var tabTitle = leftGene + ":" + rightGene;
-//    var tabDescription = $( '#tabDescription' );
-//    var tabContent = $( 'tabContent' );
-//    tabDescription.append( '<li id="'+tabName+'_tab"><a hreaf="#'+tabName+'# data-toggle="tab"><button id="'+tabName+'_close" class="close closeTab" type="button">x</button>'+tabTitle+'</a></li>' );
-//    tabContent.append( '<div id="'+tabName+'" class="tab-pane fade"></div>' );
-//    addIGVBrowser( tabName, leftChr, leftPos );
-//    registerCloseEvent( tabName+'_close', tabName+'_tab', tabName );
-//  }
-//  //Focus on Tab
-//  $('.nav-tabs a[href="#' + tabName + '"]' ).tab( 'show' );
-//}
-
-//function registerCloseEvent( closeButtonId, closeTabId, closeBodyId ){
-//  // Add close button solution from
-//  // Hardcoded and not dynamic but works for now.
-//  $( "#"+closeButtonId ).click( function() {
-//    $( '#' + closeTabId ).remove();
-//    $( '#' + closeBodyId ).remove();
-//    $( '#tabDescription a[href="#tabBrowser"]' ).tab('show'); // Show the default tab body
-//    $( "#tabBrowser_tab" ).click();
-//    var tabIndex = fusionInspectorState.cache.tabs.indexOf( closeBodyId );
-//    if( tabIndex > -1 ){
-//      fusionInspectorState.cache.tabs.splice( tabIndex, 1 );
-//    }
-//  });
-//}
-
-//function isExistingTab( leftGene, rightGene, leftChr, rightChr, leftPos, rightPos ){
-//  var tabName = leftGene + "_" + rightGene + "_" + leftChr + "_" + rightChr + "_" + leftPos + "_" + rightPos;
-//  for( var tabIndex = 0; tabIndex < fusionInspectorState.cache.tabs.length; tabIndex++ ){
-//    if( fusionInspectorState.cache.tabs[ tabIndex ] === tabName ){
-//      return true;
-//    }   
-//  }
-//  return false; 
-//}
 
 /**
 * Load the fusion list from the json array to a html list
@@ -234,10 +228,4 @@ function loadFusionDataTable( ){
  */
 //function setSampleName( sampleInfo ){
 //    $( "#sampleId" ).html( "<p class='navbar-text'><b>Sample:</b> "+sampleInfo.sampleName+"</p>" )
-//}
-
-//function registerClickFusionMenu( fusionId ){
-//    $( "#" + fusionId ).click( function() {
-//       goToFusion( fusionId, fusionInspectorState.cache.json.fusions[ fusionId ] );
-//    })
 //}

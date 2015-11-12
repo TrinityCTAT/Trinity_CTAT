@@ -59,22 +59,19 @@ print( """<!DOCTYPE html>
     <!-- Start tabs header -->
     <ul id="tabDescription" class="nav nav-tabs">
       <li role="presentation" id="tabBrowser_tab" class="active"><a href="#tabBrowser" data-toggle="tab">Browse All Fusions</a></li>
-      <li role="presentation" id="igvTab"><a href="#igvBrowser" data-toggle="tab">IGV Detail</a></li>
     </ul>
     <!-- End tabs header -->
 
     <!-- Start tabs content -->
     <div class="tab-content" id="tabContent">
       <!-- Start Data Table Tab -->
-      <div role="tabpanel" id="tabBrowser" class="tab-pane fade in">
+      <div role="tabpanel" id="tabBrowser" class="tab-pane fade in active" data-toggle="tab">
         <!-- Start data table -->
           <div class="table-responsive">
             <table id="fusionTable" class="table table-striped table-bordered table-hover active" cell spacing="0" width="100%"></table>
           </div>
         <!-- End data table -->
       </div>
-      <div role="tabpanel" id="igvBrowser" class="tab-pane fade"></div>
-      <!-- End Browser -->
     </div>
     <!-- End tab content -->
 
@@ -85,8 +82,6 @@ print( """<!DOCTYPE html>
     $(document).ready(function() {
       // Load data (MOCKED)
       fusionInspectorState.cache[ "json" ] = fusionInspector;
-      // Set sample name in header
-      // setSampleName( fusionInspectorState.cache.json );
       // Load the data table
       loadFusionDataTable();
       fusionInspectorState.cache.fusionTable = $('#fusionTable').DataTable({
@@ -95,18 +90,17 @@ print( """<!DOCTYPE html>
       });
       $('#fusionTable tbody').on('click', 'tr', function() {
         curFusionRow = fusionInspectorState.cache.fusionTable.row( this ).data();
-        setFusionDetails( getFusionAnnotationFromRow( 'Fusion', curFusionRow ),
-                          getFusionAnnotationFromRow( 'Junction Reads', curFusionRow ),
-                          getFusionAnnotationFromRow( 'Spanning Fragments', curFusionRow ) );
-        goToFusion( getFusionAnnotationFromRow( 'Fusion', curFusionRow ),
-                    getFusionAnnotationFromRow( 'Right Pos', curFusionRow ),
-                    getFusionAnnotationFromRow( 'Left Pos', curFusionRow ));
+        // IGV browser has to be visible when the files are loaded.
+        // If it is hidden the files load as 200 (full file) as opposed
+        // to 206, whichis needed for indexed reading as igv web needs it.
+        loadIGVBrowser(
+            getFusionAnnotationFromRow( 'Fusion', curFusionRow ),
+            getFusionAnnotationFromRow( 'Junction Reads', curFusionRow ),
+            getFusionAnnotationFromRow( 'Spanning Fragments', curFusionRow ),
+            getFusionAnnotationFromRow( 'Right Pos', curFusionRow ),
+            getFusionAnnotationFromRow( 'Left Pos', curFusionRow )
+        );
       });
-      loadIGVBrowser();
-      // IGV browser has to be visible when the files are loaded.
-      // If it is hidden the files load as 200 (full file) as opposed
-      // to 206, whichis needed for indexed reading as igv web needs it.
-      $('.nav-tabs a[href="#igvBrowser"]').tab('show');
       // This hooks into the event fired off by tabs being selected.
       // It forces a redraw of the tab. Because the data table is originally
       // draw in a hidden (height = 0) div, the table is misdrawn. You have to
