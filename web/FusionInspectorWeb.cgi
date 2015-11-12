@@ -46,7 +46,7 @@ print( """<!DOCTYPE html>
     <!-- Header (info) -->
     <div class="constainer-fluid" id="sampleHeader" style="background-color: #E7E7EF">
         <nav class="navbar navbar-default" style="background-color: #E7E7EF">
-            <div class="col-xs-3" id="sampleId"><p class="navbar-text"><b>Sample:</b></p></div>
+            <!-- <div class="col-xs-3" id="sampleId"><p class="navbar-text"><b>Sample:</b></p></div> -->
             <div class="col-xs-3" id="FusionNameDetail"><p class="navbar-text"><b>Fusion Name:</b> Not Selected</p></div>
             <div class="col-xs-3" id="FusionJunctionDetail"><p class="navbar-text"><b>Junction Read Count:</b> Not Selected</p></div>
             <div class="col-xs-3" id="FusionSpanningDetail"><p class="navbar-text"><b>Spanning Read Count:</b> Not Selected</p></div>
@@ -86,7 +86,7 @@ print( """<!DOCTYPE html>
       // Load data (MOCKED)
       fusionInspectorState.cache[ "json" ] = fusionInspector;
       // Set sample name in header
-      setSampleName( fusionInspectorState.cache.json );
+      // setSampleName( fusionInspectorState.cache.json );
       // Load the data table
       loadFusionDataTable();
       fusionInspectorState.cache.fusionTable = $('#fusionTable').DataTable({

@@ -232,9 +232,9 @@ function loadFusionDataTable( ){
 /**
  * Set sample name in header.
  */
-function setSampleName( sampleInfo ){
-    $( "#sampleId" ).html( "<p class='navbar-text'><b>Sample:</b> "+sampleInfo.sampleName+"</p>" )
-}
+//function setSampleName( sampleInfo ){
+//    $( "#sampleId" ).html( "<p class='navbar-text'><b>Sample:</b> "+sampleInfo.sampleName+"</p>" )
+//}
 
 //function registerClickFusionMenu( fusionId ){
 //    $( "#" + fusionId ).click( function() {
