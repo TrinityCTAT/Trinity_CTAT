@@ -1,4 +1,4 @@
-"use strict;"
+"se strict;"
 
 ///////////////////////
 // Data
@@ -9,7 +9,8 @@
  */
 var mutationInspectorState = {
   cache : {},
-  abridged : true
+  abridged : true,
+  https_enabled : false
 };
 
 
@@ -414,6 +415,10 @@ function retrieveCRAVATInfo( retrieveChr, retrievePos, retrieveRef, retrieveAlt 
   // Updates both the CRAVAT info header and the info tab
   // Puts a loading logo up while waiting
   var positionKey = retrieveChr + "_" + retrievePos
+  var cravat_prefix = "http://staging.cravat.us/rest/service/query?mutation="
+  if( mutationInspectorState.https_enabled === true ){
+    cravat_prefix = "https://www.cravat.us/rest/service/query?mutation="
+  }
   setAnnotationTabToLoad( positionKey );
   $.ajax({ type: 'GET',
            dataType: 'json',
@@ -424,7 +429,7 @@ function retrieveCRAVATInfo( retrieveChr, retrievePos, retrieveRef, retrieveAlt 
       mutationInspectorState.cache[ retrieveChr+':'+retrievePos ]["MuPIT Link"] = cravatData[ "MuPIT Link" ];
       }
     },
-           url: "http://staging.cravat.us/rest/service/query?mutation="+retrieveChr+"_"+retrievePos+"_+_"+retrieveRef+"_"+retrieveAlt
+           url: cravat_prefix+retrieveChr+"_"+retrievePos+"_+_"+retrieveRef+"_"+retrieveAlt
   });
   return null;
 }
