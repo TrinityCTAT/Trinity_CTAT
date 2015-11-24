@@ -75,6 +75,14 @@ Make sure to append to your PATH the path the STAR aligner and SciEDPiper.
 Also, make sure Picard-Tools and GATK jars are available.
 
 
+# Resources:
+
+Note, several resources are needed for additional functionality.
+* COSMIC - http://cancer.sanger.ac.uk/cosmic
+* DARNED - http://beamish.ucc.ie
+* RADAR - http://rnaedit.com
+
+
 # Pipeline behavior
 
 Note that if an error occurs on a command, the pipeline should not produce files which would have resulted 
