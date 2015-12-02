@@ -11,7 +11,8 @@ var mutationInspectorState = {
   cache : {},
   abridged : false,
   https_enabled : false,
-  galaxy_mode : true
+  galaxy_mode : true,
+  load_json_in_js : false
 };
 
 
@@ -22,9 +23,9 @@ var mutationInspectorState = {
 
 /**
  * Read in the JSON object that points to the bams and variants of interest.
- * @param {string} mutationTabFile - The path / URL to the JSON object
+ * @param {string} mutation_json_data - The path / URL to the JSON object ( mutationInspectorState.load_json_in_js === true ) or object read in from json ( mutationInspectorState.load_json_in_js === false ) depending on mutationInspectorState.load_json_in_js
  */
-function loadMutationTable( mutationTabFile ) {
+function loadMutationTable( mutation_json_data ) {
 
   // Holds all information about the mutation view
   mutationInspectorView = {};
@@ -33,8 +34,8 @@ function loadMutationTable( mutationTabFile ) {
   mutationInspectorState.cache.hiddenCols = [];
 
   // Read in the JSON file
-  if( mutationInspectorState.cache.galaxy_mode === true ){
-    readMutationJSON( mutationTabFile );
+  if( mutationInspectorState.load_json_in_js === true ){
+    readMutationJSON( mutation_json_data );
   } else {
     mutationInspectorView.json = mutation_json_data;
   }
@@ -356,7 +357,7 @@ function createIGVBrowser( sampleInfo ){
                maxHeight: 75 }]
   };
 
-  if( mutationInspectorState.cache.galaxy_mode === true ){
+  if( mutationInspectorState.galaxy_mode === true ){
     options = {
       showNavigation: true,
       genome: "hg19",
