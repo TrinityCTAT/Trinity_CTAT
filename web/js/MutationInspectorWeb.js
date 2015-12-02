@@ -442,7 +442,6 @@ function retrieveCRAVATInfo( retrieveChr, retrievePos, retrieveRef, retrieveAlt 
   if( mutationInspectorState.https_enabled === true ){
     cravat_prefix = "https://www.cravat.us/rest/service/query?mutation="
   }
-  console.log( cravat_prefix+retrieveChr+"_"+retrievePos+"_+_"+retrieveRef+"_"+retrieveAlt );
   setAnnotationTabToLoad( positionKey );
   $.ajax({ type: 'GET',
            dataType: 'json',
