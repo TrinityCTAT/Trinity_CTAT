@@ -1,4 +1,4 @@
-"se strict;"
+"use strict;"
 
 ///////////////////////
 // Data
@@ -9,8 +9,9 @@
  */
 var mutationInspectorState = {
   cache : {},
-  abridged : true,
-  https_enabled : false
+  abridged : false,
+  https_enabled : false,
+  galaxy_mode : true
 };
 
 
@@ -32,7 +33,11 @@ function loadMutationTable( mutationTabFile ) {
   mutationInspectorState.cache.hiddenCols = [];
 
   // Read in the JSON file
-  mutationInspectorView.json = dummy_data; // readMutationJSON( mutationTabFile )
+  if( mutationInspectorState.cache.galaxy_mode === true ){
+    readMutationJSON( mutationTabFile );
+  } else {
+    mutationInspectorView.json = mutation_json_data;
+  }
 
   // Forced order of the mutation table elements.
   // Any element in the table and not in this array
@@ -186,7 +191,7 @@ function updateHiddenColumns(){
  */
 function addSpecificTab( curRowChr, curRowPos, curRowRef, curRowAlt ){
   // Turn off the additional tab creation
-  if ( mutationInspectorState.abridged ){
+  if ( mutationInspectorState.abridged === true ){
     return( false );
   }
 
@@ -291,7 +296,7 @@ function registerDefaultTabClick( tabHeader ){
   // This is a hack added in after the fact. We needed to remove elements associated
   // with webservices until they were resolved. This does not belong here but is a
   // place that is called once. (Could not change the html as well).
-  if( mutationInspectorState.abridged ){
+  if( mutationInspectorState.abridged === true ){
     $("#sampleHeader").children().children()[5].remove();
     $("#currentMupit").remove();
   }
@@ -316,7 +321,7 @@ function updateSNPInfo( curSNPChr, curSNPPos, curSNPRef, curSNPAlt ){
   $( '#currentPosition' ).text( curSNPPos );
   $( '#currentRef' ).text( curSNPRef );
   $( '#currentAlt' ).text( curSNPAlt );
-  if( ! mutationInspectorState.abridged ){
+  if( mutationInspectorState.abridged === false ){
     $( '#currentMupit' ).text( '' );
     $( '#currentMupit' ).append( '<div class=\"spinner-loader\">Loading...</div>' );
   }
@@ -350,6 +355,24 @@ function createIGVBrowser( sampleInfo ){
                displayMode: "EXPANDED",
                maxHeight: 75 }]
   };
+
+  if( mutationInspectorState.cache.galaxy_mode === true ){
+    options = {
+      showNavigation: true,
+      genome: "hg19",
+      tracks: [{ url: sampleInfo.BAM,
+               indexURL: sampleInfo.BAM_INDEX,
+               type: "bam",
+               label: sampleInfo.SAMPLE,
+               maxHeight: 250 },
+             { url: sampleInfo.BED,
+               name: "Genes",
+               indexed: false,
+               order: Number.MAX_VALUE,
+               displayMode: "EXPANDED",
+               maxHeight: 75 }]
+    };
+  }
   igv.createBrowser( div, options );
 }
 
@@ -396,7 +419,7 @@ function readMutationJSON( readInFile ){
  */
 function setAnnotationTabToLoad( retrieveAnnotationTabName ){
   $( '#' + retrieveAnnotationTabName ).html( "" );
-  if( ! mutationInspectorState.abridged ){
+  if( mutationInspectorState.abridged === false ){
     $( '#' + retrieveAnnotationTabName ).append( "<div class=\"spinner-loader\">Loading...</div>" );
   }
 }
@@ -419,6 +442,7 @@ function retrieveCRAVATInfo( retrieveChr, retrievePos, retrieveRef, retrieveAlt 
   if( mutationInspectorState.https_enabled === true ){
     cravat_prefix = "https://www.cravat.us/rest/service/query?mutation="
   }
+  console.log( cravat_prefix+retrieveChr+"_"+retrievePos+"_+_"+retrieveRef+"_"+retrieveAlt );
   setAnnotationTabToLoad( positionKey );
   $.ajax({ type: 'GET',
            dataType: 'json',
@@ -465,7 +489,7 @@ function updateCravatTab( updateTab, cravatItem ){
  */
 function updateMupitLink( cravatItem ){
 
-  if( mutationInspectorState.abridged ){
+  if( mutationInspectorState.abridged === true ){
     return( false );
   }
 
