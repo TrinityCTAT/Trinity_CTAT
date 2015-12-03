@@ -3,7 +3,7 @@
 # Constants
 CHR_COMMENT = "#"
 STR_TAB_DELIMITER = "\t"
-STR_CHROM = "Chromosome"
+STR_CHROM = "Chrom"
 STR_CHROM_UPDATE = "CHROM"
 STR_EMPTY_FILE = "No Data"
 STR_POS = "Position"
