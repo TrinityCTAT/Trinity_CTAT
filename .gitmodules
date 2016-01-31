@@ -10,3 +10,6 @@
 [submodule "fusion/tools/FusionInspector"]
 	path = fusion/tools/FusionInspector
 	url = https://github.com/FusionInspector/FusionInspector.git
+[submodule "lncrna/slncky"]
+	path = lncrna/slncky
+	url = https://github.com/slncky/slncky.git
