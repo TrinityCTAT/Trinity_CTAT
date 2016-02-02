@@ -13,3 +13,6 @@
 [submodule "lncrna/slncky"]
 	path = lncrna/slncky
 	url = https://github.com/slncky/slncky.git
+[submodule "fusion/tools/FusionAnnotator"]
+	path = fusion/tools/FusionAnnotator
+	url = https://github.com/FusionAnnotator/FusionAnnotator.git
