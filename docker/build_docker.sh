@@ -1,4 +1,6 @@
 #!/bin/bash
 
-docker build -t ctat_fusion:0.0.0.1 --rm=true .
+VERSION=$(cat VERSION)
+
+docker build -t trinityctat/ctatfusion:$VERSION --rm=true .
 
