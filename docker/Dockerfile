@@ -85,6 +85,11 @@ RUN cp $TRINITY_HOME/trinity-plugins/BIN/samtools $BIN
 
 RUN cpanm install URI::Escape
 
+###############################
+## Install
+RUN apt-get install -y openjdk-7-jre
+
+
 ##############################
 ## Install CTAT data resources
 
@@ -92,10 +97,6 @@ RUN CTAT_LIB="https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/GRCh37_g
     wget -P $SRC $CTAT_LIB && \
     tar -xvf $SRC/GRCh37_gencode_v19_CTAT_lib.tar.gz -C $DATA
 
-
-###############################
-## Install
-RUN apt-get install -y openjdk-7-jre
 
 
 
