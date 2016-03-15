@@ -98,4 +98,11 @@ RUN CTAT_LIB="https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/GRCh37_g
     
 RUN tar -xvf $SRC/GRCh37_gencode_v19_CTAT_lib.tar.gz -C $DATA
 
+###############
+## FusionFilter
+
+RUN FUSION_FILTER_URL="https://github.com/FusionFilter/FusionFilter/archive/v0.2.0.tar.gz" && \
+    wget $FUSION_FILTER_URL -O "$SRC/FusionFilter_v0.2.0.tar.gz" && \
+    tar -xvf $SRC/FusionFilter_v0.2.0.tar.gz -C $SRC
+
 
