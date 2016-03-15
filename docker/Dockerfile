@@ -94,9 +94,8 @@ RUN apt-get install -y openjdk-7-jre
 ## Install CTAT data resources
 
 RUN CTAT_LIB="https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/GRCh37_gencode_v19_CTAT_lib.tar.gz" && \
-    wget -P $SRC $CTAT_LIB && \
-    tar -xvf $SRC/GRCh37_gencode_v19_CTAT_lib.tar.gz -C $DATA
-
-
+    wget -P $SRC $CTAT_LIB
+    
+RUN tar -xvf $SRC/GRCh37_gencode_v19_CTAT_lib.tar.gz -C $DATA
 
 
