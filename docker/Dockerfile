@@ -105,4 +105,9 @@ RUN FUSION_FILTER_URL="https://github.com/FusionFilter/FusionFilter/archive/v0.2
     wget $FUSION_FILTER_URL -O "$SRC/FusionFilter_v0.2.0.tar.gz" && \
     tar -xvf $SRC/FusionFilter_v0.2.0.tar.gz -C $SRC
 
+ENV CTAT_LIB_INIT $DATA/GRCh37_gencode_v19_CTAT_lib
+
+RUN /usr/local/src/FusionFilter-0.2.0/prep_genome_lib.pl --genome $CTAT_LIB_INIT/ref_genome.fa \
+    --gtf $CTAT_LIB_INIT/ref_annot.gtf --blast_pairs $CTAT_LIB_INIT/blast_pairs.outfmt6.gz \
+    --output_dir $DATA/CTAT_LIB
 
