@@ -2,4 +2,4 @@
 
 VERSION=$(cat VERSION)
 
-docker push trinityctat/ctatfusion:$VERSION
+sudo docker push trinityctat/ctatfusion:$VERSION

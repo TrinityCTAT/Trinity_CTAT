@@ -2,5 +2,5 @@
 
 VERSION=$(cat VERSION)
 
-docker build -t trinityctat/ctatfusion:$VERSION --rm=true .
+sudo docker build -t trinityctat/ctatfusion:$VERSION --rm=true .
 
