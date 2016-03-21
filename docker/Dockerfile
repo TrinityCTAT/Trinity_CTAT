@@ -84,11 +84,43 @@ RUN cp $TRINITY_HOME/trinity-plugins/BIN/samtools $BIN
 
 RUN cpanm install URI::Escape
 
+
+##############
+## DISCASM
+
+RUN DISCASM_URL="https://github.com/DISCASM/DISCASM/releases/download/v0.0.1/DISCASM_v0.0.1.FULL.tar.gz" && \
+    wget -P $SRC $DISCASM_URL && \
+    tar -xvf $SRC/DISCASM_v0.0.1.FULL.tar.gz -C $SRC
+
+ENV DISCASM_HOME $SRC/DISCASM_v0.0.1
+
+#############
+## Oases
+
+RUN VELVET_URL="http://www.ebi.ac.uk/~zerbino/velvet/velvet_1.2.10.tgz" && \
+    wget -P $SRC $VELVET_URL && \
+    tar xvf $SRC/velvet_1.2.10.tgz -C $SRC && \
+    ln -s $SRC/velvet_1.2.10 $SRC/velvet && \
+    cd $SRC/velvet && \
+    make && \
+    cp velveth velvetg $BIN/
+
+
+RUN apt-get install -y texlive-latex-base && apt-get clean  # needed for pdflatek in oases build
+
+RUN OASES_URL="https://www.ebi.ac.uk/~zerbino/oases/oases_0.2.08.tgz" && \
+    wget -P $SRC $OASES_URL && \
+    tar -xvf $SRC/oases_0.2.08.tgz -C $SRC && \
+    cd $SRC/oases_0.2.8 && \
+    make && \
+    cp oases $BIN/
+
+
 ###############################
 ## Install
 RUN apt-get install -y openjdk-7-jre
 
-RUN COPY PerlLib $SRC/
+COPY PerlLib $SRC/
 
 ENV PERL5LIB $SRC:${PERL5LIB}
 
