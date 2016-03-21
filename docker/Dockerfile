@@ -20,7 +20,6 @@ RUN mkdir $DATA
 ## Tool installations:
 ######################
 
-
 ###############
 ## STAR-Fusion:
 
@@ -89,5 +88,11 @@ RUN cpanm install URI::Escape
 ## Install
 RUN apt-get install -y openjdk-7-jre
 
+RUN COPY PerlLib $SRC/
+
+ENV PERL5LIB $SRC:${PERL5LIB}
+
+
 COPY util/*.pl $BIN/
+
 
