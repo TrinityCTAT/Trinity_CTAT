@@ -89,25 +89,5 @@ RUN cpanm install URI::Escape
 ## Install
 RUN apt-get install -y openjdk-7-jre
 
-
-##############################
-## Install CTAT data resources
-
-#RUN CTAT_LIB="https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/GRCh37_gencode_v19_CTAT_lib.tar.gz" && \
-#    wget -P $SRC $CTAT_LIB
-    
-#RUN tar -xvf $SRC/GRCh37_gencode_v19_CTAT_lib.tar.gz -C $DATA
-
-###############
-## FusionFilter
-
-#RUN FUSION_FILTER_URL="https://github.com/FusionFilter/FusionFilter/archive/v0.2.1.tar.gz" && \
-#    wget $FUSION_FILTER_URL -O "$SRC/FusionFilter_v0.2.1.tar.gz" && \
-#    tar -xvf $SRC/FusionFilter_v0.2.1.tar.gz -C $SRC
-
-#ENV CTAT_LIB_INIT $DATA/GRCh37_gencode_v19_CTAT_lib
-#
-#RUN /usr/local/src/FusionFilter-0.2.1/prep_genome_lib.pl --genome_fa $CTAT_LIB_INIT/ref_genome.fa \
-#    --gtf $CTAT_LIB_INIT/ref_annot.gtf --blast_pairs $CTAT_LIB_INIT/blast_pairs.outfmt6.gz \
-#    --output_dir $DATA/CTAT_LIB
+COPY util/* $BIN
 
