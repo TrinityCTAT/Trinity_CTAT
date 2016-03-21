@@ -10,6 +10,8 @@ my $right_fq_gz = $ARGV[1] or die $usage;
 my $ctat_genome_lib_tar_gz = $ARGV[2] or die $usage;
 
 
+my $STAR_FUSION_HOME = $ENV{STAR_FUSION_HOME} or die "Error, env var STAR_FUSION_HOME must be set";
+
 main: {
 
     my $cmd = "tar xvf $ctat_genome_lib_tar_gz";

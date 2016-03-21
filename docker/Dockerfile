@@ -89,5 +89,5 @@ RUN cpanm install URI::Escape
 ## Install
 RUN apt-get install -y openjdk-7-jre
 
-COPY util/* $BIN
+COPY util/*.pl $BIN/
 
