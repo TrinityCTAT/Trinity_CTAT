@@ -21,7 +21,6 @@ my $output_dir = $ARGV[2] or die $usage;
 
 my $UTILDIR = "$FindBin::Bin/util/star-fusion-util";
 
-my $STAR_FUSION_DIR = $ENV{STAR_FUSION_DIR} or die "Error, need env var STAR_FUSION_DIR pointing to the STAR-Fusion installation directory";
 
 
 main: {
@@ -67,7 +66,7 @@ main: {
 
     ##  assign fusion junctions to genes:
 
-    $cmd = "/home/unix/bhaas/GITHUB/STAR-Fusion/STAR-Fusion -J Chimeric.out.junction --verbose_level 2";
+    $cmd = "/home/unix/bhaas/GITHUB/CTAT_FUSIONS/STAR-Fusion/STAR-Fusion -J Chimeric.out.junction --verbose_level 2 --genome_lib_dir /seq/regev_genome_portal/RESOURCES/CTAT_GENOME_LIB/build_dir";
     $pipeliner->add_commands( Command->new($cmd, "star-fusion.ok") );
     
     $pipeliner->run();

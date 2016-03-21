@@ -6,7 +6,7 @@ use warnings;
 my $usage = "\n\n\tusage: $0 left.fq.gz right.fq.gz ctat_genome_lib.tar.gz\n\n";
 
 my $left_fq_gz = $ARGV[0] or die $usage;
-my $right_fq_Gz = $ARGV[1] or die $usage;
+my $right_fq_gz = $ARGV[1] or die $usage;
 my $ctat_genome_lib_tar_gz = $ARGV[2] or die $usage;
 
 
