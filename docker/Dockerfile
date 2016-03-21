@@ -124,6 +124,13 @@ COPY PerlLib $SRC/
 
 ENV PERL5LIB $SRC:${PERL5LIB}
 
+RUN cp $TRINITY_HOME/trinity-plugins/htslib/tabix $BIN
+
+RUN apt-get install -y python-pip 
+
+RUN apt-get install -y python-dev
+
+RUN pip install pysam
 
 COPY util/*.pl $BIN/
 
