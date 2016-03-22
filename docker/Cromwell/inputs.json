@@ -1,0 +1,6 @@
+{
+	"CTAT_FUSION_WORKFOW.input_left_fq_gz" : "gs://ctat_fusion_lib/BT474.Left.fq.gz",
+	"CTAT_FUSION_WORKFOW.input_right_fq_gz" : "gs://ctat_fusion_lib/BT474.Right.fq.gz",                                                                              
+    "CTAT_FUSION_WORKFOW.genome_lib_dir" : "gs://ctat_fusion_lib/CTAT_lib.tar.gz"
+
+}
