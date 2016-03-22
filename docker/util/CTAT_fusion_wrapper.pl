@@ -29,7 +29,7 @@ main: {
 
     my $pipeliner = new Pipeliner(-verbose => 2);
     
-    my $cmd = "tar xvf $ctat_genome_lib_tar_gz";
+    my $cmd = "tar xvf $ctat_genome_lib_tar_gz -C .";
     $pipeliner->add_commands(new Command($cmd, "untar_genome_lib.ok"));
     
     ## Run STAR-Fusion
