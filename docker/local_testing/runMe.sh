@@ -5,6 +5,7 @@ set -e
 export DISCASM_HOME=/home/unix/bhaas/GITHUB/CTAT_FUSIONS/DISCASM
 export STAR_FUSION_HOME=/home/unix/bhaas/GITHUB/CTAT_FUSIONS/STAR-Fusion
 export FUSION_INSPECTOR_HOME=/home/unix/bhaas/GITHUB/CTAT_FUSIONS/FusionInspector
+export TRINITY_HOME=/home/unix/bhaas/GITHUB/trinityrnaseq
 
 utildir=`dirname $0`/..
 
