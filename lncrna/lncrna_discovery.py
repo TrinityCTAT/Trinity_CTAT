@@ -93,18 +93,18 @@ class LncrnaScript( ParentScript.ParentScript ):
         # Make slncky command:
         slncky_cmd_list = [ 'slncky.v1.0', 
                             '--config', args_parsed.config,
-                            '--threads', args_parsed.threads,
-                            '--min_overlap', args_parsed.min_overlap,
-                            '--min_cluster', args_parsed.min_cluster,
-                            '--min_coding', args_parsed.min_noncoding,
-                            '--min_noncoding', args_parsed.min_noncoding,
+                            '--threads', str( args_parsed.threads ),
+                            '--min_overlap', str( args_parsed.min_overlap ),
+                            '--min_cluster', str( args_parsed.min_cluster ),
+                            '--min_coding', str( args_parsed.min_noncoding ),
+                            '--min_noncoding', str( args_parsed.min_noncoding ),
                             '--bedtools',args_parsed.bedtools,
                             '--liftover',args_parsed.liftover,
-                            '--minMatch',args_parsed.minMatch,
-                            '--pad',args_parsed.pad,
+                            '--minMatch',str( args_parsed.minMatch ),
+                            '--pad',str( args_parsed.pad ),
                             '--lastz',args_parsed.lastz,
-                            '--gap_open',args_parsed.gap_open,
-                            '--gap_extend',args_parsed.gap_extend ]
+                            '--gap_open',str( args_parsed.gap_open ),
+                            '--gap_extend',str( args_parsed.gap_extend ) ]
         
         boolean_args_list_all = [ 'no_orth_search','no_filter',
                                   'overwrite','no_overlap',
