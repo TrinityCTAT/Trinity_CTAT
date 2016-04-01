@@ -52,7 +52,9 @@ class LncrnaScript( ParentScript.ParentScript ):
         arg_raw.add_argument('--gap_open', type=str, default='200')
         arg_raw.add_argument('--gap_extend', type=str, default='40')
         arg_raw.add_argument('--web', action='store_true', help='flag if you want website written visualizing transcripts that were filtered out')        
-
+        arg_raw.add_argument('--lastz', help='lastz software')
+        arg_raw.add_argument('--bedtools', help='bedtools software')
+        arg_raw.add_argument('--liftover',  help='liftover software')
 
     def func_make_commands( self, args_parsed, cur_pipeline ):
         """
