@@ -31,7 +31,7 @@ class LncrnaScript( ParentScript.ParentScript ):
         arg_raw.add_argument("--bedfile", dest = "bedfile", required = True ,help = "bed12 file of transcripts" )
         arg_raw.add_argument("--assembly" ,required = True ,help="assembly")
         arg_raw.add_argument("--out_prefix", default="slncky",help="out_prefix")
-        arg_raw.add_argument("--config", default=CONFIGSTR ,type=str, help="path to assembly.config file. default uses config file in same directory as slncky")
+        arg_raw.add_argument("--config", type=str, help="path to assembly.config file. default uses config file in same directory as slncky")
         arg_raw.add_argument("--no_orth_search",action="store_true", help="flag if you only want to filter lncs but don\'t want to search for orthologs")
         arg_raw.add_argument('--no_filter', action='store_true', help='flag if you don\'t want lncs to be filtered before searching for ortholog')
         arg_raw.add_argument('--overwrite', action='store_true', help='forces overwrite of out_prefix.bed')
