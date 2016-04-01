@@ -28,9 +28,9 @@ class TransReconstruction( ParentScript.ParentScript ):
 
         arg_raw.prog = "transcript_reconstruction.py"
         arg_raw.description = "Assembling Transcripts - STRINGTIE"
-        args_parsed.add_argument("--bam_file", required=True ,help ="Aligned Bam file" )
-        args_parsed.add_argument("--ref_annot", required=True , help="Reference annotation")
-        args_parsed.add_argument("--output_gtf", required=True , help="Output GTF")        
+        arg_raw.add_argument("--bam_file", required=True ,help ="Aligned Bam file" )
+        arg_raw.add_argument("--ref_annot", required=True , help="Reference annotation")
+        arg_raw.add_argument("--output_gtf", required=True , help="Output GTF")        
 
     def func_make_commands( self, args_parsed, cur_pipeline ):
         """
