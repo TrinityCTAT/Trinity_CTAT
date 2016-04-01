@@ -70,7 +70,7 @@ class LncrnaScript( ParentScript.ParentScript ):
         # Make output directory
         cur_pipeline.func_mkdirs( [ args_parsed.str_file_base ] )
         # Bed file and config file must be present
-        cur_pipeline.func_check_files_exist( [ args_parsed.bedfile,args_parsed.configstr ] )
+        cur_pipeline.func_check_files_exist( [ args_parsed.bedfile,args_parsed.config ] )
         
 
         # Make web dir if --web included
