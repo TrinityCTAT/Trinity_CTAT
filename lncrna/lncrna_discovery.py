@@ -116,7 +116,7 @@ class LncrnaScript( ParentScript.ParentScript ):
        
         for argument in boolean_args_list_all:
             if argument in args_dict:
-                 slncky_cmd_list.append( "--" + argument )
+                 slncky_cmd_list.append( ( "--" + argument ) )
         
         slncky_cmd_list.append( args_parsed.bedfile )
         slncky_cmd_list.append( args_parsed.assembly )
