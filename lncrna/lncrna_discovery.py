@@ -106,17 +106,22 @@ class LncrnaScript( ParentScript.ParentScript ):
                             '--gap_open',str( args_parsed.gap_open ),
                             '--gap_extend',str( args_parsed.gap_extend ) ]
         
-        boolean_args_list_all = [ 'no_orth_search','no_filter',
-                                  'overwrite','no_overlap',
-                                  'no_collapse','no_dup',
-                                  'no_self','no_coding',
-                                  'no_bg','no_orf','web' ]
+        boolean_args_list_all = [ '--no_orth_search','--no_filter',
+                                  '--overwrite','--no_overlap',
+                                  '--no_collapse','--no_dup',
+                                  '--no_self','--no_coding',
+                                  '--no_bg','--no_orf','--web' ]
 
-        args_dict = vars( args_parsed ) 
+        args_list_all =         [ args.no_orth_search,args.no_filter,
+                                  args.overwrite,args.no_overlap,
+                                  args.no_collapse,args.no_dup,
+                                  args.no_self,args.no_coding,
+                                  args.no_bg,args.no_orf,web ]
+
        
-        for argument in boolean_args_list_all:
-            if argument in args_dict:
-                 slncky_cmd_list.append( ( "--" + argument ) )
+        for i,argument in enumerate( boolean_args_list_all ):
+            if args_list_all[ i ] :
+               slncky_cmd_list.append( argument )
         
         slncky_cmd_list.append( args_parsed.bedfile )
         slncky_cmd_list.append( args_parsed.assembly )
