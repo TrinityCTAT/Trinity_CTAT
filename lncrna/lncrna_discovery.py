@@ -112,11 +112,11 @@ class LncrnaScript( ParentScript.ParentScript ):
                                   '--no_self','--no_coding',
                                   '--no_bg','--no_orf','--web' ]
 
-        args_list_all =         [ args.no_orth_search,args.no_filter,
-                                  args.overwrite,args.no_overlap,
-                                  args.no_collapse,args.no_dup,
-                                  args.no_self,args.no_coding,
-                                  args.no_bg,args.no_orf,web ]
+        args_list_all =         [ args_parsed.no_orth_search,args_parsed.no_filter,
+                                  args_parsed.overwrite,args_parsed.no_overlap,
+                                  args_parsed.no_collapse,args_parsed.no_dup,
+                                  args_parsed.no_self,args_parsed.no_coding,
+                                  args_parsed.no_bg,args_parsed.no_orf,args_parsed.web ]
 
        
         for i,argument in enumerate( boolean_args_list_all ):
