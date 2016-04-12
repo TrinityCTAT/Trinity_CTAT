@@ -67,28 +67,25 @@ class LncrnaScript( ParentScript.ParentScript ):
         """
 
         
-        # Make output directory
-        cur_pipeline.func_mkdirs( [ args_parsed.str_file_base ] )
         # Bed file and config file must be present
         cur_pipeline.func_check_files_exist( [ args_parsed.bedfile,args_parsed.config ] )
         
 
         # Make web dir if --web included
         if args_parsed.web:
-           web_dir = os.path.join( args_parsed.str_file_base, ( args_parsed.out_prefix + '.EvolutionBrowser' ) )
+           web_dir = ( args_parsed.out_prefix + '.EvolutionBrowser' ) 
            cur_pipeline.func_mkdirs( [ web_dir ] )
-           os.path.join( args_parsed.str_file_base, web_dir, "browse.html" )
    
         # Make all other files 
         # TODO: include conditionals based on usage
-        canonical_to_lncs = os.path.join( args_parsed.str_file_base, ( args_parsed.out_prefix + ".canonical_to_lncs.txt" ) )
-        cluster_info = os.path.join( args_parsed.str_file_base, ( args_parsed.out_prefix + ".cluster_info.txt" ) )
-        filtered_info = os.path.join( args_parsed.str_file_base, ( args_parsed.out_prefix + ".filtered_info.txt" ) )
-        lncs_bed = os.path.join( args_parsed.str_file_base, ( args_parsed.out_prefix + ".lncs.bed" ) )
-        lncs_info = os.path.join( args_parsed.str_file_base, ( args_parsed.out_prefix + ".lncs.info.txt" ) )
-        orfs = os.path.join( args_parsed.str_file_base, ( args_parsed.out_prefix + ".orfs.txt" ) )
-        orthologs_top = os.path.join( args_parsed.str_file_base, ( args_parsed.out_prefix + ".orthologs.top.txt" ) )
-        orthologs = os.path.join( args_parsed.str_file_base, ( args_parsed.out_prefix + ".orthologs.txt" ) )
+        canonical_to_lncs = args_parsed.out_prefix + ".canonical_to_lncs.txt" 
+        cluster_info = args_parsed.out_prefix + ".cluster_info.txt"
+        filtered_info = args_parsed.out_prefix + ".filtered_info.txt" 
+        lncs_bed = args_parsed.out_prefix + ".lncs.bed" 
+        lncs_info = args_parsed.out_prefix + ".lncs.info.txt" 
+        orfs = args_parsed.out_prefix + ".orfs.txt" 
+        orthologs_top = args_parsed.out_prefix + ".orthologs.top.txt" 
+        orthologs = args_parsed.out_prefix + ".orthologs.txt" 
         
         # Make slncky command:
         slncky_cmd_list = [ 'slncky.v1.0', 
@@ -127,7 +124,8 @@ class LncrnaScript( ParentScript.ParentScript ):
         slncky_cmd_list.append( args_parsed.assembly )
         slncky_cmd_list.append( args_parsed.out_prefix )        
        
-        slncky_cmd = " ".join( slncky_cmd_list )
+        if slncky_cmd_list:
+           slncky_cmd = " ".join( slncky_cmd_list )
 
         lcmd_commands = []
         lcmd_commands.extend( [ Command.Command( str_cur_command = slncky_cmd,
