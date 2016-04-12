@@ -130,10 +130,7 @@ class LncrnaScript( ParentScript.ParentScript ):
         lcmd_commands = []
         lcmd_commands.extend( [ Command.Command( str_cur_command = slncky_cmd,
                                                  lstr_cur_dependencies = [ args_parsed.config ], 
-                                                 lstr_cur_products = [ canonical_to_lncs, cluster_info,
-                                                                       filtered_info, lncs_bed,
-                                                                       lncs_info, orfs,
-                                                                       orthologs_top, orthologs ] ) ] )
+                                                 lstr_cur_products = [ canonical_to_lncs ] ) ] )
         
         return lcmd_commands
     
