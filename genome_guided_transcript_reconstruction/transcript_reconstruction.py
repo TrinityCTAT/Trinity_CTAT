@@ -28,9 +28,10 @@ class TransReconstruction( ParentScript.ParentScript ):
 
         arg_raw.prog = "transcript_reconstruction.py"
         arg_raw.description = "Assembling Transcripts - STRINGTIE"
-        arg_raw.add_argument("--bam_file", required=True ,help ="Aligned Bam file" )
-        arg_raw.add_argument("--ref_annot", required=True , help="Reference annotation")
-        arg_raw.add_argument("--output_gtf", required=True , help="Output GTF")        
+        arg_raw.add_argument( "--bam_file", required=True ,help ="Aligned Bam file" )
+        arg_raw.add_argument( "--ref_annot", required=True , help="Reference annotation" )
+        arg_raw.add_argument( "--output_gtf", required=True , help="Output GTF" )        
+        arg_raw.add_argument( "--output_bed", required=True , help="Output GTF" )
 
     def func_make_commands( self, args_parsed, cur_pipeline ):
         """
@@ -44,7 +45,7 @@ class TransReconstruction( ParentScript.ParentScript ):
         
         cur_pipeline.func_check_files_exist( [ args_parsed.bam_file,args_parsed.ref_annot ] )
         
-        # Make slncky command:
+        # Make strigtie command:
         stringtie_cmd_list = [ 'stringtie', 
                                args_parsed.bam_file,
                                '-G', args_parsed.ref_annot,
@@ -53,12 +54,23 @@ class TransReconstruction( ParentScript.ParentScript ):
        
         stringtie_cmd = " ".join( stringtie_cmd_list )
 
+        # Make gtf2bed command:
+        gtf_to_bed_cmd_list  = [ 'gtf2bed', 
+                                 '<', args_parsed.output_bed,
+                                 '>', args_parsed.output_bed ]
+
+        gtf_to_bed_cmd = " ".join( gtf_to_bed_cmd_list ) 
+
         lcmd_commands = []
         lcmd_commands.extend( [ Command.Command( str_cur_command = stringtie_cmd,
                                                  lstr_cur_dependencies = [ args_parsed.bam_file, args_parsed.ref_annot ], 
-                                                 lstr_cur_products = [ args_parsed.output_gtf ] ) ] ) 
+                                                 lstr_cur_products = [ args_parsed.output_gtf ] ),
+                                
+                                Command.Command( str_cur_command = gtf_to_bed_cmd,
+                                                 lstr_cur_dependencies = [ args_parsed.output_gtf ] ,
+                                                 lstr_cur_products = [ args_parsed.output_bed ] )
+                              ] ) 
                                                                      
-        
         return lcmd_commands
     
     
