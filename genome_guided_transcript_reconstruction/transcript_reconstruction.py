@@ -56,7 +56,7 @@ class TransReconstruction( ParentScript.ParentScript ):
 
         # Make gtf2bed command:
         gtf_to_bed_cmd_list  = [ 'gtf2bed', 
-                                 '<', args_parsed.output_bed,
+                                 '<', args_parsed.output_gtf,
                                  '>', args_parsed.output_bed ]
 
         gtf_to_bed_cmd = " ".join( gtf_to_bed_cmd_list ) 
