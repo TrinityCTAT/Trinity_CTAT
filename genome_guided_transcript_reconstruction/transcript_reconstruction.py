@@ -14,6 +14,8 @@ import os
 import sciedpiper.Command as Command
 import sciedpiper.ParentScript as ParentScript
 
+OUTPUT_GTF_MINUS_COMMENTS = "transcripts_reconstructed_minus_comments.gtf"
+
 class TransReconstruction( ParentScript.ParentScript ):
     
     def func_update_arguments(self, arg_raw ):
@@ -54,9 +56,18 @@ class TransReconstruction( ParentScript.ParentScript ):
        
         stringtie_cmd = " ".join( stringtie_cmd_list )
 
+        # Strip comments from stringtie's gtf
+
+        strip_cmd_list = [ 'tail -n +3',
+                           args_parsed.output_gtf, '>',
+                           OUTPUT_GTF_MINUS_COMMENTS ]
+
+        strip_cmd = " ".join( strip_cmd_list ) 
+
+
         # Make gtf2bed command:
-        gtf_to_bed_cmd_list  = [ 'gtf2bed', 
-                                 '<', args_parsed.output_gtf,
+        gtf_to_bed_cmd_list  = [ 'gtf2bed.py', 
+                                 '<', OUTPUT_GTF_MINUS_COMMENTS,
                                  '>', args_parsed.output_bed ]
 
         gtf_to_bed_cmd = " ".join( gtf_to_bed_cmd_list ) 
@@ -66,8 +77,12 @@ class TransReconstruction( ParentScript.ParentScript ):
                                                  lstr_cur_dependencies = [ args_parsed.bam_file, args_parsed.ref_annot ], 
                                                  lstr_cur_products = [ args_parsed.output_gtf ] ),
                                 
+                                Command.Command( str_cur_command = strip_cmd,
+                                                 lstr_cur_dependencies = [ args_parsed.output_gtf ],
+                                                 lstr_cur_products = [ OUTPUT_GTF_MINUS_COMMENTS ] ),
+
                                 Command.Command( str_cur_command = gtf_to_bed_cmd,
-                                                 lstr_cur_dependencies = [ args_parsed.output_gtf ] ,
+                                                 lstr_cur_dependencies = [ OUTPUT_GTF_MINUS_COMMENTS ] ,
                                                  lstr_cur_products = [ args_parsed.output_bed ] )
                               ] ) 
                                                                      
