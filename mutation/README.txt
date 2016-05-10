@@ -2,6 +2,9 @@
 
 Mutation detection in RNA-Seq highlights the GATK Best Practices in RNA-Seq variant calling, several sources of variant annotation, and filtering based on CRAVAT.
 
+# Public and Free Galaxy Instance
+
+This tool as well as others are installed at Indiana University on a publicaly avialable Galaxy instance free to use for cancer research. Please register and use this service (https://galaxy.ncgas-trinity.indiana.edu/user/login). To run the tool locally continue reading.
 
 # Quick Start
 
@@ -33,25 +36,17 @@ The following argument is needed for some of the functionality involved in cance
 
 # Requirements
 
-The following software is required before running the RNAseq variant calling pipeline:
-
-* GATK: http://www.broadinstitute.org/gatk
-* Java 1.7
-* PICARD tools: http://picard.sourceforge.net/command-line-overview.shtml
-* Python >= 2.7
-* R: http://cran.r-project.org/
-* SciEDPiper: https://github.com/SciEDPipeR/SciEDPipeR
-* STAR Aligner 2.3.0: http://code.google.com/p/rna-star
-
+The following software is required before running the RNAseq variant calling pipeline. Please look below for the supported versions. PLEASE use the supported versions of the tools, other versions are not supported and may not work:
 
 # Current versions
 
 At the time of writting this documentation the following versions of software
 are being used successfully. Other versions of the software dependencies may
-also be viable.
+also be viable and are not supported.
 
 * GATK
   * GenomeAnalysisTK-3.1-1-g07a4bf8
+  * http://www.broadinstitute.org/gatk
 * Java
   * java version "1.7.0_51"
   * Java(TM) SE Runtime Environment (build 1.7.0_51-b13)
@@ -61,15 +56,19 @@ also be viable.
     * Version: 1.764(96ec474b689a429463e04256383babd1f62efd88_1410735622)
   * MarkDUplicates.jar
     * Version: 1.764(96ec474b689a429463e04256383babd1f62efd88_1410735622)
+  * http://broadinstitute.github.io/picard
 * Python
   * Python 2.7.1 (r271:86832, Apr 17 2012, 22:46:32) 
   * [GCC 4.4.3] on linux2
 * R
   * R version 3.0.2 (2013-09-25) -- "Frisbee Sailing" (64-bit)
+  * http://cran.r-project.org
 * SciEDPiper
   * v0.1.0
+  * https://github.com/SciEDPipeR/SciEDPipeR
 * STAR Aligner
   * 2.3.0
+  * https://github.com/alexdobin/STAR
 
 Make sure to append to your PATH the path the STAR aligner and SciEDPiper.
 Also, make sure Picard-Tools and GATK jars are available.
