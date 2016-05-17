@@ -11,10 +11,12 @@ utildir=`dirname $0`/..
 
 export PERL5LIB=${utildir}/PerlLib:${PERL5LIB}
 
-cmd="${utildir}/util/CTAT_fusion_wrapper.pl /seq/RNASEQ/CANCER_FUSION_RESOURCES/BT-474/BT474.Left.fq.gz \
-                                           /seq/RNASEQ/CANCER_FUSION_RESOURCES/BT-474/BT474.Right.fq.gz \
-                                           /seq/RNASEQ/public_ftp/CTAT_lib.tar.gz \
-                                           DISCASM"
+
+CTAT_LIB=/seq/RNASEQ/public_ftp/CTAT_lib.tar.gz
+LEFT_FQ=/seq/RNASEQ/CANCER_FUSION_RESOURCES/BT-474/BT474.Left.fq.gz
+RIGHT_FQ=/seq/RNASEQ/CANCER_FUSION_RESOURCES/BT-474/BT474.Right.fq.gz
+
+cmd="${utildir}/util/CTAT_fusion_wrapper.pl $LEFT_FQ $RIGHT_FQ $CTAT_LIB DISCASM FusionInspector"
 
 eval $cmd
 
