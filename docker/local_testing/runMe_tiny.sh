@@ -12,7 +12,7 @@ utildir=`dirname $0`/..
 export PERL5LIB=${utildir}/PerlLib:${PERL5LIB}
 
 
-CTAT_LIB=/seq/RNASEQ/public_ftp/CTAT_lib.tar.gz
+CTAT_LIB=/seq/RNASEQ/public_ftp/GRCh37_gencode_v19_FULL.tgz
 LEFT_FQ=$STAR_FUSION_HOME/testing/reads_1.fq.gz
 RIGHT_FQ=$STAR_FUSION_HOME/testing/reads_2.fq.gz
 

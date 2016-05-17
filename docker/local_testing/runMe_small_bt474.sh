@@ -3,7 +3,7 @@
 set -e
 
 
-CTAT_LIB=/seq/RNASEQ/public_ftp/CTAT_lib.tar.gz
+CTAT_LIB=/seq/RNASEQ/public_ftp/GRCh37_gencode_v19_FULL.tgz
 LEFT_FQ=/home/unix/bhaas/FUS/CancerCellLineToolkit/test_data/BT474_testdata/BT474.FusionReads.Left.fq.gz
 RIGHT_FQ=/home/unix/bhaas/FUS/CancerCellLineToolkit/test_data/BT474_testdata/BT474.FusionReads.Right.fq.gz
 
