@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y gcc g++ perl python automake make \
                                        zlib1g-dev bzip2 libncurses5-dev \
 				       texlive-latex-base \
                                        openjdk-7-jre \
+				       python-pip python-dev \
     && apt-get clean
 
 RUN curl -L https://cpanmin.us | perl - App::cpanminus
@@ -15,6 +16,9 @@ RUN cpanm install DB_File
 RUN cpanm install Set::IntervalTree
 
 RUN cpanm install URI::Escape
+
+RUN pip install pysam
+
 
 ## set up tool config and deployment area:
 
@@ -74,16 +78,6 @@ RUN cp $TRINITY_HOME/trinity-plugins/BIN/samtools $BIN
 RUN cp $TRINITY_HOME/trinity-plugins/htslib/tabix $BIN
 
 
-
-##############
-## DISCASM
-
-RUN cd $SRC && \
-    git clone --recursive https://github.com/DISCASM/DISCASM.git
-
-ENV DISCASM_HOME $SRC/DISCASM
-
-
 #############
 ## Oases
 
@@ -104,6 +98,15 @@ RUN OASES_URL="https://www.ebi.ac.uk/~zerbino/oases/oases_0.2.08.tgz" && \
     cp oases $BIN/
 
 
+##############
+## DISCASM
+
+RUN cd $SRC && \
+    git clone --recursive https://github.com/DISCASM/DISCASM.git
+
+ENV DISCASM_HOME $SRC/DISCASM
+
+
 ###############################
 ## Install
 
@@ -112,12 +115,6 @@ COPY PerlLib $SRC/
 ENV PERL5LIB $SRC:${PERL5LIB}
 
 
-
-RUN apt-get install -y python-pip 
-
-RUN apt-get install -y python-dev
-
-RUN pip install pysam
 
 COPY util/*.pl $BIN/
 
