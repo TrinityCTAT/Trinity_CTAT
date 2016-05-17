@@ -23,12 +23,12 @@ def main():
 
     ggp_name = get_ggp_name(json_structs_aref, wflow_id)
 
-    print("\n\n\tgcloud compute ssh --zone=us-central1-a {}\n\n".format(gpp_name))
+    print("\n\n\tgcloud compute ssh --zone=us-central1-a {}\n\n".format(ggp_name))
 
     sys.exit(0)
 
 
-def get_gpp_name(json_structs_aref, wflow_id):
+def get_ggp_name(json_structs_aref, wflow_id):
     
     # example wflow_id:
     # EOimlIPMKhjd3M_GyfH1jXQgw7vetLsXKg9wcm9kdWN0aW9uUXVldWU
