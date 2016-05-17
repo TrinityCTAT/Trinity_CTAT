@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use Pipeliner;
+use File::Basename;
 
 my $usage = "\n\n\tusage: $0 left.fq.gz right.fq.gz ctat_genome_lib.tar.gz [FusionInspector] [DISCASM]\n\n";
 
@@ -62,7 +63,7 @@ main: {
         
         $cmd = "cp Fusion_Inspector-STAR/finspector.fusion_predictions.final.abridged.FFPM $ctat_outdir";
         $pipeliner->add_commands(new Command($cmd, "capture_fusion_inspector_outputs.ok"));
-	$pipeliner->run();
+        $pipeliner->run();
     }
     
     
@@ -84,13 +85,13 @@ main: {
         
         $cmd = "cp DOI_outdir/oases_out_dir/oases.transcripts.fa $ctat_outdir"; 
         $pipeliner->add_commands(new Command($cmd, "discasm_trans_captured.ok"));
-	
-	my $norm_left_fq = "$left_fq_gz.normalized_K25_C50_pctSD200.fq";
-	my $norm_right_fq = "$right_fq_gz.normalized_K25_C50_pctSD200.fq";
-	
-	$pipeliner->add_commands(new Command("gzip $norm_left_fq $norm_right_fq", "gzip_norm_fq.ok"));
-	$pipeliner->add_commands(new Command("cp $norm_left_fq.gz $norm_right_fq.gz $ctat_outdir", "retain_norm_fqs.ok"));
-	$pipeliner->run();
+        
+        my $norm_left_fq = "DOI_outdir/" . basename($left_fq_gz) . ".extracted.fq.normalized_K25_C50_pctSD200.fq";
+        my $norm_right_fq = "DOI_outdir/" . basename($right_fq_gz) . ".extracted.fq.normalized_K25_C50_pctSD200.fq";
+        
+        $pipeliner->add_commands(new Command("gzip $norm_left_fq $norm_right_fq", "gzip_norm_fq.ok"));
+        $pipeliner->add_commands(new Command("cp $norm_left_fq.gz $norm_right_fq.gz $ctat_outdir", "retain_norm_fqs.ok"));
+        $pipeliner->run();
     }
     
     
