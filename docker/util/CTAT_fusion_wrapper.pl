@@ -38,7 +38,7 @@ main: {
     $cmd = "$STAR_FUSION_HOME/STAR-Fusion " .
         " --left_fq  $left_fq_gz" .
         " --right_fq $right_fq_gz" . 
-        " --genome_lib_dir CTAT_lib" .
+        " --genome_lib_dir GRCh37_gencode_v19_FULL" .
         " --output_dir star_fusion_outdir";
     
     $pipeliner->add_commands(new Command($cmd, "star_fusion.ok"));
@@ -51,7 +51,7 @@ main: {
     if (grep { /FusionInspector/i } @ARGV) {
         ## Run FusionInspector
         my $cmd = "$FUSION_INSPECTOR_HOME/FusionInspector --fusions star_fusion_outdir/star-fusion.fusion_candidates.final.abridged.FFPM " .
-            " --genome_lib CTAT_lib " .
+            " --genome_lib GRCh37_gencode_v19_FULL " .
             " --left_fq $left_fq_gz " .
             " --right $right_fq_gz " .
             " --out_dir Fusion_Inspector-STAR " .
