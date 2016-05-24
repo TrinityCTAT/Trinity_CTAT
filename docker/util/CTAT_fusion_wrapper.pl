@@ -3,8 +3,9 @@
 use strict;
 use warnings;
 use Pipeliner;
+use File::Basename;
 
-my $usage = "\n\n\tusage: $0 left.fq.gz right.fq.gz ctat_genome_lib.tar.gz [FusionInspector|DISCASM]\n\n";
+my $usage = "\n\n\tusage: $0 left.fq.gz right.fq.gz ctat_genome_lib.tar.gz [FusionInspector] [DISCASM]\n\n";
 
 my $left_fq_gz = $ARGV[0] or die $usage;
 my $right_fq_gz = $ARGV[1] or die $usage;
@@ -37,19 +38,20 @@ main: {
     $cmd = "$STAR_FUSION_HOME/STAR-Fusion " .
         " --left_fq  $left_fq_gz" .
         " --right_fq $right_fq_gz" . 
-        " --genome_lib_dir CTAT_lib" .
+        " --genome_lib_dir GRCh37_gencode_v19_FULL" .
         " --output_dir star_fusion_outdir";
     
     $pipeliner->add_commands(new Command($cmd, "star_fusion.ok"));
     
     $cmd = "cp star_fusion_outdir/star-fusion.fusion_candidates.final.abridged.FFPM $ctat_outdir";
     $pipeliner->add_commands(new Command($cmd, "capture_star_fusion_outputs.ok"));
+    $pipeliner->run();
     
     
     if (grep { /FusionInspector/i } @ARGV) {
         ## Run FusionInspector
         my $cmd = "$FUSION_INSPECTOR_HOME/FusionInspector --fusions star_fusion_outdir/star-fusion.fusion_candidates.final.abridged.FFPM " .
-            " --genome_lib CTAT_lib " .
+            " --genome_lib GRCh37_gencode_v19_FULL " .
             " --left_fq $left_fq_gz " .
             " --right $right_fq_gz " .
             " --out_dir Fusion_Inspector-STAR " .
@@ -61,6 +63,7 @@ main: {
         
         $cmd = "cp Fusion_Inspector-STAR/finspector.fusion_predictions.final.abridged.FFPM $ctat_outdir";
         $pipeliner->add_commands(new Command($cmd, "capture_fusion_inspector_outputs.ok"));
+        $pipeliner->run();
     }
     
     
@@ -74,6 +77,7 @@ main: {
         my $cmd = "$DISCASM_HOME/DISCASM --aligned_bam $bam_file " .
             " --chimeric_junctions $chimeric_junctions_file " .
             " --left_fq $left_fq_gz --right_fq $right_fq_gz " .
+	    " --normalize_reads " .
             " --denovo_assembler Oases " .
             " --out_dir DOI_outdir";
         
@@ -81,6 +85,13 @@ main: {
         
         $cmd = "cp DOI_outdir/oases_out_dir/oases.transcripts.fa $ctat_outdir"; 
         $pipeliner->add_commands(new Command($cmd, "discasm_trans_captured.ok"));
+        
+        #my $norm_left_fq = "DOI_outdir/" . basename($left_fq_gz) . ".extracted.fq.normalized_K25_C50_pctSD200.fq";
+        #my $norm_right_fq = "DOI_outdir/" . basename($right_fq_gz) . ".extracted.fq.normalized_K25_C50_pctSD200.fq";
+        
+        #$pipeliner->add_commands(new Command("gzip $norm_left_fq $norm_right_fq", "gzip_norm_fq.ok"));
+        #$pipeliner->add_commands(new Command("cp $norm_left_fq.gz $norm_right_fq.gz $ctat_outdir", "retain_norm_fqs.ok"));
+        $pipeliner->run();
     }
     
     
