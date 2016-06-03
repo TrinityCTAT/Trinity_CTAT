@@ -48,7 +48,7 @@ class LncrnaScript( ParentScript.ParentScript ):
         arg_raw.add_argument('--no_bg', action='store_true', help='flag if you don\'t want to compare lnc-to-ortholog alignments to a background. This flag may be useful if you want to do a \'quick-and-dirty\' run of the ortholog search.')
         arg_raw.add_argument('--no_orf', action='store_true', help='flag if you don\'t want to search for orfs')
         arg_raw.add_argument('--minMatch', type=float, help='minMatch parameter for liftover. default=0.1', default=0.1)
-        arg_raw.add_argument('--pad', type=int, help='# of basepairs to search up- and down-stream when lifting over lnc to ortholog', default=0)
+        arg_raw.add_argument('--pad', type=int, help='# of basepairs to search up- and down-stream when lifting over lnc to ortholog', default=50000)
         arg_raw.add_argument('--gap_open', type=str, default='200')
         arg_raw.add_argument('--gap_extend', type=str, default='40')
         arg_raw.add_argument('--web', action='store_true', help='flag if you want website written visualizing transcripts that were filtered out')        
