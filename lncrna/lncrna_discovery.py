@@ -92,7 +92,7 @@ class LncrnaScript( ParentScript.ParentScript ):
                             '--threads', str( args_parsed.threads ),
                             '--min_overlap', str( args_parsed.min_overlap ),
                             '--min_cluster', str( args_parsed.min_cluster ),
-                            '--min_coding', str( args_parsed.min_noncoding ),
+                            '--min_coding', str( args_parsed.min_coding ),
                             '--bedtools',args_parsed.bedtools,
                             '--liftover',args_parsed.liftover,
                             '--minMatch',str( args_parsed.minMatch ),
