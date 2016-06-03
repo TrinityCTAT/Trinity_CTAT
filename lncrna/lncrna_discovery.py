@@ -38,13 +38,12 @@ class LncrnaScript( ParentScript.ParentScript ):
         arg_raw.add_argument('--threads', type=int, help='number of threads. default = 5', default=5)
         arg_raw.add_argument('--min_overlap', type=float, help='remove any transcript that overlap annotated coding gene > min_overlap%%. default = 0%%', default=0)
         arg_raw.add_argument('--min_cluster', type=int, help='min size of duplication clusters to remove. default=2', default=2)
-        arg_raw.add_argument('--min_coding', type=float, help='min exonic identity to filter out transcript that aligns to orthologous coding gene. default is set by learning coding alignment distribution from data', default=None)
+        arg_raw.add_argument('--min_coding', type=float, help='min exonic identity to filter out transcript that aligns to orthologous coding gene. default is set by learning coding alignment distribution from data', default=0.1)
         arg_raw.add_argument('--no_overlap', action='store_true', help='flag if you don\'t want to overlap with coding')
         arg_raw.add_argument('--no_collapse', action='store_true', help='flag if you don\'t want to collapse isoforms')
         arg_raw.add_argument('--no_dup', action='store_true', help='flag if don\'t want to align to duplicates')
         arg_raw.add_argument('--no_self', action='store_true', help='flag if you don\'t want to self-align for duplicates')
         arg_raw.add_argument('--no_coding', action='store_true', help='flag if you don\'t want to align to orthologous coding')
-        arg_raw.add_argument('--min_noncoding', type=float, help='min exonic identity to filter out transcript that aligns to orthologous noncoding gene. default=0', default=0.0)
         arg_raw.add_argument('--no_bg', action='store_true', help='flag if you don\'t want to compare lnc-to-ortholog alignments to a background. This flag may be useful if you want to do a \'quick-and-dirty\' run of the ortholog search.')
         arg_raw.add_argument('--no_orf', action='store_true', help='flag if you don\'t want to search for orfs')
         arg_raw.add_argument('--minMatch', type=float, help='minMatch parameter for liftover. default=0.1', default=0.1)
@@ -94,7 +93,6 @@ class LncrnaScript( ParentScript.ParentScript ):
                             '--min_overlap', str( args_parsed.min_overlap ),
                             '--min_cluster', str( args_parsed.min_cluster ),
                             '--min_coding', str( args_parsed.min_noncoding ),
-                            '--min_noncoding', str( args_parsed.min_noncoding ),
                             '--bedtools',args_parsed.bedtools,
                             '--liftover',args_parsed.liftover,
                             '--minMatch',str( args_parsed.minMatch ),
