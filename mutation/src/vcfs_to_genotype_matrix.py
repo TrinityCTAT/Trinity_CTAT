@@ -36,15 +36,13 @@ lstr_columns = []
 
 # Go through each directory
 for str_file in args.files:
-  print( "File" )
-  print( str_file )
   # Add row
   lstr_columns = lstr_columns + [ os.path.basename( str_file ) ]
-        
+
   # Reduce vcf files to matrix
   with open( str_file, 'r') as hndl_vcf:
 
-    # Add a sample (current vf file)            
+    # Add a sample (current vf file)
     dict_samples[ os.path.basename( str_file ) ] = dict()
     # Create a file reader
     reader = csv.reader( hndl_vcf, delimiter = STR_VCF_DELIMITER )
@@ -53,7 +51,7 @@ for str_file in args.files:
 
     # Read through VCF file
     for lstr_line in reader:
-                
+
       # Skip comments
       if lstr_line[0][0] == CHR_COMMENT:
         continue
@@ -72,7 +70,7 @@ for str_file in args.files:
 #        if len( [ 1 for str_genotype in lstr_genotype if ((len( str_genotype ) > 1) or (str_genotype == "."))] ) > 0:
 #          continue
 
-      # Make genomic location (chr--position) and store to row features 
+      # Make genomic location (chr--position) and store to row features
       str_location = lstr_line[ I_CHR_INDEX ] + "--" + lstr_line[ I_POS_INDEX ]
       lstr_locs.append( str_location )
 
@@ -95,10 +93,10 @@ if args.str_output_matrix_file:
   with open( args.str_output_matrix_file, "w" ) as hndl_out:
 
     writer = csv.writer( hndl_out, delimiter = STR_VCF_DELIMITER )
-    
+
     # Write header
     writer.writerow( [ "" ] + lstr_columns )
-    
+
     # For each location
     for str_loc in set_rows:
       # Write header

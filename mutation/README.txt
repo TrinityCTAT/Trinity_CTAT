@@ -4,9 +4,15 @@ Mutation detection in RNA-Seq highlights the GATK Best Practices in RNA-Seq vari
 
 # Public and Free Galaxy Instance
 
-This tool as well as others are installed at Indiana University on a publicaly avialable Galaxy instance free to use for cancer research. Please register and use this service (https://galaxy.ncgas-trinity.indiana.edu/user/login). To run the tool locally continue reading.
+This tool as well as others are installed at Indiana University on a publicaly available Galaxy instance free to use for cancer research. Please register and use this service (https://galaxy.ncgas-trinity.indiana.edu/user/login). To run the tool locally continue reading.
 
 # Quick Start
+
+Dowload the Resource files found at
+https://data.broadinstitute.org/Trinity/CTAT/mutation_resources.tar.gz
+
+Download demo data at
+A demo set of files is available at https://data.broadinstitute.org/Trinity/CTAT/demo_data.tar.gz
 
 You will need the following files:
 * A reference genome ( fasta )
@@ -18,7 +24,10 @@ Either put the rnaseq_mutation_pipeline in your path or go to its directory.
 Use the following command:
 Note: values in {} will need to be updated with actual files / options.
 
-python rnaseq_mutation_pipeline.py --reference {reference_genome.fa} --vcf {reference_genome.vcf} --left {left_sample.fa} --right {right_sample.fa} --threads 8 --cosmic_vcf {cosmic.vcf} --darned {darned.txt} --radar {radar.txt} --log log.txt --tissue_type {tissue} --email {your@email.com} --cravat_annotation_header { Trinity_CTAT/mutation/headers/cravat_annotation.txt } --is_hg19 --out_dir rnaseq_mut_out
+python rnaseq_mutation_pipeline.py --reference {reference_genome.fa} --vcf {reference_genome.vcf} --left {left_sample.fa} --right {right_sample.fa} --threads 8 --cosmic_vcf {cosmic.vcf} --darned {darned.txt} --radar {radar.txt} --log log.txt --tissue_type {tissue} --email {your@email.com} --cravat_annotation_header { Trinity_CTAT/mutation/headers/cravat_annotation.txt } --is_hg19 --out_dir rnaseq_mut_out --plot --index {star_index} --bed {reference.bed}
+
+Using the demo data nad resource bundle and assuming all files are in your current directory the command would be:
+python rnaseq_mutation_pipeline.py --reference Hg19.fa --vcf dbsnp_138.b37_Hg19.vcf --left FLI1.left.fq --right FLI1.right.fq --threads 8 --cosmic_vcf CosmicCodingMuts_v72_grch37_updated_chr.vcf.gz --darned darned_hg19.txt --radar radar_hg19_v2.txt --log log.txt --tissue_type Blood-Lymphocyte --email change@email.com --cravat_annotation_header cravat_annotation.txt --is_hg19 --out_dir rnaseq_mut_out --plot --index Hg19.fa_star_index --bed hg19.refGene.sort.bed
 
 The following arguments are optional and needed to turn on CRAVAT associated functionality:
 * --tissue_type
@@ -30,9 +39,9 @@ The following arguments are optional and needed for RNA editing filtering:
 * --darned
 * --radar
 
-The following argument is needed for some of the functionality involved in cancer annotation and filtering:
+The following arguments are needed for some of the functionality involved in annotation and filtering:
 * --cosmic_vcf
-
+* --vcf
 
 # Requirements
 
@@ -76,10 +85,8 @@ Also, make sure Picard-Tools and GATK jars are available.
 
 # Resources:
 
-Note, several resources are needed for additional functionality.
-* COSMIC - http://cancer.sanger.ac.uk/cosmic
-* DARNED - http://beamish.ucc.ie
-* RADAR - http://rnaedit.com
+Dowload the resource files for HG19 at
+https://data.broadinstitute.org/Trinity/CTAT/mutation_resources.tar.gz
 
 
 # Pipeline behavior
@@ -105,25 +112,6 @@ use making any command compatible with zipped files. Please use them space footp
 # Updating paths
 
 Several jars are used in this pipeline. If you need, you may supply the path of any command. This occurs with the -u/update_command .
-
-
-# Reducing processing time
-
-The indexing step takes is the longest step and can create large files ( GBs ). This happens twice, the 
-first indexing is a only dependent on the reference genome and so can be shared in the processing of many samples.
-It is possible to index the reference genome first and then supply the directory of the reference genome index
-to the pipeline.
-
-We have made a script to make building the index easier.
-Here is an example command on building the index.
-Note: Files in {} need to be updated with actual files
-
-python rnaseq_mutation_indexer.py --reference {reference_genome.fa} --threads 8 --log indexing_log.txt --out_dir premade_index_directory
-
-If you have an index already made you can then supply the rnaseq_mutation_pipeline.py with the location 
-of the index using the optional argument -i / --index
-
-python rnaseq_mutation_pipeline.py --reference {reference_genome.fa} --vcf {reference_genome.vcf} --left {left_sample.fa} --right {right_sample.fa} --threads 8 --log log.txt --out_dir rnaseq_mut_out --index {premade_index_directory}
 
 
 # Argument Help

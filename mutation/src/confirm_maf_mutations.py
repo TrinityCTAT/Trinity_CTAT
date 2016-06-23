@@ -46,7 +46,7 @@ def func_read_maf( str_maf_file ):
   Read in a MAF file.
   Return a dict[ sample_name ] = [ [position info],[position info],...]
   where position info is [position, gene name, genotype]
-  """  
+  """
   # Dict
   # { sample: [ [ pos, gene ], [ pos, gene ] , ... ] }
   dict_maf = {}
@@ -71,7 +71,7 @@ def func_read_maf( str_maf_file ):
 def func_read_sample_mappings( str_file_sample_mappings ):
   """
   Read in a file that maps between MAF ids and samples (VCF files)
-  This is a tab delimited file. 
+  This is a tab delimited file.
   MAF_Id\tVCF_file
 
   Return a dict[ MAF_id ] = VCF_name
@@ -84,7 +84,7 @@ def func_read_sample_mappings( str_file_sample_mappings ):
       if f_skip:
         f_skip = False
         continue
-      dict_sample_mappings[ lstr_line[ 0 ] ] = lstr_line[ 1 ]   
+      dict_sample_mappings[ lstr_line[ 0 ] ] = lstr_line[ 1 ]
   return dict_sample_mappings
 
 
@@ -111,7 +111,6 @@ def func_read_vcf( str_file ):
       str_genotype = "/".join( lstr_genotype )
       dict_location[ "--".join( [ lstr_vcf_line[ c_I_VCF_CHR ], lstr_vcf_line[ c_I_VCF_POS] ] ) ] = [ lstr_ref_alt[ 0 ], str_genotype ]
   return dict_location
-      
 
 prsr_arguments = argparse.ArgumentParser( prog = "confirm_maf_mutations.py", description = "Confirms mutations in maf file.", conflict_handler="resolve", formatter_class = argparse.ArgumentDefaultsHelpFormatter )
 prsr_arguments.add_argument( "-m", "--maf", metavar = "Maf_file", dest = "str_maf", default = None, required = True, help = "Maf file." )
@@ -158,12 +157,11 @@ dict_sample_mappings = func_read_sample_mappings( args_call.str_sample_mappings 
 # For vcf in maf file
 for str_sample, llstr_positions in dict_maf_data.items():
   if str_sample in dict_sample_mappings:
-    
     ## Get VCF SNPs
     print "Reading " + dict_sample_mappings[ str_sample ]
     dict_vcf_snps = func_read_vcf( dict_sample_mappings[ str_sample ] )
     i_vcf_matched = i_vcf_matched + 1
- 
+
     # Check location
     for lstr_maf_pos in llstr_positions:
       # Make sure the gene is in the key genes
@@ -181,8 +179,8 @@ for str_sample, llstr_positions in dict_maf_data.items():
           # { Position : [ [ mafref maf/genotype ], [ vcfref vcf/genotype ] ] }
           dict_wrong_genotype_pos[ lstr_maf_pos[ c_I_MAF_RETURN_POS ] ] = [ " ".join( [ lstr_maf_pos[ c_I_MAF_RETURN_REF ],lstr_maf_pos[ c_I_MAF_RETURN_GENOTYPE ] ] ),
                                                            " ".join( [ lstr_cur_vcf_entry[ c_I_VCF_RETURN_REF ],
-                                                           lstr_cur_vcf_entry[ c_I_VCF_RETURN_GENOTYPE ] ] ), 
-                                                           str_sample, 
+                                                           lstr_cur_vcf_entry[ c_I_VCF_RETURN_GENOTYPE ] ] ),
+                                                           str_sample,
                                                            lstr_maf_pos[ c_I_MAF_RETURN_GENE_NAME ] ]
           dict_gene_missed[ lstr_maf_pos[ c_I_MAF_RETURN_GENE_NAME ] ] = dict_gene_missed.setdefault( lstr_maf_pos[ c_I_MAF_RETURN_GENE_NAME ], 0 ) + 1
           llstr_missed_detail.append( [ str_sample, dict_sample_mappings[ str_sample ], lstr_maf_pos[ c_I_MAF_RETURN_POS ], lstr_maf_pos[ c_I_MAF_RETURN_GENE_NAME ] ] )

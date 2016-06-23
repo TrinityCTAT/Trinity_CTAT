@@ -1,20 +1,20 @@
 #Non-coding Variant Report
-#2015-07-31 12:08:00.609253
+#2016-05-28 00:05:21.655097
 #CRAVAT version: 3.2
 #Analysis done at http://www.cravat.us.
-#Job Id: ttickle_20150731_120655
-#Input file: Left_fq_cluster_variants_clean_snp_RNAedit_dbsnp_cosmic_filtered.vcf
+#Job Id: ttickle_20160528_000326
+#Input file: variants_initial_filtering_clean_snp_RNAedit.vcf_dbsnp_cosmic_filtered.vcf
 #This report shows analysis results at variant level.
 #Input coordinate was hg19 genomic.
-#Tissue type for CHASM analysis: Breast
+#Tissue type for CHASM analysis: Blood-Lymphocyte
 #For more information on CRAVAT, visit http://www.cravat.us.
 
 CHROM	POS	CHASM_PVALUE	CHASM_FDR	VEST_PVALUE	VEST_FDR
-chr1	567486	3	4	5	6
-chr1	567489	31	41	51	61
-chr1	567697	32	42	52	62
-chr1	569803	33	43	53	63
-chr1	569874	34	44	54	64
-chr1	569878	35	45	55	65
-chr1	569983	36	46	56	66
-chr1	1534171	37	47	57	67
+chr1	658025				
+chr1	658026				
+chr1	883625				
+chr1	909768				
+chr1	978850				
+chr1	1387667				
+chr1	1389695				
+chr1	1391534				

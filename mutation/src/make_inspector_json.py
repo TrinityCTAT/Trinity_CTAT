@@ -29,7 +29,7 @@ c_I_TAB_RNA_COVERAGE = 7
 c_I_MIN_COVERAGE = 10
 
 def func_make_weighted_coverage( str_RNA_coverage, str_DNA_coverage ):
-  # Ad hoc waiting for coverage weight coverage by both amount of coverage and balance of coverage 
+  # Ad hoc waiting for coverage weight coverage by both amount of coverage and balance of coverage
   # ( prefering balanced maginitude of covarege between DNA and RNA )
   i_RNA_coverage = int( str_RNA_coverage ) * 1.0
   i_DNA_coverage = int( str_DNA_coverage ) * 1.0

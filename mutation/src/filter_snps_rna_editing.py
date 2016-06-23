@@ -4,24 +4,24 @@ import argparse
 import csv
 
 # Constants
-CHR_COMMENT = "#"
-STR_VCF_DELIMITER = "\t"
-I_CHR_INDEX = 0
-I_POS_INDEX = 1
-I_REF_INDEX = 3
-I_ALT_INDEX = 4
+CHR_COMMENT="#"
+STR_VCF_DELIMITER="\t"
+I_CHR_INDEX=0
+I_POS_INDEX=1
+I_REF_INDEX=3
+I_ALT_INDEX=4
 
-STR_DARNED_DELIMITER = "\t"
-I_CHR_DARNED = 0
-I_POS_DARNED = 1
-I_STRAND_DARNED = 2
-I_INCHR_DARNED = 3
-I_INRNA_DARNED = 4
+STR_DARNED_DELIMITER="\t"
+I_CHR_DARNED=0
+I_POS_DARNED=1
+I_STRAND_DARNED=2
+I_INCHR_DARNED=3
+I_INRNA_DARNED=4
 
-STR_RADAR_DELIMITER = "\t"
-I_CHR_RADAR = 0
-I_POS_RADAR = 1
-I_STRAND_RADAR = 3
+STR_RADAR_DELIMITER="\t"
+I_CHR_RADAR=0
+I_POS_RADAR=1
+I_STRAND_RADAR=3
 
 str_prog_des = " ".join(["Filters SNP entries from a VCF file which are",
                          "in provided RNA Editing databases."])

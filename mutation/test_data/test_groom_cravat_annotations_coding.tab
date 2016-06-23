@@ -1,20 +1,20 @@
 #Variant Report
-#2015-07-31 12:08:00.609106
+#2016-05-28 00:05:21.654929
 #CRAVAT version: 3.2
 #Analysis done at http://www.cravat.us.
-#Job Id: ttickle_20150731_120655
-#Input file: Left_fq_cluster_variants_clean_snp_RNAedit_dbsnp_cosmic_filtered.vcf
+#Job Id: ttickle_20160528_000326
+#Input file: variants_initial_filtering_clean_snp_RNAedit.vcf_dbsnp_cosmic_filtered.vcf
 #This report shows analysis results at variant level.
 #Input coordinate was hg19 genomic.
-#Tissue type for CHASM analysis: Breast
+#Tissue type for CHASM analysis: Blood-Lymphocyte
 #For more information on CRAVAT, visit http://www.cravat.us.
 
-Input line number	ID	Chromosome	Position	Strand	Reference base(s)	Alternate base(s)	Sample ID	HUGO symbol	Sequence ontology	Sequence ontology protein sequence change	QUAL	FILTER	Zygosity	Variant reads : Sample reads	CHASM cancer driver p-value (missense)	CHASM cancer driver FDR (missense)	VEST pathogenicity p-value (non-silent)	VEST pathogenicity FDR (non-silent)	Mappability Warning	Driver genes	TARGET	dbSNP	1000 Genomes allele frequency	ESP6500 allele frequency (average)	ExAC total allele frequency	Occurrences in COSMIC by primary sites [exact nucleotide change]	Number of samples in study having the exact nucleotide change	MuPIT Link	GeneCards summary (from http://www.genecards.org)	Number of retrieved articles from PubMed	PubMed search term
-9	VAR108_/broad/hptmp/ttickle/full_run/test_sam/star_align_2_Left_fq/Aligned.sorted.bam	chr1	1653046	+	T	A	/broad/hptmp/ttickle/full_run/test_sam/star_align_2_Left_fq/Aligned.sorted.bam	CDK11B	SY	S72S	26.2597	PASS	het						A75			rs1137006	0	0.0	8.37283e-06		1				
-13	VAR170_/broad/hptmp/ttickle/full_run/test_sam/star_align_2_Left_fq/Aligned.sorted.bam	chr1	33282804	+	G	A	/broad/hptmp/ttickle/full_run/test_sam/star_align_2_Left_fq/Aligned.sorted.bam	YARS	SY	I14I	31.2136	PASS	het									rs199894991	0.000199681	0.0	2.47451e-05		1				
-14	VAR171_/broad/hptmp/ttickle/full_run/test_sam/star_align_2_Left_fq/Aligned.sorted.bam	chr1	35658384	+	C	T	/broad/hptmp/ttickle/full_run/test_sam/star_align_2_Left_fq/Aligned.sorted.bam	SFPQ	SY	P89P	64	PASS	het									rs372546993	0.00319489	0.0014142605	0.00947282		1				
-16	VAR188_/broad/hptmp/ttickle/full_run/test_sam/star_align_2_Left_fq/Aligned.sorted.bam	chr1	45241813	+	G	A	/broad/hptmp/ttickle/full_run/test_sam/star_align_2_Left_fq/Aligned.sorted.bam	RPS8	SS	_37_	12.0661	PASS	hom				0.0247107613017	0.1					0	0.0	0.0		1				
-19	VAR218_/broad/hptmp/ttickle/full_run/test_sam/star_align_2_Left_fq/Aligned.sorted.bam	chr1	89448817	+	T	A	/broad/hptmp/ttickle/full_run/test_sam/star_align_2_Left_fq/Aligned.sorted.bam	RBMXL1	SY	T231T	23.012	PASS	het						A75				0.000798722	0.0	0.000941728		1				
-26	VAR229_/broad/hptmp/ttickle/full_run/test_sam/star_align_2_Left_fq/Aligned.sorted.bam	chr1	109704618	+	A	G	/broad/hptmp/ttickle/full_run/test_sam/star_align_2_Left_fq/Aligned.sorted.bam	KIAA1324	MS	I86V	160	PASS	hom		0.0224	0.65	0.314393183387	0.5				rs678238	0.995607	0.99336	0.998698		1				
-27	VAR239_/broad/hptmp/ttickle/full_run/test_sam/star_align_2_Left_fq/Aligned.sorted.bam	chr1	114515903	+	C	T	/broad/hptmp/ttickle/full_run/test_sam/star_align_2_Left_fq/Aligned.sorted.bam	HIPK1	SY	S1134S	31.2419	PASS	het									rs147414526	0	0.0006920795	0.000667348		1				
-33	VAR251_/broad/hptmp/ttickle/full_run/test_sam/star_align_2_Left_fq/Aligned.sorted.bam	chr1	145103928	+	G	A	/broad/hptmp/ttickle/full_run/test_sam/star_align_2_Left_fq/Aligned.sorted.bam	SEC22B	SY	Q32Q	83	PASS	het									rs2596251	0.340056	0.0	0.381342		1				
+Input line	ID	Chrom	Position	Strand	Ref. base(s)	Alt. base(s)	Sample ID	HUGO symbol	Sequence ontology	Protein sequence change	QUAL	FILTER	Zygosity	Variant reads	Sample reads	CHASM cancer driver p-value (missense)	CHASM cancer driver FDR (missense)	VEST pathogenicity p-value (non-silent)	VEST pathogenicity FDR (non-silent)	Mappability Warning	Driver genes	TARGET	dbSNP	1000 Genomes allele frequency	ESP6500 allele frequency (average)	ExAC total allele frequency	COSMIC ID	Occurrences in COSMIC by primary sites	Number of samples in study having the exact nucleotide change	MuPIT Link	In TCGA 3D Hot Region
+1	VAR83_CW104L_Left_fq	chr1	69270	+	A	G	CW104L_Left_fq	OR4F5	SY	S60S	442.77	PASS	hom	30	15					A75			rs201219564	0	0.0	0.643308			1		
+5	VAR95_CW104L_Left_fq	chr1	900560	+	A	C	CW104L_Left_fq	KLHL17	MS	T640P	124.77	PASS	het	12	19	0.2586	0.80	0.0240155712964	0.25				rs188543688	0	0.0	0.00720192			1		
+8	VAR103_CW104L_Left_fq	chr1	980784	+	A	C	CW104L_Left_fq	AGRN	MS	D806A	31.77	PASS	het	5	15	0.6816	0.90	0.0288695743239	0.25					0	0.0	0.000173007			1		
+9	VAR104_CW104L_Left_fq	chr1	980868	+	G	A	CW104L_Left_fq	AGRN	MS	R834Q	568.77	PASS	het	30	71	0.1455	0.80	0.02571506891	0.25				rs146243145	0.000399361	0.0008111565	0.00131057			1		
+10	VAR107_CW104L_Left_fq	chr1	983691	+	G	T	CW104L_Left_fq	AGRN	MS	G1351W	31.77	PASS	het	2	10	0.7327	0.90	0.252078712261	0.6					0	0.0	0.0			1		
+11	VAR114_CW104L_Left_fq	chr1	1334409	+	C	G	CW104L_Left_fq	CCNL2	MS	R93P	220.77	PASS	het	10	12	0.1022	0.80	0.0144186384864	0.25				rs200316100	0	0.0	0.00587294			1	http://mupit.icm.jhu.edu?gm=chr1:1334409	
+16	VAR123_CW104L_Left_fq	chr1	1458170	+	A	G	CW104L_Left_fq	ATAD3A	MS	N314S	690.77	PASS	het	26	53	0.0000	0.05	0.196869372291	0.5				rs371398161	0	0.000116279	4.24196e-05			1		
+39	VAR194_CW104L_Left_fq	chr1	6638988	+	G	T	CW104L_Left_fq	TAS1R1	MS	G624W	186.77	PASS	het	5	52	0.1755	0.80	0.00783349436091	0.25				rs200895739	0	0.0	0.00815398			1		

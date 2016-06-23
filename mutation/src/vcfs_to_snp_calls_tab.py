@@ -87,7 +87,7 @@ def func_get_genotype( str_REF, str_ALT, str_genotype_info ):
     return None
 
   # Make call
-  str_genotype = CHR_GENOTYPE_SEP.join([ lstr_genotype_values[ li_genotype[0] ], lstr_genotype_values[ li_genotype[1] ]]) 
+  str_genotype = CHR_GENOTYPE_SEP.join([ lstr_genotype_values[ li_genotype[0] ], lstr_genotype_values[ li_genotype[1] ]])
 
   # Check to make sure none of the calls are '.'
   if "." in str_genotype:
@@ -177,7 +177,7 @@ def func_read_VCF_file( str_file_name, dict_reference = None, f_no_prefilter_mod
 dict_output = None
 # Read in the reference dict
 if args.str_vcf_reference_file:
-  
+
   # Read in the non-reference vcf file
   dict_output = func_read_VCF_file( str_file_name = args.str_vcf_reference_file, f_no_prefilter_mode=args.f_no_prefilter_mode )
 
@@ -218,7 +218,7 @@ elif args.str_maf_file:
       str_loc_maf = str_loc_maf + lstr_line_maf[ I_MAF_CHR_INDEX ] + STR_POS_SEP + lstr_line_maf[ I_MAF_POS_INDEX ]
 
       # Store in dict
-      dict_output[ str_loc_maf ] = [ str_loc_maf, lstr_line_maf[ I_MAF_REF_INDEX ], str_call_maf, "NA", "NA", "NA", "NA", "NA" ]      
+      dict_output[ str_loc_maf ] = [ str_loc_maf, lstr_line_maf[ I_MAF_REF_INDEX ], str_call_maf, "NA", "NA", "NA", "NA", "NA" ]
 else:
   print "Please provide either a reference VCF or maf file."
   exit( 13 )

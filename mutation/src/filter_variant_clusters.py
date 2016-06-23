@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 # VCF contants
-c_I_CHR_INDEX = 0
-c_I_POS_INDEX = 1
-c_CHR_VCF_DELIM = "\t"
-c_CHR_COMMENT = "#"
+c_I_CHR_INDEX=0
+c_I_POS_INDEX=1
+c_CHR_VCF_DELIM="\t"
+c_CHR_COMMENT="#"
 
 # libraries
 import argparse
@@ -135,7 +135,7 @@ with open( args.str_output_file, "w" ) as hndl_out:
       if lstr_line[0][0] == c_CHR_COMMENT:
         hndl_out.write( c_CHR_VCF_DELIM.join( lstr_line ) + "\n" )
         continue
-    
+
       # Add a feature into the window
       window_current.func_add_line( lstr_line )
 

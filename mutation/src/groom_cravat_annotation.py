@@ -83,7 +83,7 @@ if args.str_input_file:
         if lstr_line[ 0 ] == STR_EMPTY_FILE:
           llstr_tab.append( [ 0, 0, STR_TAB_DELIMITER.join( [ "NA" ] * len( lstr_header_order ) ) ] )
           break
- 
+
         # Shuffle to header index and reduce
         # And store
         str_chrom = lstr_line[ i_chrom_index ]

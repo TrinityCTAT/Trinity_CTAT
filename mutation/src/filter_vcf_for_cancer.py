@@ -90,31 +90,19 @@ if args.str_input_file:
           i_depth = i_depth + 1
           continue
 
-      ## SAO = Germline
+      ## Filter out SAO = Germline unless in COSMIC
       if STR_ORIGIN in dict_info_tokens:
         if((dict_info_tokens[STR_ORIGIN] == STR_ORIGIN_GERMLINE)
            and (STR_COSMIC_ID not in dict_info_tokens)):
           i_origin = i_origin + 1
           continue
 
-      ## FATHMM = Neutral or passenger
+      ## Filter out FATHMM = Neutral or passenger unless in COSMIC
       if STR_FATHMM in dict_info_tokens:
         if((dict_info_tokens[STR_FATHMM] == STR_FATHMM_NEUTRAL)
            and (STR_COSMIC_ID not in dict_info_tokens)):
           i_fathmm = i_fathmm + 1
           continue
-
-      # TODO could add
-      ## In UTR
-      ## U3
-      ## U5
-
-      # TODO could add
-      # SSR,Number=1,Type=Integer,
-      # Description="Variant Suspect Reason Codes (may be more than one
-      # value added together) 0 - unspecified, 1 - Paralog, 2 - byEST,
-      # 4 - oldAlign, 8 - Para_EST, 16 - 1kg_failed, 1024 - other"
-      # SSR
 
       # Store passing variant
       lstr_vcf.append(STR_VCF_DELIMITER.join(lstr_line))
@@ -132,10 +120,3 @@ if args.str_input_file:
 
 # Close input handle
 hndl_vcf.close()
-
-print "Filtering by class:"
-print "(Features in multiple classes are counted in the first to filter them)"
-print "Common: " + str(i_common)
-print "Depth: " + str(i_depth)
-print "Origin: " + str(i_origin)
-print "FATHMM: " + str(i_fathmm)

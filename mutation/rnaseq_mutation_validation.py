@@ -12,7 +12,7 @@ import csv
 import os
 import sciedpiper.Command as Command
 import sciedpiper.Pipeline as Pipeline
-import sciedpiper.ParentScript as ParentScript
+import sciedpiper.PipelineRunner as PipelineRunner
 
 # Sample study keys
 STR_CMDS = "CMDS"
@@ -40,7 +40,7 @@ I_DNA_RIGHT = 2
 I_DNA_LEFT = 1
 I_MAF_SAMPLE = 0
 
-class RNASEQ_mutation_validation( ParentScript.ParentScript ):
+class RNASEQ_mutation_validation(PipelineRunner.PipelineRunner):
 
     def __init__( self ):
 

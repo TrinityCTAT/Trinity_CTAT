@@ -16,7 +16,6 @@ class ScriptTester( ParentPipelineTester.ParentPipelineTester ):
     """
     Testing for scripts, starting at command line.
     """
-    
     str_script_dir = "src"
     str_test_data_dir = "test_data"
     str_test_data_dir_working = os.path.join( str_test_data_dir, "active_testing_script_tester" )
@@ -128,7 +127,7 @@ class ScriptTester( ParentPipelineTester.ParentPipelineTester ):
         # Check test environment for results
         f_success = self.func_are_files_equivalent( str_answer_file, str_result_file )
         # Destroy environment
-        self.func_remove_files( [ str_result_file ] )
+        #self.func_remove_files( [ str_result_file ] )
         # Evaluate
         self.func_test_true( f_success )
 
@@ -150,7 +149,7 @@ class ScriptTester( ParentPipelineTester.ParentPipelineTester ):
         # Check test environment for results
         f_success = self.func_are_files_equivalent( str_answer_file, str_result_file )
         # Destroy environment
-        self.func_remove_files( [ str_result_file ] )
+        #self.func_remove_files( [ str_result_file ] )
         # Evaluate
         self.func_test_true( f_success )
 
@@ -172,7 +171,7 @@ class ScriptTester( ParentPipelineTester.ParentPipelineTester ):
         # Check test environment for results
         f_success = self.func_are_files_equivalent( str_answer_file, str_result_file )
         # Destroy environment
-        self.func_remove_files( [ str_result_file ] )
+        #self.func_remove_files( [ str_result_file ] )
         # Evaluate
         self.func_test_true( f_success )
 
@@ -195,7 +194,7 @@ class ScriptTester( ParentPipelineTester.ParentPipelineTester ):
         # Check test environment for results
         f_success = self.func_are_files_equivalent( str_answer_file, str_result_file )
         # Destroy environment
-        self.func_remove_files( [ str_result_file ] )
+        #self.func_remove_files( [ str_result_file ] )
         # Evaluate
         self.func_test_true( f_success )
 
@@ -546,117 +545,13 @@ class ScriptTester( ParentPipelineTester.ParentPipelineTester ):
         # Call Example script
         str_command = " ".join( [ str_filtered_vcf_script, str_filtered_vcf_test_file, str_filtered_vcf_result ] )
         Commandline.Commandline().func_CMD( str_command )
-        
+
         # Check test environment for results
         f_success = self.func_are_files_equivalent( str_filtered_vcf_answer, str_filtered_vcf_result )
 
         # Destroy environment
         self.func_remove_files( [ str_filtered_vcf_result ] )
 
-        # Evaluate
-        self.func_test_true( f_success )
-
-
-# tabs_to_percent_mutations.py
-    def failtest_tabs_to_percent_mutations_for_one_tab_file( self ):
-        """
-        Test tabs_to_percent_mutations.py for reading in one tab file with mutations.
-        """
-        # Create test environment
-        str_count_mutations_script = os.path.join( self.str_script_dir, "tabs_to_percent_mutations.py" )
-        str_count_mutations_gtf_file = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations.gtf" )
-        str_count_mutations_key_genes = "Gene1,Gene3,Gene5"
-        str_count_mutations_input_tab_file = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_tab_1.tab" )
-        str_count_mutations_output_file_answer = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_for_one_tab_file_ANSWER.txt" )
-        str_count_mutations_output_file_result = os.path.join( self.str_test_data_dir_working, "tabs_to_percent_mutations_for_one_tab_file_RESULT.txt" )
-        str_count_mutations_output_file_pdf = os.path.join( self.str_test_data_dir_working, "tabs_to_percent_mutations_for_one_tab_file_RESULT.pdf" )
-        self.func_make_dummy_dir( self.str_test_data_dir_working )
-        # Call Example script
-        str_command = " ".join( [ str_count_mutations_script, "--gtf", str_count_mutations_gtf_file, "--key", str_count_mutations_key_genes,
-                                  "--tab", str_count_mutations_input_tab_file, "--out_file", str_count_mutations_output_file_pdf ] )
-        Commandline.Commandline().func_CMD( str_command )
-        # Check test environment for results
-        f_success = self.func_are_files_equivalent( str_count_mutations_output_file_answer, str_count_mutations_output_file_result )
-        # Destroy environment
-        self.func_remove_files( [ str_count_mutations_output_file_result, str_count_mutations_output_file_pdf ] )
-        # Evaluate
-        self.func_test_true( f_success )
-
-    def failtest_tabs_to_percent_mutations_for_one_tab_file_secondary( self ):
-        """
-        Test tabs_to_percent_mutations.py for reading in one tab file with mutations, using secondary evidence.
-        """
-        # Create test environment
-        str_count_mutations_script = os.path.join( self.str_script_dir, "tabs_to_percent_mutations.py" )
-        str_count_mutations_gtf_file = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations.gtf" )
-        str_count_mutations_key_genes = "Gene1,Gene3,Gene5"
-        str_count_mutations_input_tab_file = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_tab_1.tab" )
-        str_count_mutations_output_file_answer = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_for_one_tab_file_secondary_ANSWER.txt" )
-        str_count_mutations_output_file_result = os.path.join( self.str_test_data_dir_working, "tabs_to_percent_mutations_for_one_tab_file_secondary_RESULT.txt" )
-        str_count_mutations_output_file_pdf = os.path.join( self.str_test_data_dir_working, "tabs_to_percent_mutations_for_one_tab_file_secondary_RESULT.pdf" )
-        self.func_make_dummy_dir( self.str_test_data_dir_working )
-        # Call Example script
-        str_command = " ".join( [ str_count_mutations_script, "--gtf", str_count_mutations_gtf_file, "--key", str_count_mutations_key_genes,
-                                  "--tab", str_count_mutations_input_tab_file, "--out_file", str_count_mutations_output_file_pdf, "--second" ] )
-        Commandline.Commandline().func_CMD( str_command )
-        # Check test environment for results
-        f_success = self.func_are_files_equivalent( str_count_mutations_output_file_answer, str_count_mutations_output_file_result )
-        # Destroy environment
-        self.func_remove_files( [ str_count_mutations_output_file_result, str_count_mutations_output_file_pdf ] )
-        # Evaluate
-        self.func_test_true( f_success )
-
-    def failtest_tabs_to_percent_mutations_for_three_tab_file( self ):
-        """
-        Test tabs_to_percent_mutations.py for reading in three tab files with mutations.
-        """
-        # Create test environment
-        str_count_mutations_script = os.path.join( self.str_script_dir, "tabs_to_percent_mutations.py" )
-        str_count_mutations_gtf_file = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations.gtf" )
-        str_count_mutations_key_genes = "Gene1,Gene3,Gene5"
-        str_count_mutations_input_tab_file_1 = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_tab_1.tab" )
-        str_count_mutations_input_tab_file_2 = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_tab_2.tab" )
-        str_count_mutations_input_tab_file_3 = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_tab_3.tab" )
-        str_count_mutations_output_file_answer = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_for_three_tab_file_ANSWER.txt" )
-        str_count_mutations_output_file_result = os.path.join( self.str_test_data_dir_working, "tabs_to_percent_mutations_for_three_tab_file_RESULT.txt" )
-        str_count_mutations_output_file_pdf = os.path.join( self.str_test_data_dir_working, "tabs_to_percent_mutations_for_three_tab_file_RESULT.pdf" )
-        self.func_make_dummy_dir( self.str_test_data_dir_working )
-        # Call Example script
-        str_command = " ".join( [ str_count_mutations_script, "--gtf", str_count_mutations_gtf_file, "--key", str_count_mutations_key_genes,
-                                  "--tab", str_count_mutations_input_tab_file_1, "--tab", str_count_mutations_input_tab_file_2, "--tab", str_count_mutations_input_tab_file_3,
-                                  "--out_file", str_count_mutations_output_file_pdf ] )
-        Commandline.Commandline().func_CMD( str_command )
-        # Check test environment for results
-        f_success = self.func_are_files_equivalent( str_count_mutations_output_file_answer, str_count_mutations_output_file_result )
-        # Destroy environment
-        self.func_remove_files( [ str_count_mutations_output_file_result, str_count_mutations_output_file_pdf ] )
-        # Evaluate
-        self.func_test_true( f_success )
-
-    def failtest_tabs_to_percent_mutations_for_three_tab_file_secondary( self ):
-        """
-        Test tabs_to_percent_mutations.py for reading in three tab files with mutations, using secondary evidence.
-        """
-        # Create test environment
-        str_count_mutations_script = os.path.join( self.str_script_dir, "tabs_to_percent_mutations.py" )
-        str_count_mutations_gtf_file = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations.gtf" )
-        str_count_mutations_key_genes = "Gene1,Gene3,Gene5"
-        str_count_mutations_input_tab_file_1 = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_tab_1.tab" )
-        str_count_mutations_input_tab_file_2 = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_tab_2.tab" )
-        str_count_mutations_input_tab_file_3 = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_tab_3.tab" )
-        str_count_mutations_output_file_answer = os.path.join( self.str_test_data_dir, "tabs_to_percent_mutations_for_three_tab_file_secondary_ANSWER.txt" )
-        str_count_mutations_output_file_result = os.path.join( self.str_test_data_dir_working, "tabs_to_percent_mutations_for_three_tab_file_secondary_RESULT.txt" )
-        str_count_mutations_output_file_pdf = os.path.join( self.str_test_data_dir_working, "tabs_to_percent_mutations_for_three_tab_file_secondary_RESULT.pdf" )
-        self.func_make_dummy_dir( self.str_test_data_dir_working )
-        # Call Example script
-        str_command = " ".join( [ str_count_mutations_script, "--gtf", str_count_mutations_gtf_file, "--key", str_count_mutations_key_genes,
-                                  "--tab", str_count_mutations_input_tab_file_1, "--tab", str_count_mutations_input_tab_file_2, "--tab", str_count_mutations_input_tab_file_3,
-                                  "--out_file", str_count_mutations_output_file_pdf, "--second" ] )
-        Commandline.Commandline().func_CMD( str_command )
-        # Check test environment for results
-        f_success = self.func_are_files_equivalent( str_count_mutations_output_file_answer, str_count_mutations_output_file_result )
-        # Destroy environment
-        self.func_remove_files( [ str_count_mutations_output_file_result, str_count_mutations_output_file_pdf ] )
         # Evaluate
         self.func_test_true( f_success )
 
@@ -760,7 +655,9 @@ class ScriptTester( ParentPipelineTester.ParentPipelineTester ):
         self.func_test_equals( "\n".join( lstr_answer_lines), "\n".join( lstr_result_lines ) )
 
 # vcfs_to_genotype_matrix.py
-    def failtest_vcfs_to_genotype_matrix_1_file( self ):
+# This is for validation only, not for the pipeline runs.
+# Under development.
+    def not_test_vcfs_to_genotype_matrix_1_file( self ):
         """
         Test vcfs_to_genotype_matrix.py with one input file.
         """
@@ -780,7 +677,7 @@ class ScriptTester( ParentPipelineTester.ParentPipelineTester ):
         # Evaluate
         self.func_test_true( f_success )
 
-    def failtest_vcfs_to_genotype_matrix_3_file( self ):
+    def not_test_vcfs_to_genotype_matrix_3_file( self ):
         """
         Test vcfs_to_genotype_matrix.py with one input file in one directory and 2 in another.
         """
@@ -802,7 +699,9 @@ class ScriptTester( ParentPipelineTester.ParentPipelineTester ):
         self.func_test_true( f_success )
 
 # visualize_mutation_depth_tab_files.R
-    def nottest_visualize_mutation_depth_tab_files_for_error_counts_opt( self ):
+# This is for validation only, not for the pipeline runs.
+# Under development.
+    def not_test_visualize_mutation_depth_tab_files_for_error_counts_opt( self ):
         """
         Tests to make sure the TP, FP, FN, senstivity, and specificity measurements are correct from a test data set.
         This is testing output that has a changing feature space (optimization figure) and not the "ROC" plot.
@@ -876,7 +775,7 @@ class ScriptTester( ParentPipelineTester.ParentPipelineTester ):
         Tests to make sure the TP, FP, FN, senstivity, and specificity measurements are correct from a test data set.
         This is testing output that has a set feature space (the "ROC" plot) and not the optimization plot.
 
-        The other test uses a simple input data set similar to traditional ROC data, this one have varying RNA seq depth and 
+        The other test uses a simple input data set similar to traditional ROC data, this one have varying RNA seq depth and
         such that allows a more authentic test.
         """
         # Create environment
