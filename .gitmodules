@@ -16,3 +16,6 @@
 [submodule "cnv/inferCNV"]
 	path = cnv/inferCNV
 	url = https://github.com/broadinstitute/inferCNV
+[submodule "fusion/tools/FusionInspector"]
+	path = fusion/tools/FusionInspector
+	url = https://github.com/FusionInspector/FusionInspector.git
