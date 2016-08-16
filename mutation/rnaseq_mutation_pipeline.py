@@ -4,9 +4,9 @@
 import argparse
 import datetime
 import os
-import Command
-import PipelineRunner
-import Pipeline
+import sciedpiper.Command as Command
+import sciedpiper.PipelineRunner as PipelineRunner
+import sciedpiper.Pipeline as Pipeline
 
 
 __author__="Timothy Tickle"
