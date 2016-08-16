@@ -53,7 +53,7 @@ def func_check_job(str_json_id):
     """
 
     # Send file over to service
-    response_check_job = requests.get("http://www.cravat.us/rest/service/status", params={ str_response_job_id: str_json_id })
+    response_check_job = requests.get("http://www.cravat.us/CRAVAT/rest/service/status", params={ str_response_job_id: str_json_id })
     return response_check_job.json()
 
 def func_download_cravat_result(str_cravat_url, str_download_location):
@@ -134,7 +134,7 @@ def func_request_cravat_service(str_vcf_path, str_analysis, str_classifier, f_hg
                      "email": str_email }
 
     # Send file over to service
-    response_cravat = requests.post("http://www.cravat.us/rest/service/submit", files={"inputfile": open(str_vcf_path)}, data=pyld_request)
+    response_cravat = requests.post("http://www.cravat.us/CRAVAT/rest/service/submit", files={"inputfile": open(str_vcf_path)}, data=pyld_request)
     json_response = response_cravat.json()
     print "annotate_with_cravat:: Response = " + str(json_response)
     # Get return (job id)
