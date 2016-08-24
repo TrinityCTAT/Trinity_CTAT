@@ -893,7 +893,6 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
         str_cancer_mutations_filtered = self.func_switch_ext(str_vcf_base, "_cosmic_filtered.vcf")
         str_cravat_annotated_coding_vcf = self.func_switch_ext(str_vcf_base, "_cosmic_filtered_cravate_annotated_coding.vcf.gz")
         str_cravat_annotated_all_vcf = str_project_dir + os.path.sep + "annotated_min_filtered.vcf.gz"
-        str_pred_filtered_vcf = self.func_switch_ext(str_vcf_base, "_cosmic_filtered_cravate_annotated_filtered.vcf")
         str_cravat_filtered_groom_vcf = str_project_dir + os.path.sep + C_STR_CANCER_VCF
         str_cancer_tab = str_project_dir + os.path.sep + C_STR_CANCER_TAB
         str_cravat_result_dir = self.func_switch_ext(str_vcf_base, "_cosmic_filtered_cravat_annotations.gz")
@@ -902,6 +901,7 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
         str_cravat_detail_noncoding = os.path.join(str_extracted_cravat_dir, "Variant_Non-coding.Result.tsv")
         str_cravat_detail_coding_updated = os.path.join(str_project_dir, STR_MISC_DIR, "Variant_result_updated.tsv")
         str_cravat_detail_noncoding_updated = os.path.join(str_project_dir, STR_MISC_DIR, "Variant_non_coding_result_updated.tsv")
+        str_return_vcf = str_cancer_mutations_filtered
 
         # Index and bgzip vcf
         dict_csi = self.func_csi(str_vcf_to_filter)
@@ -934,7 +934,22 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
         lcmd_cancer_filter.append(cmd_cancer_filter)
 
         # Annotate non-common with CRAVAT
-        if not f_is_hg_18 is None:
+        str_cmd_make_cravat_tab = " ".join(["java -jar GenomeAnalysisTK.jar", "-R", args_call.str_genome_fa, "-T", "VariantsToTable", "-V", str_cravat_filtered_groom_vcf,
+                                           "-F", "CHROM", "-F", "POS", "-F", "REF", "-F", "ALT", "-F", "GENE",
+                                           "-F", "DP", "-F", "QUAL", "-F", "MQ",
+                                           "-F", "SAO", "-F", "NSF", "-F", "NSM", "-F", "NSN", "-F", "TUMOR", "-F", "TISSUE",
+                                           "-F", "COSMIC_ID", "-F", "KGPROD", "-F", "RS", "-F", "PMC"])
+        str_pred_filtered_vcf=str_cancer_mutations_filtered
+        if (not f_is_hg_18 is None) and (not args_call.f_skip_cravat):
+            # Update the output target vcf file given these steps are ran.
+            str_return_vcf = str_cravat_filtered_groom_vcf
+            str_pred_filtered_vcf=self.func_switch_ext(str_vcf_base, "_cosmic_filtered_cravate_annotated_filtered.vcf")
+            str_cmd_make_cravat_tab = " ".join([str_cmd_make_cravat_tab,
+                                                "-F", "CRAVAT_PVALUE",
+                                                "-F", "CRAVAT_FDR",
+                                                "-F", "VEST_PVALUE",
+                                                "-F", "VEST_FDR"])
+
             str_cravat_result_dir_zip = str_cravat_result_dir + ".zip"
             lstr_hg_18 = ["--is_hg18"] if f_is_hg_18 else []
             str_cravat_cmd = " ".join(["annotate_with_cravat.py", "--classifier", args_call.str_cravat_classifier] + lstr_hg_18 +
@@ -1027,30 +1042,28 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
             lcmd_cancer_filter.append(cmd_filter_predictions)
             cmd_filter_predictions.func_set_dependency_clean_level([str_cravat_annotated_all_vcf], Command.CLEAN_NEVER)
 
-            # Groom before filter
-            str_cmd_groom_cancer_filtered = " ".join(["groom_vcf.py",
-                                                      str_pred_filtered_vcf,
-                                                      str_cravat_filtered_groom_vcf])
-            cmd_groom_cancer_filtered = Command.Command(str_cur_command = str_cmd_groom_cancer_filtered,
-                                                      lstr_cur_dependencies = [str_pred_filtered_vcf],
-                                                      lstr_cur_products = [str_cravat_filtered_groom_vcf])
-            lcmd_cancer_filter.append(cmd_groom_cancer_filtered)
+        # Groom before filter
+        str_cmd_groom_cancer_filtered = " ".join(["groom_vcf.py",
+                                                  str_pred_filtered_vcf,
+                                                  str_cravat_filtered_groom_vcf])
+        cmd_groom_cancer_filtered = Command.Command(str_cur_command = str_cmd_groom_cancer_filtered,
+                                                    lstr_cur_dependencies = [str_pred_filtered_vcf],
+                                                    lstr_cur_products = [str_cravat_filtered_groom_vcf])
+        lcmd_cancer_filter.append(cmd_groom_cancer_filtered)
 
-            # Convert filtered VCF file to tab file.
-            str_cmd_make_cravat_tab = " ".join(["java -jar GenomeAnalysisTK.jar", "-R", args_call.str_genome_fa, "-T", "VariantsToTable", "-V", str_cravat_filtered_groom_vcf,
-                                                "-F", "CHROM", "-F", "POS", "-F", "REF", "-F", "ALT", "-F", "GENE",
-                                                "-F", "DP", "-F", "QUAL", "-F", "MQ",
-                                                "-F", "SAO", "-F", "NSF", "-F", "NSM", "-F", "NSN", "-F", "TUMOR", "-F", "TISSUE",
-                                                "-F", "COSMIC_ID", "-F", "KGPROD", "-F", "RS", "-F", "PMC",
-                                                "-F", "CRAVAT_PVALUE", "-F", "CRAVAT_FDR", "-F", "VEST_PVALUE", "-F", "VEST_FDR",
-                                                "--allowMissingData", "--unsafe", "LENIENT_VCF_PROCESSING", "-o", str_cancer_tab])
-            cmd_cravat_table = Command.Command(str_cur_command = str_cmd_make_cravat_tab,
-                                                      lstr_cur_dependencies = [str_cravat_filtered_groom_vcf],
-                                                      lstr_cur_products = [str_cancer_tab])
-            cmd_cravat_table.func_set_dependency_clean_level([str_cravat_filtered_groom_vcf], Command.CLEAN_NEVER)
-            lcmd_cancer_filter.append(cmd_cravat_table)
+        # Convert filtered VCF file to tab file.
+        str_cmd_make_cravat_tab = " ".join([str_cmd_make_cravat_tab,
+                                            "--allowMissingData",
+                                            "--unsafe",
+                                            "LENIENT_VCF_PROCESSING",
+                                            "-o", str_cancer_tab])
+        cmd_cravat_table = Command.Command(str_cur_command = str_cmd_make_cravat_tab,
+                                           lstr_cur_dependencies = [str_cravat_filtered_groom_vcf],
+                                           lstr_cur_products = [str_cancer_tab])
+        cmd_cravat_table.func_set_dependency_clean_level([str_cravat_filtered_groom_vcf], Command.CLEAN_NEVER)
+        lcmd_cancer_filter.append(cmd_cravat_table)
         return {INDEX_CMD:lcmd_cancer_filter,
-                INDEX_FILE:str_cravat_filtered_groom_vcf}
+                INDEX_FILE:str_cancer_tab}
 
     def func_make_commands(self, args_parsed, cur_pipeline):
         """
@@ -1173,7 +1186,6 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
             # Currently edited VCF file
             str_annotated_vcf_file = ""
 
-            str_cancer_tab = args_parsed.str_out_dir + os.path.sep + C_STR_CANCER_TAB
             str_json_inspector_file = args_parsed.str_out_dir + os.path.sep + C_STR_MUTATION_INSPECTOR
 
             # Add variant calling commands
@@ -1316,10 +1328,12 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
                     f_cravat_hg18 = True
                 elif args_parsed.f_hg_19:
                     f_cravat_hg18 = False
-                lcmd_commands.extend(self.func_do_variant_filtering_cancer(args_call=args_parsed,
-                                                                    str_variants_file=str_annotated_vcf_file,
-                                                                    str_project_dir=args_parsed.str_out_dir,
-                                                                    f_is_hg_18=f_cravat_hg18)[INDEX_CMD])
+                cmd_filter_cancer = self.func_do_variant_filtering_cancer(args_call=args_parsed,
+                                                                          str_variants_file=str_annotated_vcf_file,
+                                                                          str_project_dir=args_parsed.str_out_dir,
+                                                                          f_is_hg_18=f_cravat_hg18)
+                str_cancer_tab = cmd_filter_cancer[INDEX_FILE]
+                lcmd_commands.extend(cmd_filter_cancer[INDEX_CMD])
 
                 # Make JSON file for the inspector
                 if args_parsed.str_bed:
@@ -1496,6 +1510,7 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
         # Cravat associated
         args_group_cravat = arg_raw.add_argument_group("CRAVAT", "Associated with CRAVAT prioritization of variant calls.")
         args_group_cravat.add_argument("--cravat_annotation_header", metavar = "cravat_headers", dest = "str_cravat_headers", default = None, help = "Headers for each CRAVAT feature annotated to the VCF file (used in BCFtools).")
+        args_group_cravat.add_argument("--skip_cravat", dest = "f_skip_cravat", action="store_true", default = False, help = "Skips CRAVAT services.")
         args_group_cravat.add_argument("--tissue_type", metavar = "cravat_tissue", dest = "str_cravat_classifier", default = STR_CRAVAT_CLASSIFIER_DEFAULT, help = "Tissue type (used in CRAVAT variant prioritation). Supported classifiers can be found at http://www.cravat.us/help.jsp)")
         args_group_cravat.add_argument("--email", metavar = "email_contact", dest = "str_email_contact", default = None, help = "Email used to notify of errors associated with cravat.")
         group_hg = args_group_cravat.add_mutually_exclusive_group()

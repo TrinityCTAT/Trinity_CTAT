@@ -25,7 +25,8 @@ lstr_response_fail = [u'Error', u'submissionfailed']
 
 # VCF
 str_vcf_comment = "#"
-str_cravat_header = "\t".join(["# UID", "Chr.", "Position", "Strand", "Ref. base", "Alt. base"])
+str_cravat_header = "\t".join(["# UID", "Chr.", "Position",
+                               "Strand", "Ref. base", "Alt. base"])
 c_VCF_delimiter = "\t"
 i_vcf_chr = 0
 i_vcf_position = 1
@@ -53,7 +54,7 @@ def func_check_job(str_json_id):
     """
 
     # Send file over to service
-    response_check_job = requests.get("http://www.cravat.us/rest/service/status", params={ str_response_job_id: str_json_id })
+    response_check_job = requests.get("http://www.cravat.us/CRAVAT/rest/service/status", params={ str_response_job_id: str_json_id })
     return response_check_job.json()
 
 def func_download_cravat_result(str_cravat_url, str_download_location):
@@ -109,13 +110,14 @@ def func_get_cravat_response(str_json_id, i_max_attempts, i_wait):
     return(None)
 
 
-def func_request_cravat_service(str_vcf_path, str_analysis, str_classifier, f_hg_18, str_email):
+def func_request_cravat_service(str_vcf_path, str_analysis,
+                                str_classifier, f_hg_18, str_email):
     """
     Request a job to occur with CRAVAT.
 
     * str_vcf_path : Path to VCF file of mutations to submit.
                    : string
-    * str_classifier : Tissue type being analyzed (see http://www.cravat.us/help.jsp).
+    * str_classifier : Tissue type analyzed(see http://www.cravat.us/help.jsp).
                      : string
     * f_hg_18 : True indictes HG18 / False indicates HG19.
               : boolean
@@ -130,13 +132,14 @@ def func_request_cravat_service(str_vcf_path, str_analysis, str_classifier, f_hg
                      "tsvreport": "on",
                      "analyses": str_analysis,
                      "functionalannotation": "on",
-                     "analysistype": "driver",
+#                     "analysistype": "driver",
                      "email": str_email }
 
     # Send file over to service
-    response_cravat = requests.post("http://www.cravat.us/rest/service/submit", files={"inputfile": open(str_vcf_path)}, data=pyld_request)
+    response_cravat = requests.post("http://www.cravat.us/CRAVAT/rest/service/submit",
+                                    files={"inputfile": open(str_vcf_path)},
+                                    data=pyld_request)
     json_response = response_cravat.json()
-    print "annotate_with_cravat:: Response = " + str(json_response)
     # Get return (job id)
     return json_response.get(str_response_job_id, None)
 
@@ -156,19 +159,24 @@ if not str_job_id:
     exit(100)
 
 # Wait for result
-str_download_url = func_get_cravat_response(str_job_id, args_call.i_max_attempts, args_call.i_wait)
+str_download_url = func_get_cravat_response(str_job_id,
+                                            args_call.i_max_attempts,
+                                            args_call.i_wait)
 if not str_download_url:
-    print " ".join(["annotate_with_cravat::Error did not recieve valid URL download.",
-                      "Job id =" + str(str_job_id) + ".",
-                      "URL =" + str(str_download_url) + "."])
+    print " ".join(["annotate_with_cravat::Error did no",
+                    "recieve valid URL download.",
+                    "Job id =" + str(str_job_id) + ".",
+                    "URL =" + str(str_download_url) + "."])
     exit(101)
 
 # Get zip file
-f_success = func_download_cravat_result(str_download_url, args_call.str_output_dir)
+f_success = func_download_cravat_result(str_download_url,
+                                        args_call.str_output_dir)
 print "annotate_with_cravat:: Success = " + str(f_success)
 if not f_success:
-    print " ".join(["annotate_with_cravat::Error, could not download data in URL.",
-                      "Job id =" + str(str_job_id) + ".",
-                      "URL =" + str(str_download_url) + ".",
-                      "Download =" + str(args_call.str_output_dir) + "."])
+    print " ".join(["annotate_with_cravat::Error,",
+                    "could not download data in URL.",
+                    "Job id =" + str(str_job_id) + ".",
+                    "URL =" + str(str_download_url) + ".",
+                    "Download =" + str(args_call.str_output_dir) + "."])
     exit(102)
