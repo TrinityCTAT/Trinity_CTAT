@@ -13,13 +13,16 @@ STR_VCF_DELIMITER = "\t"
 I_INFO_INDEX = 7
 CHR_INFO_DELIMITER = ";"
 # INFO features
-STR_CHASM = "CHASM_FDR"
-STR_VEST = "VEST_FDR"
+STR_CHASM_FDR = "CHASM_FDR"
+STR_CHASM_PVALUE = "CHASM_PVALUE"
+STR_VEST_FDR = "VEST_FDR"
+STR_VEST_PVALUE = "VEST_PVALUE"
 STR_COSMIC_ID = "COSMIC_ID"
 STR_FATHMM = "FATHMM"
 STR_CANCER = "CANCER"
 # Thresholds
 I_FDR = 0.3
+I_PVALUE = 0.05
 
 # Arguments
 prog_desc = "".join(["Filters VCF based on mutation priority predictions."])
@@ -74,9 +77,15 @@ if args.str_input_file:
 
             # Keep everything that is a COSMIC ID at this point.
             # Otherwise require CRAVAT or VEST to have an annotation.
-            if( float(dict_info_tokens.get(STR_CHASM, "2")) <= I_FDR):
+            if STR_CHASM_FDR in dict_info_tokens:
+                if( float(dict_info_tokens.get(STR_CHASM_FDR, "2")) <= I_FDR):
+                    f_keep = True
+            elif(float(dict_info_tokens.get(STR_CHASM_PVALUE, "2")) <= I_PVALUE):
                 f_keep = True
-            if( float(dict_info_tokens.get(STR_VEST, "2")) <= I_FDR):
+            if STR_VEST_FDR in dict_info_tokens:
+                if( float(dict_info_tokens.get(STR_VEST_FDR, "2")) <= I_FDR):
+                    f_keep = True
+            elif(float(dict_info_tokens.get(STR_VEST_PVALUE, "2")) <= I_PVALUE):
                 f_keep = True
 
             # Keep FATHMM = Cancer

@@ -132,7 +132,7 @@ def func_request_cravat_service(str_vcf_path, str_analysis,
                      "tsvreport": "on",
                      "analyses": str_analysis,
                      "functionalannotation": "on",
-#                     "analysistype": "driver",
+                     "analysistype": "driver",
                      "email": str_email }
 
     # Send file over to service
