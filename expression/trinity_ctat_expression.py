@@ -5,21 +5,23 @@ __author__ = "Asma Bankapur"
 __copyright__ = "Copyright 2014"
 __credits__ = [ "Timothy Tickle", "Brian Haas" ]
 __license__ = "MIT"
-__maintainer__ = "Timothy Tickle"
+__maintainer__ = "Asma Bankapur"
 __email__ = "bankapur@broadinstitute.org"
 __status__ = "Development"
 
-import os
+import os, sys
+sys.path.append(os.path.sep.join([os.path.dirname(os.path.realpath(__file__)), "SciEDPipeR"]))
+sys.path.append(os.path.sep.join([os.path.dirname(os.path.realpath(__file__)), "SciEDPipeR", "sciedpiper"]))
 import sciedpiper.Command as Command
-import sciedpiper.ParentScript as ParentScript
+import sciedpiper.PipelineRunner as PipelineRunner
 
 KALLISTO = 'kallisto'
 kallisto_script = 'kallisto_script'
 
-class ExpressionScript( ParentScript.ParentScript ):
+class ExpressionScript( PipelineRunner.PipelineRunner ):
     
     
-    def func_update_arguments(self, arg_raw ):
+    def func_update_arguments(self, arg_raw):
         """
         Updates to the arg parser, command line options
         
@@ -37,13 +39,13 @@ class ExpressionScript( ParentScript.ParentScript ):
         arg_raw.add_argument( "--bootstrap_samples", help ="Number of bootstrap samples" )
         arg_raw.add_argument( "--threads", help ="Number of threads to use for bootstraping" )
         arg_raw.add_argument( "--seed", help ="Seed for the bootstrap sampling" )
-        
+        return(arg_raw) 
 
     def func_make_commands( self, args_parsed, cur_pipeline ):
         
         # Make directories and check files that need to exist before beginning
  
-        kallisto_dir = os.path.join( args_parsed.str_file_base, KALLISTO )
+        kallisto_dir = os.path.join( args_parsed.str_out_dir, KALLISTO )
         cur_pipeline.func_mkdirs( [ kallisto_dir  ] )
 
         ### Get kallisto script command
@@ -62,15 +64,15 @@ class ExpressionScript( ParentScript.ParentScript ):
            option_cmd2 = [ " --bias " ]
            kallisto_cmd.extend( option_cmd2 )
 
-        if not args_parsed.bootstrap_samples:
+        if args_parsed.bootstrap_samples:
            option_cmd3 = [ " --bootstrap-samples " + args_parsed.bootstrap_samples ]
            kallisto_cmd.extend( option_cmd3 )
 
-        if not args_parsed.threads:
+        if args_parsed.threads:
            option_cmd4 = [ " --threads " + args_parsed.threads ]
            kallisto_cmd.extend( option_cmd4 )
 
-        if not args_parsed.seed:
+        if args_parsed.seed:
            option_cmd5 = [ " --seed  " + args_parsed.seed ]
            kallisto_cmd.extend( option_cmd5 )
         
@@ -92,7 +94,7 @@ class ExpressionScript( ParentScript.ParentScript ):
         lcmd_commands.extend( [ Command.Command( str_cur_command = kallisto_cmd_str,
                                                  lstr_cur_dependencies = [ args_parsed.left_fq ], 
                                                  lstr_cur_products = [ kallisto_dir ] ) ] )
-        return lcmd_commands
+        return(lcmd_commands)
     
     
 if __name__ == "__main__":

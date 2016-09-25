@@ -19,3 +19,12 @@
 [submodule "fusion/tools/FusionInspector"]
 	path = fusion/tools/FusionInspector
 	url = https://github.com/FusionInspector/FusionInspector.git
+[submodule "lncrna/SciEDPipeR"]
+	path = lncrna/SciEDPipeR
+	url = https://github.com/SciEDPipeR/SciEDPipeR.git
+[submodule "genome_guided_transcript_reconstruction/SciEDPipeR"]
+	path = genome_guided_transcript_reconstruction/SciEDPipeR
+	url = https://github.com/SciEDPipeR/SciEDPipeR.git
+[submodule "expression/SciEDPipeR"]
+	path = expression/SciEDPipeR
+	url = https://github.com/SciEDPipeR/SciEDPipeR.git
