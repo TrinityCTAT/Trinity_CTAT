@@ -28,3 +28,6 @@
 [submodule "expression/SciEDPipeR"]
 	path = expression/SciEDPipeR
 	url = https://github.com/SciEDPipeR/SciEDPipeR.git
+[submodule "mutation/SciEDPipeR"]
+	path = mutation/SciEDPipeR
+	url = https://github.com/SciEDPipeR/SciEDPipeR.git
