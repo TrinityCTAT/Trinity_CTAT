@@ -947,8 +947,8 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
             str_return_vcf = str_cravat_filtered_groom_vcf
             str_pred_filtered_vcf=self.func_switch_ext(str_vcf_base, "_cosmic_filtered_cravate_annotated_filtered.vcf")
             str_cmd_make_cravat_tab = " ".join([str_cmd_make_cravat_tab,
-                                                "-F", "CRAVAT_PVALUE",
-                                                "-F", "CRAVAT_FDR",
+                                                "-F", "CHASM_PVALUE",
+                                                "-F", "CHASM_FDR",
                                                 "-F", "VEST_PVALUE",
                                                 "-F", "VEST_FDR"])
 
