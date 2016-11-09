@@ -1133,7 +1133,7 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
         # If the output directory is not given,
         # get the file base from a sample file
         if not args_parsed.str_out_dir:
-            args_parsed.str_out_dir = args_parsed.str_sample_postix
+            args_parsed.str_out_dir = str_sample_postfix
 
         # Make sure the output directory is absolute
         args_parsed.str_out_dir = os.path.abspath(args_parsed.str_out_dir)
