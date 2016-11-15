@@ -972,7 +972,7 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
             # MV files needed from the CRAVAT dir to the current working dir.
             str_coding_variant_result = str_extracted_cravat_dir+os.path.sep+"*"+os.path.sep+"Variant.Result.tsv"
             str_non_coding_variant_result = str_extracted_cravat_dir+os.path.sep+"*"+os.path.sep+"Variant_Non-coding.Result.tsv"
-            str_move_cravate_files = " ".join(["cp", "{"+str_coding_variant_result+","+str_non_coding_variant_result+"}", str_extracted_cravat_dir])
+            str_move_cravate_files = " ".join(["bash -c \"cp", "{"+str_coding_variant_result+","+str_non_coding_variant_result+"}", str_extracted_cravat_dir+"\""])
             cmd_mv_cravat = Command.Command(str_cur_command = str_move_cravate_files,
                                            lstr_cur_dependencies = [str_extracted_cravat_dir],
                                            lstr_cur_products = [str_cravat_detail_noncoding, str_cravat_detail_coding])
