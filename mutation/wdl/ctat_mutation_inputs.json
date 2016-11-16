@@ -1,0 +1,19 @@
+{
+  "ctat_rnaseq_mutation.single_paired_mutation.cosmic_vcf_index": "File",
+  "ctat_rnaseq_mutation.single_paired_mutation.reference_fai": "File",
+  "ctat_rnaseq_mutation.single_paired_mutation.reference_dict": "File",
+  "ctat_rnaseq_mutation.single_paired_mutation.radar": "File",
+  "ctat_rnaseq_mutation.single_paired_mutation.dbsnp_gz_index": "File",
+  "ctat_rnaseq_mutation.single_paired_mutation.cravat_header": "File",
+  "ctat_rnaseq_mutation.single_paired_mutation.sample_right": "File",
+  "ctat_rnaseq_mutation.single_paired_mutation.tissue_type": "String",
+  "ctat_rnaseq_mutation.single_paired_mutation.reference_bed": "File",
+  "ctat_rnaseq_mutation.single_paired_mutation.dbsnp_vcf": "File",
+  "ctat_rnaseq_mutation.single_paired_mutation.sample_left": "File",
+  "ctat_rnaseq_mutation.single_paired_mutation.email": "String",
+  "ctat_rnaseq_mutation.single_paired_mutation.darned": "File",
+  "ctat_rnaseq_mutation.single_paired_mutation.dbsnp_gz": "File",
+  "ctat_rnaseq_mutation.single_paired_mutation.index": "File",
+  "ctat_rnaseq_mutation.single_paired_mutation.cosmic_vcf": "File",
+  "ctat_rnaseq_mutation.single_paired_mutation.reference": "File"
+}

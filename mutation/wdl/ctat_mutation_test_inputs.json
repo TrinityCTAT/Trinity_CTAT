@@ -1,0 +1,19 @@
+{
+  "ctat_rnaseq_mutation.single_paired_mutation.radar": "/home/ubuntu/resources/radar_hg19_v2.txt",
+  "ctat_rnaseq_mutation.single_paired_mutation.cravat_header": "/home/ubuntu/resources/cravat_annotation.txt",
+  "ctat_rnaseq_mutation.single_paired_mutation.sample_right": "/home/ubuntu/resources/FLI1.right.fq",
+  "ctat_rnaseq_mutation.single_paired_mutation.tissue_type": "Blood-Lymphocyte",
+  "ctat_rnaseq_mutation.single_paired_mutation.reference_bed": "/home/ubuntu/resources/hg19.refGene.sort.bed",
+  "ctat_rnaseq_mutation.single_paired_mutation.dbsnp_vcf": "/home/ubuntu/resources/dbsnp_FLI1.vcf",
+  "ctat_rnaseq_mutation.single_paired_mutation.dbsnp_gz": "/home/ubuntu/resources/dbsnp_FLI1.vcf.gz",
+  "ctat_rnaseq_mutation.single_paired_mutation.dbsnp_gz_index": "/home/ubuntu/resources/dbsnp_FLI1.vcf.gz.csi",
+  "ctat_rnaseq_mutation.single_paired_mutation.sample_left": "/home/ubuntu/resources/FLI1.left.fq",
+  "ctat_rnaseq_mutation.single_paired_mutation.email": "ttickle@broadinstitute.org",
+  "ctat_rnaseq_mutation.single_paired_mutation.darned": "/home/ubuntu/resources/darned_hg19.txt",
+  "ctat_rnaseq_mutation.single_paired_mutation.index": "/home/ubuntu/resources/Hg19_11",
+  "ctat_rnaseq_mutation.single_paired_mutation.cosmic_vcf": "/home/ubuntu/resources/CosmicCodingMuts_v72_grch37_updated_chr.vcf.gz",
+  "ctat_rnaseq_mutation.single_paired_mutation.cosmic_vcf_index": "/home/ubuntu/resources/CosmicCodingMuts_v72_grch37_updated_chr.vcf.gz.csi",
+  "ctat_rnaseq_mutation.single_paired_mutation.reference": "/home/ubuntu/resources/Hg19_11.fa",
+  "ctat_rnaseq_mutation.single_paired_mutation.reference_fai": "/home/ubuntu/resources/Hg19_11.fa.fai",
+  "ctat_rnaseq_mutation.single_paired_mutation.reference_dict": "/home/ubuntu/resources/Hg19_11.dict"
+}
