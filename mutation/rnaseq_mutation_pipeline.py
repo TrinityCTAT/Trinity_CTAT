@@ -1132,8 +1132,11 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
 
         # If the output directory is not given,
         # get the file base from a sample file
-        #if not args_parsed.str_out_dir:
-        #    args_parsed.str_out_dir = str_sample_postfix
+        if args_parsed.f_wdl_run:
+            args_parsed.str_out_dir = ""
+        else:
+            if not args_parsed.str_out_dir:
+                args_parsed.str_out_dir = str_sample_postfix
 
         # Make sure the output directory is absolute
         args_parsed.str_out_dir = os.path.abspath(args_parsed.str_out_dir)
@@ -1482,6 +1485,7 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
         arg_raw.add_argument("-l", "--left", metavar = "Left_sample_file", dest = "str_sample_file_left_fq", required = False, help = "Path to one of the two paired RNAseq samples (left)")
         arg_raw.add_argument("-r", "--right", metavar = "Right_sample_file", dest = "str_sample_file_right_fq", required = False, help = "Path to one of the two paired RNAseq samples (right)")
         arg_raw.add_argument("-n", "--threads", metavar = "Process_threads", dest = "i_number_threads", type = int, default = 1, help = "The number of threads to use for multi-threaded steps.")
+        arg_raw.add_argument("--wdl_compatible_run", dest = "f_wdl_run", action="store_true", help = "Cromwell/WDL requires execution to happen relative to an output directory of dynaically created without giving the directory path to the underlying tools/pipelines. This requires a pipeline to use relative paths which can be dangerous outside of Cromwell/WDL. This will ignore any output directory specified in the command line and force the output to be relative paths. DO NOT USE outside of Cromwell/WDL.")
 
         # Run modes
         args_group_run = arg_raw.add_argument_group("Run Mode", "Associated in running different modes of the pipeline.")
