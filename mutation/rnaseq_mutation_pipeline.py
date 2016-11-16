@@ -1132,8 +1132,8 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
 
         # If the output directory is not given,
         # get the file base from a sample file
-        if not args_parsed.str_out_dir:
-            args_parsed.str_out_dir = str_sample_postfix
+        #if not args_parsed.str_out_dir:
+        #    args_parsed.str_out_dir = str_sample_postfix
 
         # Make sure the output directory is absolute
         args_parsed.str_out_dir = os.path.abspath(args_parsed.str_out_dir)
@@ -1419,7 +1419,7 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
         # Create index for the VCF file
         if str_output_dir:
           str_index_file = os.path.join(str_output_dir, os.path.basename(str_index_file))
-        str_cmd_index_vcf = " ".join(["bcftools index", str_vcf, "--output-file", str_index_file])
+        str_cmd_index_vcf = " ".join(["bcftools index", str_vcf])
         cmd_index_vcf = Command.Command(str_cur_command = str_cmd_index_vcf,
                                          lstr_cur_dependencies = [str_vcf],
                                          lstr_cur_products = [str_index_file])
