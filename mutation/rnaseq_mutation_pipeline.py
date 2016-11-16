@@ -1419,7 +1419,7 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
         # Create index for the VCF file
         if str_output_dir:
           str_index_file = os.path.join(str_output_dir, os.path.basename(str_index_file))
-        str_cmd_index_vcf = " ".join(["bcftools index ", str_vcf])
+        str_cmd_index_vcf = " ".join(["bcftools index", str_vcf, "--output-file", str_index_file])
         cmd_index_vcf = Command.Command(str_cur_command = str_cmd_index_vcf,
                                          lstr_cur_dependencies = [str_vcf],
                                          lstr_cur_products = [str_index_file])
