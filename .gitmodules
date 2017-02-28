@@ -28,3 +28,6 @@
 [submodule "mutation/SciEDPipeR"]
 	path = mutation/SciEDPipeR
 	url = https://github.com/SciEDPipeR/SciEDPipeR.git
+[submodule "lncrna/slncky"]
+	path = lncrna/slncky
+	url = https://github.com/slncky/slncky.git
