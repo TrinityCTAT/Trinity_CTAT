@@ -10,9 +10,6 @@
 [submodule "fusion/tools/FusionAnnotator"]
 	path = fusion/tools/FusionAnnotator
 	url = https://github.com/FusionAnnotator/FusionAnnotator.git
-[submodule "lncrna/slncky"]
-	path = lncrna/slncky
-	url = https://github.com/NCIP/slncky.git
 [submodule "cnv/inferCNV"]
 	path = cnv/inferCNV
 	url = https://github.com/broadinstitute/inferCNV
