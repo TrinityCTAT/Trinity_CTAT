@@ -34,6 +34,8 @@ class ExpressionScript( PipelineRunner.PipelineRunner ):
         arg_raw.description = "Expression from RNASeq Data for Trinity CTAT"
         arg_raw.add_argument( "--left_fq", required=True, help = "Left read fastq" )        
         arg_raw.add_argument( "--right_fq", default="", help ="Right read fastq" )
+        arg_raw.add_argument( "--frag_len", default="200", help="Fragment length. Use only for SE data")
+        arg_raw.add_argument( "--std_dev", default="20", help="Standard deviation of fragment length. Use only for SE data")
         arg_raw.add_argument( "--annot_config", required=True ,help ="Annotation Config file" )
         arg_raw.add_argument( "--bias", action="store_true", help= "Perform sequence based bias correction")
         arg_raw.add_argument( "--bootstrap_samples", help ="Number of bootstrap samples" )
@@ -80,7 +82,7 @@ class ExpressionScript( PipelineRunner.PipelineRunner ):
         kallisto_cmd.extend( option_cmd6 )
 
         if not args_parsed.right_fq:
-           option_cmd7 = [ " --single " + args_parsed.left_fq ] 
+           option_cmd7 = [ " --single " + args_parsed.left_fq + " -l " + args_parsed.frag_len + " -s " + args_parsed.std_dev ] 
         else:
            option_cmd7 = [ args_parsed.left_fq + " " + args_parsed.right_fq ]
       
