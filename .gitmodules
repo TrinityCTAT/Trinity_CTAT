@@ -31,3 +31,6 @@
 [submodule "lncrna/slncky"]
 	path = lncrna/slncky
 	url = https://github.com/slncky/slncky.git
+[submodule "metagenomics/SciEDPipeR"]
+	path = metagenomics/SciEDPipeR
+	url = https://github.com/SciEDPipeR/SciEDPipeR.git
