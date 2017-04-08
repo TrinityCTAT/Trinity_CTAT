@@ -31,38 +31,37 @@ class MetagenomicsScript( PipelineRunner.PipelineRunner ):
         arg_raw.prog = "metagenomics.py "
         arg_raw.description = "Metagenomics - Centrifuge"
         arg_raw.add_argument("--threads", dest = "threads", default = "1", required = True ,help = "Launch NTHREADS parallel search threads - default: 1" )
-        arg_raw.add_argument("--fastq",dest="fastq_format",action="store_true",default=True ,help="Reads are FASTQ files(format)")
-        arg_raw.add_argument("--fasta",dest="fasta_format",action="store_false",default=False ,help="Reads are FASTA files(format). Eg: Trinity assembled reads")
-        arg_raw.add_argument("--num_primary_assign",dest="distinct_primary_assignments",default="5",help="It searches for at most <int> distinct, primary assignments for each read or pair.Default=5") 
+        arg_raw.add_argument("--format",dest="format",choices=["fastq","fasta"],default="fastq" ,help="Choose format")
+        arg_raw.add_argument("--num_primary_assign",dest="distinct_primary_assignments",default="1",help="It searches for at most <int> distinct, primary assignments for each read or pair.Default=5") 
         arg_raw.add_argument("--index", dest="centrifuge_index",help="The basename of the index for the reference genomes")
-        arg_raw.add_argument("--read_type", dest="read_type", choices=["single","paired"], help="Choose read type")
-        arg_raw.add_argument("--right_fq", help="Comma-separated list of files containing mate 2s (only when --fastq is included)")
-        arg_raw.add_argument("--left_fq", help="Comma-separated list of files containing mate 1s (only when --fastq is included)")
-        arg_raw.add_argument("--unpaired_reads", dest="unpaired_reads",help="Comma-separated list of files containing unpaired reads to be aligned (only when --fasta is included)")
+        arg_raw.add_argument("--read_type", dest="read_type", choices=["single","paired"], default="paired", help="Choose read type, skip if using Trinity assembles reads")
+        arg_raw.add_argument("--right_fq", dest="right_fq" ,help="Right_fq (only when fastq format is used for read_type paired)")
+        arg_raw.add_argument("--left_fq", dest="left_fq", help="Left_fq (only when fastq format is used for read_type paired)")
+        arg_raw.add_argument("--unpaired_reads", dest="unpaired_reads",help="Comma-separated list of files containing unpaired reads to be aligned (for Trinity runs and single end reads)")
         return(arg_raw)
 
     def func_make_commands( self, args_parsed, cur_pipeline ):
         
         
         #For trinity assembled reads
-        if args_parsed.fasta:
+        if args_parsed.format=="fasta":
             cur_pipeline.func_check_files_exist( [ args_parsed.unpaired_reads ] )
         #Direct route: paired or single end fastq 
-        elif args_parsed.fastq:
+        elif args_parsed.format=="fastq":
             if args_parsed.read_type=="single":
-                cur_pipeline.func_check_files_exist( [ args_parsed.left_fq ] )
+                cur_pipeline.func_check_files_exist( [ args_parsed.unpaired_reads ] )
             else:
                 cur_pipeline.func_check_files_exist( [ args_parsed.right_fq,args_parsed.left_fq ] )
         else:
-            exit()
+            cur_pipeline.logr_logger.error("Choose either --fasta or --fastq and provide appropriate inputs")
 
         # Make all output files 
-        classification_results = args_parsed.out_dir + "classification.results.txt" 
-        classification_report = args_parsed.out_dir + "classification.report.txt"
-        report_kraken = args_parsed.out_dir + "kraken_style_report.txt" 
+        classification_results = os.path.join(args_parsed.str_out_dir,"classification.results.txt") 
+        classification_report = os.path.join(args_parsed.str_out_dir,"classification.report.txt")
+        report_kraken = os.path.join(args_parsed.str_out_dir,"kraken_style_report.txt") 
         
         #Trinity centrifuge command
-        if args_parsed.fasta:
+        if args_parsed.format=="fasta":
             centrifige_cmd=["centrifuge",
                             "-p",args_parsed.threads,
                             "-k",args_parsed.distinct_primary_assignments,
@@ -72,10 +71,11 @@ class MetagenomicsScript( PipelineRunner.PipelineRunner ):
                             "--report-file",classification_report]
 
         #Direct fastq run with centrifuge
-        elif args_parsed.fastq:
+        elif args_parsed.format=="fastq":
             if args_parsed.read_type=="single":
                 centrifige_cmd=["centrifuge",
                                 "-p",args_parsed.threads,
+                                "-k",args_parsed.distinct_primary_assignments,
                                 "-q","-x",args_parsed.centrifuge_index,
                                 "-U",args_parsed.unpaired_reads,
                                 "-S",classification_results,
@@ -84,12 +84,14 @@ class MetagenomicsScript( PipelineRunner.PipelineRunner ):
                 centrifige_cmd=["centrifuge",              
                                  "-p",args_parsed.threads,
                                  "-q","-x",args_parsed.centrifuge_index,
+                                 "-k",args_parsed.distinct_primary_assignments,
                                  "-1",args_parsed.left_fq,
                                  "-2",args_parsed.right_fq,
                                  "-S",classification_results,
                                  "--report-file",classification_report] 
         else:
-            exit()
+            cur_pipeline.logr_logger.error("Choose either --fasta or --fastq and provide appropriate inputs")
+
 
         #Generate kraken style report
         kreport_cmd=["centrifuge-kreport",
