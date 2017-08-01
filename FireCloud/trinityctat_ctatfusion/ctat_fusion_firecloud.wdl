@@ -2,11 +2,14 @@
 task UNTAR {
 
     File tar_gz_file
-	String prev
-	
+    String prev
 
-	command {
+    command {
        tar xvf ${tar_gz_file}
+    }
+
+    output {
+        String out_token="UNTAR"
     }
 }
 
@@ -17,7 +20,7 @@ task CTAT_FUSION_TASK {
     File right_fq_gz
     String genome_lib_dirname
     String output_dir_name
-	String prev
+    String prev
 
     command {
         /usr/local/src/STAR-Fusion-v1.0.0/STAR-Fusion \
@@ -31,13 +34,19 @@ task CTAT_FUSION_TASK {
             --examine_coding_effect \
             --output_dir ${output_dir_name} 
     }
-	
+
+    output {
+        String out_token="CTAT_FUSION_TASK"
+    }
+
     runtime {
             docker: "trinityctat/ctatfusion:latest"
             disks: "local-disk 100 SSD"
             memory: "50G"
             cpu: "16"
     }
+
+
 }
 
 
@@ -86,12 +95,12 @@ workflow ctat_fusion_wf {
                right_fq_gz=input_right_fq_gz,
                output_dir_name=sample_name,
                genome_lib_dirname=genome_lib_dirname,
-               prev=UNTAR.prev
+               prev=UNTAR.out_token
 	}
 
     call CAPTURE_OUTPUTS {
-	input: dirname=${sample_name},
-               prev=CTAT_FUSION_TASK.prev
+	input: dirname="${sample_name}",
+               prev=CTAT_FUSION_TASK.out_token
 
     }
 
