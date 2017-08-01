@@ -1,0 +1,17 @@
+
+base bucket:  gs://trinityctat_ctatfusion
+
+ctat_genome_lib:  gs://trinityctat_ctatfusion/ctat_genome_lib/GRCh38_gencode_v26_CTAT_lib_July192017.plug-n-play.tar.gz
+
+sample_data: gs://trinityctat_ctatfusion/sample_data/
+
+##
+    %  gsutil ls gs://trinityctat_ctatfusion/sample_data/
+
+    gs://trinityctat_ctatfusion/sample_data/BT474.Left.fq.gz
+    gs://trinityctat_ctatfusion/sample_data/BT474.Right.fq.gz
+    gs://trinityctat_ctatfusion/sample_data/small_1.fq.gz
+    gs://trinityctat_ctatfusion/sample_data/small_2.fq.gz
+##
+
+
