@@ -2,6 +2,8 @@
 task UNTAR {
 
     File tar_gz_file
+	String prev
+	
 
 	command {
        tar xvf ${tar_gz_file}
@@ -15,6 +17,7 @@ task CTAT_FUSION_TASK {
     File right_fq_gz
     String genome_lib_dir
     String output_dir_name
+	String prev
 
     command {
         /usr/local/src/STAR-Fusion-v1.0.0/STAR-Fusion \
@@ -41,6 +44,7 @@ task CTAT_FUSION_TASK {
 task CAPTURE_OUTPUTS {
 
     String dirname
+	String prev
 
     command {
 
@@ -71,9 +75,9 @@ workflow ctat_fusion_wf {
     File genome_lib_tar_gz
 	String genome_lib_dirname
 
-
 	call UNTAR {
-        input: tar_gz_file=genome_lib_tar_gz
+        input: tar_gz_file=genome_lib_tar_gz,
+               prev='none'
     }
 
 
@@ -81,12 +85,14 @@ workflow ctat_fusion_wf {
         input: left_fq_gz=input_left_fq_gz,
                right_fq_gz=input_right_fq_gz,
                output_dir_name=sample_name,
-               genome_lib_dirname=genome_lib_dirname
+               genome_lib_dirname=genome_lib_dirname,
+               prev=UNTAR.prev
 	}
-
+	
 	call CAPTURE_OUTPUTS {
 
-	    input: dirname=${sample_name}
+	    input: dirname=${sample_name},
+               prev=CTAT_FUSION_TASK.prev
 
     }
 
