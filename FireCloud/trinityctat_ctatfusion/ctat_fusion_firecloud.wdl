@@ -13,14 +13,14 @@ task CTAT_FUSION_TASK {
 
     File left_fq_gz
     File right_fq_gz
-    String genome_lib_dir
+    String genome_lib_dirname
     String output_dir_name
 
     command {
         /usr/local/src/STAR-Fusion-v1.0.0/STAR-Fusion \
             --left_fq ${left_fq_gz} \
             --right_fq  ${right_fq_gz} \
-            --genome_lib_dir ${genome_lib_dir} \
+            --genome_lib_dir ${genome_lib_dirname} \
             --extract_fusion_reads \
             --FusionInspector validate \
             --denovo_reconstruct \
@@ -58,7 +58,7 @@ task CAPTURE_OUTPUTS {
     }
 
     output {
-       File out_tar_gz = ${dirname}.tar.gz
+       File out_tar_gz="${dirname}.tar.gz"
     }
 }
 
@@ -86,7 +86,7 @@ workflow ctat_fusion_wf {
 
 	call CAPTURE_OUTPUTS {
 
-	    input: dirname=${sample_name}
+	    input: dirname="${sample_name}"
 
     }
 

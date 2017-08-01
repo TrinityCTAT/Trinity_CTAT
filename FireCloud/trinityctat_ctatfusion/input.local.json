@@ -1,14 +1,14 @@
 {
 
-    "sample_name" : "testsample",
+    "ctat_fusion_wf.sample_name" : "testsample",
 
-    "input_left_fq_gz" : "small_1.fq.gz",
+    "ctat_fusion_wf.input_left_fq_gz" : "small_1.fq.gz",
     
-    "input_right_fq_gz" : "small_2.fq.gz",
+    "ctat_fusion_wf.input_right_fq_gz" : "small_2.fq.gz",
     
-    "genome_lib_tar_gz" : "GRCh38_gencode_v26_CTAT_lib_July192017.tar.gz",
+    "ctat_fusion_wf.genome_lib_tar_gz" : "GRCh38_gencode_v26_CTAT_lib_July192017.tar.gz",
     
-    "genome_lib_dirname" : "GRCh38_gencode_v26_CTAT_lib_July192017/ctat_genome_lib_build_dir"
+    "ctat_fusion_wf.genome_lib_dirname" : "GRCh38_gencode_v26_CTAT_lib_July192017/ctat_genome_lib_build_dir"
 
 }
 
