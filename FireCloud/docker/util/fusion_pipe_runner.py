@@ -62,7 +62,7 @@ def main():
     subprocess.check_call(starF_cmd, shell=True)
     
     ## package up outputs
-    cmd = str("tar -cvfz ${}.tar.gz".format(outdir) +
+    cmd = str("tar -cvzf {}.tar.gz".format(outdir) +
               " {}/star-fusion.fusion_predictions.abridged.annotated.coding_effect.tsv".format(outdir) +
               " {}/star-fusion.fusion_evidence_reads_1.fq ".format(outdir) +
               " {}/star-fusion.fusion_evidence_reads_2.fq ".format(outdir) +
