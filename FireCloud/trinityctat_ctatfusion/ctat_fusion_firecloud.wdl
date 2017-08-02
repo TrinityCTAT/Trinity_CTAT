@@ -23,7 +23,7 @@ task CTAT_FUSION_TASK {
     String prev
 
     command {
-        /usr/local/src/STAR-Fusion-v1.0.0/STAR-Fusion \
+        /usr/local/src/STAR-Fusion_v1.1.0/STAR-Fusion \
             --left_fq ${left_fq_gz} \
             --right_fq  ${right_fq_gz} \
             --genome_lib_dir ${genome_lib_dirname} \

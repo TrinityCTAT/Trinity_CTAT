@@ -6,7 +6,7 @@
     
     "ctat_fusion_wf.input_right_fq_gz" : "small_2.fq.gz",
     
-    "ctat_fusion_wf.genome_lib_tar_gz" : "GRCh38_gencode_v26_CTAT_lib_July192017.tar.gz",
+    "ctat_fusion_wf.genome_lib_tar_gz" : "GRCh38_gencode_v26_CTAT_lib_July192017.plug-n-play.tar.gz",
     
     "ctat_fusion_wf.genome_lib_dirname" : "GRCh38_gencode_v26_CTAT_lib_July192017/ctat_genome_lib_build_dir"
 
