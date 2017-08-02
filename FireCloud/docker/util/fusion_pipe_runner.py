@@ -40,17 +40,17 @@ def main():
     # prep the genome lib
     subprocess.check_call("tar xvf {}".format(args.genome_lib_tar_gz), shell=True)
 
-    genome_lib_dir = re.sub(".tar.gz$", "", args.genome_lib_tar_gz)
-
-
+    genome_lib_dir = re.sub(".plug-n-play.tar.gz$", "", args.genome_lib_tar_gz)
+    genome_lib_dir = os.path.basename(genome_lib_dir) + "/ctat_genome_lib_build_dir"
+    
     ## run star-fusion
 
     outdir = args.output_dir_name
     
-    starF_cmd = str("/usr/local/src/STAR-Fusion-v1.0.0/STAR-Fusion" +
+    starF_cmd = str("/usr/local/bin/STAR-Fusion" +
                     " --left_fq {}".format(args.left_fq) +
                     " --right_fq {}".format(args.right_fq) +
-                    " --genome_lib_dir {}".format(args.genome_lib_dir) +
+                    " --genome_lib_dir {}".format(genome_lib_dir) +
                     " --extract_fusion_reads " +
                     " --FusionInspector validate " +
                     " --denovo_reconstruct " +
