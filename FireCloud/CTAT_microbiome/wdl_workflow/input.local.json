@@ -1,0 +1,8 @@
+{
+  "ctat_microbiome_workflow.primary_assignment": 1,
+  "ctat_microbiome_workflow.sample_name": "SRR073747",
+  "ctat_microbiome_workflow.refindex": "/seq/regev_genome_portal/RESOURCES/centrifuge/indexes/abvh",
+  "ctat_microbiome_workflow.threads": 4,
+  "ctat_microbiome_workflow.left_fq":"SRR073747_1.fastq",
+  "ctat_microbiome_workflow.right_fq":"SRR073747_2.fastq"
+}
