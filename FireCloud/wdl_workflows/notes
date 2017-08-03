@@ -12,6 +12,8 @@ sample_data: gs://trinityctat_ctatfusion/sample_data/
     gs://trinityctat_ctatfusion/sample_data/BT474.Right.fq.gz
     gs://trinityctat_ctatfusion/sample_data/small_1.fq.gz
     gs://trinityctat_ctatfusion/sample_data/small_2.fq.gz
+    gs://trinityctat_ctatfusion/sample_data/small.STAR.sortedByCoord.bam
+
 ##
 
 
