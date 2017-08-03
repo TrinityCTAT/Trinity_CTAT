@@ -1,0 +1,6 @@
+
+
+sample data for use with ctat_microbiome:
+
+gs://trinityctat_ctatmicrobiome/sample_data/SRR073747_1.fastq.gz
+gs://trinityctat_ctatmicrobiome/sample_data/SRR073747_2.fastq.gz
