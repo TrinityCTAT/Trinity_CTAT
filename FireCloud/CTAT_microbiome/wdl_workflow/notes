@@ -9,3 +9,9 @@ gs://trinityctat_ctatmicrobiome/centrifuge_resources/centrifuge_indexes.tar
 
 gs://trinityctat_ctatmicrobiome/sample_data/SRR073747_1.fastq.gz
 gs://trinityctat_ctatmicrobiome/sample_data/SRR073747_2.fastq.gz
+
+
+## reads aligned in bam format:
+
+gs://trinityctat_ctatmicrobiome/sample_data/SRR073747.STAR.sortedByCoord.bam
+
