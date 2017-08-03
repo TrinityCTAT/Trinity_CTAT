@@ -1,6 +1,11 @@
 
 
-sample data for use with ctat_microbiome:
+## centrifuge index:
+
+gs://trinityctat_ctatmicrobiome/centrifuge_resources/centrifuge_indexes.tar
+
+
+## sample data for use with ctat_microbiome:
 
 gs://trinityctat_ctatmicrobiome/sample_data/SRR073747_1.fastq.gz
 gs://trinityctat_ctatmicrobiome/sample_data/SRR073747_2.fastq.gz
