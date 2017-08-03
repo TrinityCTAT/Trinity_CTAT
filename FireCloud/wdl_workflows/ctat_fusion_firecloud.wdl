@@ -32,11 +32,11 @@ task PicardSamToFastq {
   command {
     java -jar /usr/local/bin/picard.jar \
     SamToFastq I=${input_unmapped_bam} \
-    F=${sample_name}.1.fastq F2=${sample_name}.2.fastq \
+    F=${sample_name}_1.fastq F2=${sample_name}_2.fastq \
     INTERLEAVE=false NON_PF=true \
     CLIPPING_ATTRIBUTE=XT CLIPPING_ACTION=2
   
-    gzip ${sample_name}.1.fastq ${sample_name}.2.fastq
+    gzip ${sample_name}_1.fastq ${sample_name}_2.fastq
 
   }
   output {
