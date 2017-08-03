@@ -1,4 +1,57 @@
 
+task PicardRevertSam {
+  File input_bam
+  String sample_name  
+
+  command {
+    java -Xmx1000m -jar /usr/local/bin/picard.jar \
+    RevertSam \
+    INPUT=${input_bam} \
+    OUTPUT_BY_READGROUP=false \
+    VALIDATION_STRINGENCY=LENIENT \
+    ATTRIBUTE_TO_CLEAR=FT \
+    SORT_ORDER=queryname \
+    OUTPUT=${sample_name}.reverted.bam 
+  }
+  output {
+    File unmapped_bam = "${sample_name}.reverted.bam"
+  }
+
+  runtime {
+        docker: "trinityctat/firecloud_ctatfusion:0.0.1"
+        disks: "local-disk 100 HDD"
+        memory: "1200 MB"
+    }
+}
+
+
+task PicardSamToFastq {
+  File input_unmapped_bam
+  String sample_name
+
+  command {
+    java -jar /usr/local/bin/picard.jar \
+    SamToFastq I=${input_unmapped_bam} \
+    F=${sample_name}.1.fastq F2=${sample_name}.2.fastq \
+    INTERLEAVE=false NON_PF=true \
+    CLIPPING_ATTRIBUTE=XT CLIPPING_ACTION=2
+  
+    gzip ${sample_name}.1.fastq ${sample_name}.2.fastq
+
+  }
+  output {
+	File left_fq_gz = "${sample_name}_1.fastq.gz"
+        File right_fq_gz = "${sample_name}_2.fastq.gz"
+  }
+
+  runtime {
+        docker: "trinityctat/firecloud_ctatfusion:0.0.1"
+        disks: "local-disk 100 HDD"
+        memory: "2G"
+    }
+}
+
+
 task CTAT_FUSION_TASK {
 
     File left_fq_gz
@@ -19,7 +72,7 @@ task CTAT_FUSION_TASK {
     }
 
     runtime {
-            docker: "trinityctat/firecloud_ctatfusion:latest"
+            docker: "trinityctat/firecloud_ctatfusion:0.0.1"
             disks: "local-disk 100 SSD"
             memory: "50G"
             cpu: "16"
@@ -31,18 +84,29 @@ task CTAT_FUSION_TASK {
 workflow ctat_fusion_wf {
 
     String sample_name
-    File input_left_fq_gz
-    File input_right_fq_gz
+    File rnaseq_aligned_bam
     File genome_lib_tar_gz
-    
+
+
+    call PicardRevertSam {
+        input: input_bam=rnaseq_aligned_bam,
+	       sample_name=sample_name
+    }
+
+    call PicardSamToFastq {
+        input: input_unmapped_bam=PicardRevertSam.unmapped_bam,
+	       sample_name=sample_name
+    }
+	
 
     call CTAT_FUSION_TASK {
-        input: left_fq_gz=input_left_fq_gz,
-               right_fq_gz=input_right_fq_gz,
+        input: left_fq_gz=PicardSamToFastq.left_fq_gz,
+               right_fq_gz=PicardSamToFastq.right_fq_gz,
                sample_name=sample_name,
                genome_lib_tar_gz=genome_lib_tar_gz
     }
 
+    
 
 }
 
