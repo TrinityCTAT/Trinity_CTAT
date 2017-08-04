@@ -1,7 +1,7 @@
 {
-  "ctat_microbiome_workflow.primary_assignment": 1,
-  "ctat_microbiome_workflow.sample_name": "SRR073747",
-  "ctat_microbiome_workflow.refindex_name": "centrifuge_indexes/abvh",
+    "ctat_microbiome_workflow.primary_assignment": 1,
+    "ctat_microbiome_workflow.sample_name": "SRR073747",
+    "ctat_microbiome_workflow.refindex_name": "centrifuge_indexes/abvh",
     "ctat_microbiome_workflow.refindex_tar" : "centrifuge_indexes.tar",
     "ctat_microbiome_workflow.threads": 4,
     "ctat_microbiome_workflow.rnaseq_aligned_bam" : 
