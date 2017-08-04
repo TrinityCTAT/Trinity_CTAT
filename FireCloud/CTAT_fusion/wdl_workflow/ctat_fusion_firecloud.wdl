@@ -31,10 +31,14 @@ task CTAT_FUSION_TASK {
             --right_fq ${sample_name}_2.fastq \
             --genome_lib_tar_gz ${genome_lib_tar_gz} \
             --output ${sample_name} 
+
+    mv ${sample_name}.tar.gz  ${sample_name}.ctat_fusion.tar.gz
+
+
     }
     
     output {
-      File output_tar_gz="${sample_name}.tar.gz"
+      File output_tar_gz="${sample_name}.ctat_fusion.tar.gz"
     }
 
     runtime {

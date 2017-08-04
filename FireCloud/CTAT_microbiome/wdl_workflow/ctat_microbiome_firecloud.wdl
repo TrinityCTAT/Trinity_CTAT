@@ -34,6 +34,8 @@ task centrifuge {
 
    command {
 
+    set -e
+
     # revert bam file
     java -Xmx1000m -jar /usr/local/bin/picard.jar \
         RevertSam \
@@ -46,7 +48,7 @@ task centrifuge {
 
     # bam to fastq
     java -jar /usr/local/bin/picard.jar \
-        SamToFastq I=${sample_name}.reverted_bam \
+        SamToFastq I=${sample_name}.reverted.bam \
         F=${sample_name}_1.fastq F2=${sample_name}_2.fastq \
         INTERLEAVE=false NON_PF=true \
         CLIPPING_ATTRIBUTE=XT CLIPPING_ACTION=2
@@ -74,7 +76,7 @@ task centrifuge {
    }
 
    runtime {
-            docker: "trinityctat/firecloud_ctatfusion:0.0.1"
+            docker: "trinityctat/firecloud_ctatmicrobiome:0.0.1"
             disks: "local-disk 200 SSD"
             memory: "10G"
             cpu: "4"
