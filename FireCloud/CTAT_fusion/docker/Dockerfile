@@ -15,7 +15,6 @@ RUN apt-get update && apt-get install -y gcc g++ perl python automake make \
 
 RUN mv /usr/local/src/STAR-Fusion*/* /usr/local/bin
 
-COPY util/* /usr/local/bin/
 
 ###################################
 ## install picard for reverting bam to fastq
@@ -34,6 +33,12 @@ RUN wget https://github.com/samtools/samtools/releases/download/1.5/samtools-1.5
     tar xvf samtools-1.5.tar.bz2  && \
     cd samtools-1.5 && \
     ./configure && make && make install
+
+
+
+###################
+
+COPY util/* /usr/local/bin/
 
 
 RUN mkdir /workdir
