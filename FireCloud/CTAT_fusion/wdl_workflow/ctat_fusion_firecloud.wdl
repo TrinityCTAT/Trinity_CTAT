@@ -7,13 +7,18 @@ task CTAT_FUSION_TASK {
 
     command {
 
+    set -e
+
+    # initial potential cleanup of read names in the bam file
+    /usr/local/bin/sam_readname_cleaner.py ${input_bam} ${input_bam}.cleaned.bam
+
+
     # revert aligned bam
     java -Xmx1000m -jar /usr/local/bin/picard.jar \
         RevertSam \
-        INPUT=${input_bam} \
+        INPUT=${input_bam}.cleaned.bam \
         OUTPUT_BY_READGROUP=false \
-        VALIDATION_STRINGENCY=LENIENT \
-        ATTRIBUTE_TO_CLEAR=FT \
+        VALIDATION_STRINGENCY=SILENT \
         SORT_ORDER=queryname \
         OUTPUT=${sample_name}.reverted.bam 
 
@@ -42,7 +47,7 @@ task CTAT_FUSION_TASK {
     }
 
     runtime {
-            docker: "trinityctat/firecloud_ctatfusion:0.0.1"
+            docker: "trinityctat/firecloud_ctatfusion:0.0.2"
             disks: "local-disk 200 SSD"
             memory: "50G"
             cpu: "16"
