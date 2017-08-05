@@ -36,12 +36,16 @@ task centrifuge {
 
     set -e
 
+    # initial potential cleanup of read names in the bam file
+    /usr/local/bin/sam_readname_cleaner.py ${rnaseq_aligned_bam} ${rnaseq_aligned_bam}.cleaned.bam
+    
+
     # revert bam file
     java -Xmx1000m -jar /usr/local/bin/picard.jar \
         RevertSam \
-        INPUT=${rnaseq_aligned_bam} \
+        INPUT=${rnaseq_aligned_bam}.cleaned.bam \
         OUTPUT_BY_READGROUP=false \
-        VALIDATION_STRINGENCY=LENIENT \
+        VALIDATION_STRINGENCY=SILENT \
         ATTRIBUTE_TO_CLEAR=FT \
         SORT_ORDER=queryname \
         OUTPUT=${sample_name}.reverted.bam 
@@ -76,7 +80,7 @@ task centrifuge {
    }
 
    runtime {
-            docker: "trinityctat/firecloud_ctatmicrobiome:0.0.1"
+            docker: "trinityctat/firecloud_ctatmicrobiome:0.0.2"
             disks: "local-disk 200 SSD"
             memory: "10G"
             cpu: "4"
