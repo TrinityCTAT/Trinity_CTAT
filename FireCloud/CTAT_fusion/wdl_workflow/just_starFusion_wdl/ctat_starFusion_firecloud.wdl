@@ -38,17 +38,18 @@ task CTAT_FUSION_TASK {
     /usr/local/bin/STAR-Fusion \
          --left_fq ${sample_name}_1.fastq \
          --right_fq ${sample_name}_2.fastq \
-         --genome_lib_dir `dirname ${genome_lib_tar_gz}`/ctat_genome_lib_build_dir \
+	 --CPU 16 \
+         --genome_lib_dir $(echo $(basename ${genome_lib_tar_gz}) | sed s/.plug-n-play.tar.gz//)/ctat_genome_lib_build_dir \
          --output_dir ${sample_name}
+	 
 
-
-	cp ${sample_name}/star-fusion.fusion_predictions.abridged  ${sample_name}.star-fusion.fusion_predictions.abridged.FFPM
+	cp ${sample_name}/star-fusion.fusion_predictions.abridged.tsv  ${sample_name}.star-fusion.fusion_predictions.abridged.tsv
 	
 
     }
     
     output {
-      File star_fusion_results="${sample_name}.star-fusion.fusion_predictions.abridged.FFPM"
+      File star_fusion_results="${sample_name}.star-fusion.fusion_predictions.abridged.tsv"
     }
 
     runtime {

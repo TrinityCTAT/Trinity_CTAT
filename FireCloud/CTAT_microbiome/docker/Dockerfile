@@ -40,8 +40,10 @@ RUN wget https://github.com/samtools/samtools/releases/download/1.5/samtools-1.5
 
 RUN wget ftp://ftp.ccb.jhu.edu/pub/infphilo/centrifuge/downloads/centrifuge-1.0.3-beta-Linux_x86_64.zip && \
      unzip centrifuge-1.0.3-beta-Linux_x86_64.zip && \
-     ln -s /usr/local/src/centrifuge-1.0.3-beta/centrifuge /usr/local/bin/.
+     ln -s /usr/local/src/centrifuge-1.0.3-beta/centrifuge* /usr/local/bin/.
 
+
+COPY centrifuge/centrifuge-kreport /usr/local/bin
 
 ###################
 

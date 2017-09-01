@@ -71,7 +71,12 @@ task centrifuge {
           -S ${sample_name}.centrifuge.results.txt \
           --report-file ${sample_name}.centrifuge.report.txt
 
-     tar -zcvf ${sample_name}.centrifuge.tar.gz ${sample_name}.centrifuge.results.txt ${sample_name}.centrifuge.report.txt
+     centrifuge-kreport -x ${refindex_name} ${sample_name}.centrifuge.results.txt > ${sample_name}.centrifuge.kraken_style.txt
+     
+
+     #tar -zcvf ${sample_name}.centrifuge.tar.gz ${sample_name}.centrifuge.results.txt ${sample_name}.centrifuge.report.txt
+     tar -zcvf ${sample_name}.centrifuge.tar.gz ${sample_name}.centrifuge.kraken_style.txt ${sample_name}.centrifuge.report.txt
+	  
 
     }
 	
@@ -80,7 +85,7 @@ task centrifuge {
    }
 
    runtime {
-            docker: "trinityctat/firecloud_ctatmicrobiome:0.0.2"
+            docker: "trinityctat/firecloud_ctatmicrobiome:0.0.3"
             disks: "local-disk 200 SSD"
             memory: "10G"
             cpu: "4"
