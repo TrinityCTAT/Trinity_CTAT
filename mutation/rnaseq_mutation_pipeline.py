@@ -867,15 +867,15 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
         return { INDEX_CMD : [], INDEX_FILE : "" }
 
     def func_do_variant_filtering_cancer(self, args_call, str_variants_file,
-                                         str_project_dir, f_is_hg_18):
+                                         str_project_dir, f_is_hg_38):
         """
 
         * args_call: Arguments for the pipeline
                    : Dict
         * str_variants_file: Path to file to be annotated and filtered
                            : String path
-        * f_is_hg_18: Indicates if the reference is Hg18, Hg19, or something else (in which CRAVAT will not run)
-                    : True (HG18), False (HG19), None (CRAVAT will not run)
+        * f_is_hg_38: Indicates if the reference is Hg38, Hg19, or something else (in which CRAVAT will not run)
+                    : True (HG38), False (HG19), None (CRAVAT will not run)
         * return: List of commands
         """
 
@@ -942,7 +942,7 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
                                            "-F", "SAO", "-F", "NSF", "-F", "NSM", "-F", "NSN", "-F", "TUMOR", "-F", "TISSUE",
                                            "-F", "COSMIC_ID", "-F", "KGPROD", "-F", "RS", "-F", "PMC"])
         str_pred_filtered_vcf=str_cancer_mutations_filtered
-        if (not f_is_hg_18 is None) and (not args_call.f_skip_cravat):
+        if (not f_is_hg_38 is None) and (not args_call.f_skip_cravat):
             # Update the output target vcf file given these steps are ran.
             str_return_vcf = str_cravat_filtered_groom_vcf
             str_pred_filtered_vcf=self.func_switch_ext(str_vcf_base, "_cosmic_filtered_cravate_annotated_filtered.vcf")
@@ -953,8 +953,8 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
                                                 "-F", "VEST_FDR"])
 
             str_cravat_result_dir_zip = str_cravat_result_dir + ".zip"
-            lstr_hg_18 = ["--is_hg18"] if f_is_hg_18 else []
-            str_cravat_cmd = " ".join(["annotate_with_cravat.py", "--classifier", args_call.str_cravat_classifier] + lstr_hg_18 +
+            lstr_hg_38 = ["--is_hg19"] if not f_is_hg_38 else []
+            str_cravat_cmd = " ".join(["annotate_with_cravat.py", "--classifier", args_call.str_cravat_classifier] + lstr_hg_38 +
                                       ["--email", args_call.str_email_contact, "--max_attempts", str(I_CRAVAT_ATTEMPTS),
                                       "--wait", str(I_CRAVAT_WAIT), str_cancer_mutations_filtered, str_cravat_result_dir])
             cmd_cravat = Command.Command(str_cur_command = str_cravat_cmd,
@@ -1326,17 +1326,17 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
                 str_annotated_vcf_file = str_snp_eff_updated_file
 
                 # Perform cancer filtering
-                f_cravat_hg18 = None
-                if args_parsed.str_email_contact is None or (not args_parsed.f_hg_19 and not args_parsed.f_hg_18):
-                    cur_pipeline.logr_logger.warning("CRAVAT analysis will not be ran. Please make sure to provide an email and indicate if hg18 or hg19 is being used.")
-                elif args_parsed.f_hg_18:
-                    f_cravat_hg18 = True
+                f_cravat_hg38 = None
+                if args_parsed.str_email_contact is None or (not args_parsed.f_hg_19 and not args_parsed.f_hg_38):
+                    cur_pipeline.logr_logger.warning("CRAVAT analysis will not be ran. Please make sure to provide an email and indicate if hg38 or hg19 is being used.")
+                elif args_parsed.f_hg_38:
+                    f_cravat_hg38 = True
                 elif args_parsed.f_hg_19:
-                    f_cravat_hg18 = False
+                    f_cravat_hg38 = False
                 cmd_filter_cancer = self.func_do_variant_filtering_cancer(args_call=args_parsed,
                                                                           str_variants_file=str_annotated_vcf_file,
                                                                           str_project_dir=args_parsed.str_out_dir,
-                                                                          f_is_hg_18=f_cravat_hg18)
+                                                                          f_is_hg_38=f_cravat_hg38)
                 str_cancer_tab = cmd_filter_cancer[INDEX_FILE]
                 lcmd_commands.extend(cmd_filter_cancer[INDEX_CMD])
 
@@ -1521,7 +1521,7 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
         args_group_cravat.add_argument("--email", metavar = "email_contact", dest = "str_email_contact", default = None, help = "Email used to notify of errors associated with cravat.")
         group_hg = args_group_cravat.add_mutually_exclusive_group()
         group_hg.add_argument("--is_hg19", dest = "f_hg_19", action="store_true", help = "Indicates that Hg19 is being used.")
-        group_hg.add_argument("--is_hg18", dest = "f_hg_18", action="store_true", help = "Indicates that Hg18 is being used.")
+        group_hg.add_argument("--is_hg38", dest = "f_hg_38", action="store_true", help = "Indicates that Hg38 is being used.")
         return(arg_raw)
 
 if __name__ == "__main__":

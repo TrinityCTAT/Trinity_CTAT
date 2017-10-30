@@ -38,7 +38,7 @@ prsr_arguments = argparse.ArgumentParser(prog = "annotate_with_cravat.py", descr
 prsr_arguments.add_argument("--analysis", dest = "str_analysis", action = "store", default="CHASM;VEST", help = "Analysis type parameter. For options see cravat.us/help.jsp")
 prsr_arguments.add_argument("--classifier", dest = "str_classifier", action = "store", required=True, help = "Tissue type for the classifier. For options see cravat.us/help.jsp.")
 prsr_arguments.add_argument("--email", dest = "str_email", action = "store", required=True, help = "Email contact for job.")
-prsr_arguments.add_argument("--is_hg18", dest = "f_hg_18", action = "store_true", default=False, help = "Indicates the reference is Hg18 (By default assumed to be Hg19).")
+prsr_arguments.add_argument("--is_hg19", dest = "f_hg_19", action = "store_true", default=False, help = "Indicates the reference is Hg19 (By default assumed to be Hg38).")
 prsr_arguments.add_argument("--max_attempts", dest = "i_max_attempts", default=100, action = "store", type=int, help = "Max attempts of querying response before timing out.")
 prsr_arguments.add_argument("--wait", dest = "i_wait", action = "store", default=10, type=int, help = "Wait in seconds before querying the response.")
 prsr_arguments.add_argument(dest = "str_input_file", action = "store", help = "Path to VCF file containing variants.")
@@ -111,7 +111,7 @@ def func_get_cravat_response(str_json_id, i_max_attempts, i_wait):
 
 
 def func_request_cravat_service(str_vcf_path, str_analysis,
-                                str_classifier, f_hg_18, str_email):
+                                str_classifier, f_hg_19, str_email):
     """
     Request a job to occur with CRAVAT.
 
@@ -119,7 +119,7 @@ def func_request_cravat_service(str_vcf_path, str_analysis,
                    : string
     * str_classifier : Tissue type analyzed(see http://www.cravat.us/help.jsp).
                      : string
-    * f_hg_18 : True indictes HG18 / False indicates HG19.
+    * f_hg_19 : True indictes HG19 / False indicates HG38 (Current CRAVAT default).
               : boolean
     * str_email : Email of user (errors will be sent by email).
                 : string
@@ -128,7 +128,7 @@ def func_request_cravat_service(str_vcf_path, str_analysis,
     # Encode request info
     pyld_request = { "chasmclassifier": str(str_classifier),
                      "mupitinput": "on",
-                     "hg18": "on" if f_hg_18 else "off",
+                     "hg19": "on" if f_hg_19 else "off",
                      "tsvreport": "on",
                      "analyses": str_analysis,
                      "functionalannotation": "on",
@@ -151,7 +151,7 @@ if not os.path.splitext(args_call.str_output_dir)[1] == ".zip":
 str_job_id = func_request_cravat_service(args_call.str_input_file,
                                           args_call.str_analysis,
                                           args_call.str_classifier,
-                                          args_call.f_hg_18,
+                                          args_call.f_hg_19,
                                           args_call.str_email)
 if not str_job_id:
     print " ".join(["annotate_with_cravat::Error Job id not found.",
