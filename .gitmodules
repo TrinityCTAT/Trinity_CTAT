@@ -25,12 +25,12 @@
 [submodule "expression/SciEDPipeR"]
 	path = expression/SciEDPipeR
 	url = https://github.com/SciEDPipeR/SciEDPipeR.git
-[submodule "mutation/SciEDPipeR"]
-	path = mutation/SciEDPipeR
-	url = https://github.com/SciEDPipeR/SciEDPipeR.git
 [submodule "lncrna/slncky"]
 	path = lncrna/slncky
 	url = https://github.com/slncky/slncky.git
 [submodule "metagenomics/SciEDPipeR"]
 	path = metagenomics/SciEDPipeR
 	url = https://github.com/SciEDPipeR/SciEDPipeR.git
+[submodule "mutations"]
+	path = mutations
+	url = https://github.com/TrinityCTAT/mutations
