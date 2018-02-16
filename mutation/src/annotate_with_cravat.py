@@ -35,7 +35,7 @@ i_vcf_alt = 4
 
 # Parse arguments
 prsr_arguments = argparse.ArgumentParser(prog = "annotate_with_cravat.py", description = "Retrieve annotations associated with variants in a VCF file using CRAVAT.", formatter_class = argparse.ArgumentDefaultsHelpFormatter)
-prsr_arguments.add_argument("--analysis", dest = "str_analysis", action = "store", default="CHASM;VEST", help = "Analysis type parameter. For options see cravat.us/help.jsp")
+prsr_arguments.add_argument("--analysis", dest = "str_analysis", action = "store", default="CHASM;VEST;", help = "Analysis type parameter. For options see cravat.us/help.jsp")
 prsr_arguments.add_argument("--classifier", dest = "str_classifier", action = "store", required=True, help = "Tissue type for the classifier. For options see cravat.us/help.jsp.")
 prsr_arguments.add_argument("--email", dest = "str_email", action = "store", required=True, help = "Email contact for job.")
 prsr_arguments.add_argument("--is_hg19", dest = "f_hg_19", action = "store_true", default=False, help = "Indicates the reference is Hg19 (By default assumed to be Hg38).")
@@ -126,9 +126,10 @@ def func_request_cravat_service(str_vcf_path, str_analysis,
     """
 
     # Encode request info
-    pyld_request = { "chasmclassifier": str(str_classifier),
+    pyld_request = { "classifier": str(str_classifier),
                      "mupitinput": "on",
-                     "hg19": "on" if f_hg_19 else "off",
+                     #"hg18": "off",
+                     "hg19": "on", #if f_hg_19 else "off",
                      "tsvreport": "on",
                      "analyses": str_analysis,
                      "functionalannotation": "on",
@@ -136,9 +137,10 @@ def func_request_cravat_service(str_vcf_path, str_analysis,
                      "email": str_email }
 
     # Send file over to service
-    response_cravat = requests.post("http://www.cravat.us/CRAVAT/rest/service/submit",
+    response_cravat = requests.post("http://cravat.us/CRAVAT/rest/service/submit",
                                     files={"inputfile": open(str_vcf_path)},
                                     data=pyld_request)
+    print response_cravat
     json_response = response_cravat.json()
     # Get return (job id)
     return json_response.get(str_response_job_id, None)

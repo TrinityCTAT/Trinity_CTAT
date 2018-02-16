@@ -3,18 +3,18 @@
 # Constants
 CHR_COMMENT = "#"
 STR_TAB_DELIMITER = "\t"
-STR_CHROM = "Chrom"
+STR_CHROM = "Chromosome"
 STR_CHROM_UPDATE = "CHROM"
 STR_EMPTY_FILE = "No Data"
 STR_POS = "Position"
 STR_POS_UPDATE = "POS"
-STR_CHASM_PVALUE = "CHASM cancer driver p-value (missense)"
+STR_CHASM_PVALUE = "CHASM p-value"
 STR_CHASM_PVALUE_UPDATE = "CHASM_PVALUE"
-STR_CHASM_FDR = "CHASM cancer driver FDR (missense)"
+STR_CHASM_FDR = "CHASM FDR"
 STR_CHASM_FDR_UPDATE = "CHASM_FDR"
-STR_VEST_PVALUE = "VEST pathogenicity p-value (non-silent)"
+STR_VEST_PVALUE = "VEST p-value"
 STR_VEST_PVALUE_UPDATE = "VEST_PVALUE"
-STR_VEST_FDR = "VEST pathogenicity FDR (non-silent)"
+STR_VEST_FDR = "VEST FDR"
 STR_VEST_FDR_UPDATE = "VEST_FDR"
 
 import argparse
@@ -71,6 +71,7 @@ if args.str_input_file:
           i_chasm_pvalue = lstr_line.index( STR_CHASM_PVALUE ) if STR_CHASM_PVALUE in lstr_line else -1
           i_chasm_fdr = lstr_line.index( STR_CHASM_FDR ) if STR_CHASM_FDR in lstr_line else -1
           i_vest_pvalue = lstr_line.index( STR_VEST_PVALUE ) if STR_VEST_PVALUE in lstr_line else -1
+          print i_vest_pvalue
           i_vest_fdr = lstr_line.index( STR_VEST_FDR ) if STR_VEST_FDR in lstr_line else -1
           lstr_header_order = [ i_chrom_index, i_pos_index, i_chasm_pvalue, i_chasm_fdr, i_vest_pvalue, i_vest_fdr ]
 
@@ -94,6 +95,7 @@ if args.str_input_file:
           if len( str_chrom ) == 1:
             str_chrom = "0" + str_chrom
         i_pos = int( lstr_line[ i_pos_index ] )
+        print [ lstr_line[ i_index ] if i_index > 0 else "NA" for i_index in lstr_header_order ]
         llstr_tab.append( [ str_chrom, i_pos, STR_TAB_DELIMITER.join( [ lstr_line[ i_index ] if i_index > 0 else "NA" for i_index in lstr_header_order ] ) ] )
 
     # Sort by chr and pos
