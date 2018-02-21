@@ -4,8 +4,8 @@
 import argparse
 import datetime
 import os,sys
-sys.path.append(os.path.sep.join([os.path.dirname(os.path.realpath(__file__)), "SciEDPipeR"]))
-sys.path.append(os.path.sep.join([os.path.dirname(os.path.realpath(__file__)), "SciEDPipeR", "sciedpiper"]))
+sys.path.insert(0, os.path.sep.join([os.path.dirname(os.path.abspath(__file__)), "SciEDPipeR"]))
+sys.path.insert(0, os.path.sep.join([os.path.dirname(os.path.abspath(__file__)), "SciEDPipeR", "sciedpiper"]))
 import sciedpiper.Command as Command
 import sciedpiper.PipelineRunner as PipelineRunner
 import sciedpiper.Pipeline as Pipeline
@@ -457,10 +457,10 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
         str_hap_call = " ".join(["java", "-jar", "GenomeAnalysisTK.jar",
                                  "-T", "HaplotypeCaller", "-R",
                                  args_call.str_genome_fa, "-I", str_input_bam,
-                                 "-recoverDanglingHeads",
                                  "-dontUseSoftClippedBases","-stand_call_conf",
                                  "20.0", "-stand_emit_conf", "20.0",
                                  "--out", str_variants_file])
+        #removed recoverDangling head option from above , option not required above GATK3.3
         cmd_haplotype_caller = Command.Command(str_cur_command=str_hap_call,
                                                lstr_cur_dependencies=[args_call.str_genome_fa,
                                                                       str_input_bam,
@@ -1241,6 +1241,7 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
                 # Filter results to just SNPs
                 str_snp_filtered_vcf = self.func_switch_ext(str_annotated_vcf_file, "_snp.vcf")
                 str_cmd_filter_snps = " ".join(["reduce_vcf_to_snps.py", str_annotated_vcf_file, str_snp_filtered_vcf])
+                #changed above command
                 cmd_snp_filter = Command.Command(str_cur_command = str_cmd_filter_snps,
                                               lstr_cur_dependencies = [str_annotated_vcf_file],
                                               lstr_cur_products = [str_snp_filtered_vcf])
@@ -1252,6 +1253,7 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
                 if args_parsed.str_darned_data or args_parsed.str_radar_data:
                     str_rna_edit_filtered_vcf = self.func_switch_ext(str_annotated_vcf_file, "_RNAedit.vcf")
                     lstr_cmd_rna_editing_filter = ["filter_snps_rna_editing.py"]
+                    #changed above command
                     if args_parsed.str_darned_data:
                         lstr_cmd_rna_editing_filter.extend(["--darned", args_parsed.str_darned_data])
                     if args_parsed.str_radar_data:
