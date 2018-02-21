@@ -150,6 +150,7 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
          lstr_limited_index_mode.append(" ".join(["--limitGenomeGenerateRAM",
                                                   "15000000000",
                                                   "--genomeSAsparseD 2",
+                                                  "--outSAMmapqUnique 60",
                                                   "--limitIObufferSize",
                                                   "150000000"]))
 
@@ -166,6 +167,7 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
             str_index = " ".join(["STAR", "--runMode", STR_STAR_GENOME_GENERATE] +
                                   lstr_limited_index_mode + lstr_index_memory_size +
                                   ["--genomeDir", str_index_dir,
+                                    "--outSAMmapqUnique", "60",
                                    "--genomeFastaFiles", args_call.str_genome_fa,
                                    "--runThreadN", str_num_threads])
             cmd_i = Command.Command(str_cur_command=str_index,
@@ -197,6 +199,7 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
                                        "BAM", "SortedByCoordinate",
                                        "--twopassMode", "Basic",
                                        "--limitBAMsortRAM", "30000000000",
+                                       " --outSAMmapqUnique","60",
                                        "--outFileNamePrefix",
                                        str_misc_dir + os.sep])
             lstr_deps = [str_index_dir, str_left, str_right]
@@ -328,7 +331,9 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
         str_realigned_bai = os.path.join(str_tmp_dir, "realigned.bai")
         str_recalibrated_alignment_file = os.path.join(str_tmp_dir, "recal_table.table")
         str_recalibrated_bam = os.path.join(str_tmp_dir, "recalibrated.bam")
+        str_recalibrated_bam_2 = os.path.join(str_tmp_dir, "recalibrated_tmp.bam")
         str_recalibrated_bai = os.path.join(str_tmp_dir, "recalibrated.bai")
+        str_recalibrated_bai_2 = os.path.join(str_tmp_dir, "recalibrated_tmp.bai")
         str_recalibration_plots_pdf = os.path.join(str_tmp_dir, "recalibration.pdf")
         str_sorted_bam = os.path.join(str_tmp_dir, "sorted.bam")
         str_split_bam = os.path.join(str_tmp_dir, "split.bam")
@@ -352,14 +357,15 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
                                                                           " CREATE_INDEX=true M=", str_qc_metrics]),
                                                 lstr_cur_dependencies = [str_sorted_bam],
                                                 lstr_cur_products = [str_dedupped_bam, str_dedupped_bai, str_qc_metrics])
-        cmd_split_cigar_reads = Command.Command(str_cur_command = " ".join(["java -jar GenomeAnalysisTK.jar -T SplitNCigarReads -R", args_call.str_genome_fa,
-                                                                          "-I", str_dedupped_bam, "-o", str_split_bam, "-rf ReassignOneMappingQuality",
-                                                                          "-RMQF 255 -RMQT 60 -U ALLOW_N_CIGAR_READS"]),
+        cmd_split_cigar_reads = Command.Command(str_cur_command = " ".join(["java -jar gatk-package-4.0.1.2-local.jar SplitNCigarReads -R", args_call.str_genome_fa,
+                                                                          "-I", str_dedupped_bam, "-O", str_split_bam,
+                                                                          "--read-validation-stringency LENIENT"]),
                                                 lstr_cur_dependencies = [args_call.str_genome_fa, str_dedupped_bam, str_dedupped_bai],
                                                 lstr_cur_products = [str_split_bam, str_split_bai])
         lcmd_gatk_recalibration_commands.extend([cmd_add_or_replace_groups, cmd_mark_duplicates, cmd_split_cigar_reads])
         str_return_bam = str_split_bam
         str_return_bai = str_split_bai
+        '''
 
         # optional indel realignment step
         if not args_call.f_stop_optional_realignment:
@@ -375,30 +381,38 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
             lcmd_gatk_recalibration_commands.extend([cmd_realigner_target_creator, cmd_indel_realigner])
             str_return_bam = str_realigned_bam
             str_return_bai = str_realigned_bai
-
+        '''
         # Recalibrate alignments
         if not args_call.str_vcf_file is None:
-            cmd_base_recalibrator = Command.Command(str_cur_command = " ".join(["java -Xmx4g -jar GenomeAnalysisTK.jar -T BaseRecalibrator -I",
-                                                                          str_split_bam if args_call.f_stop_optional_realignment else str_realigned_bam,
-                                                                          "-R", args_call.str_genome_fa, "--out", str_recalibrated_alignment_file, "-knownSites", args_call.str_vcf_file]),
+            cmd_base_recalibrator = Command.Command(str_cur_command = " ".join(["java -Xmx4g -jar gatk-package-4.0.1.2-local.jar BaseRecalibrator -I",
+                                                                          str_split_bam,
+                                                                          "-R", args_call.str_genome_fa, "-O", str_recalibrated_alignment_file, "--known-sites", args_call.str_vcf_file]),
                                                 lstr_cur_dependencies = [args_call.str_genome_fa, args_call.str_vcf_file] +
-                                                                      [str_split_bam, str_split_bai] if args_call.f_stop_optional_realignment else [str_realigned_bam, str_realigned_bai],
+                                                                      [str_split_bam, str_split_bai],
                                                 lstr_cur_products = [str_recalibrated_alignment_file])
-            cmd_print_reads = Command.Command(str_cur_command = " ".join(["java -Xmx2g -jar GenomeAnalysisTK.jar -R", args_call.str_genome_fa,
-                                                                           "-T PrintReads", "--out", str_recalibrated_bam, "-I",
-                                                                           str_split_bam if args_call.f_stop_optional_realignment else str_realigned_bam,
-                                                                           "--BQSR", str_recalibrated_alignment_file]),
+           
+            cmd_print_reads = Command.Command(str_cur_command = " ".join(["java -Xmx2g -jar gatk-package-4.0.1.2-local.jar ",
+                                                                           "PrintReads", "-O", str_recalibrated_bam_2, "-I",
+                                                                           str_split_bam]),
                                                  lstr_cur_dependencies = [args_call.str_genome_fa, str_recalibrated_alignment_file] +
-                                                                      [str_split_bam, str_split_bai] if args_call.f_stop_optional_realignment else [str_realigned_bam, str_realigned_bai],
+                                                                      [str_split_bam, str_split_bai] ,
+                                                 lstr_cur_products = [str_recalibrated_bam_2,str_recalibrated_bai_2])
+
+            cmd_apply_bqsr = Command.Command(str_cur_command = " ".join(["java -jar gatk-package-4.0.1.2-local.jar ApplyBQSR",
+                                                    "-I", str_recalibrated_bam_2, "-O", str_recalibrated_bam,
+                                                    "-bqsr", str_recalibrated_alignment_file]),
+                                                 lstr_cur_dependencies = [args_call.str_genome_fa, str_recalibrated_alignment_file] +
+                                                                      [str_split_bam, str_split_bai] ,
                                                  lstr_cur_products = [str_recalibrated_bam, str_recalibrated_bai])
-            lcmd_gatk_recalibration_commands.extend([cmd_base_recalibrator, cmd_print_reads])
+            
+            lcmd_gatk_recalibration_commands.extend([cmd_base_recalibrator, cmd_print_reads, cmd_apply_bqsr])
             str_return_bam = str_recalibrated_bam
             str_return_bai = str_recalibrated_bai
 
             # Optional plotting of recalibration
             if args_call.f_optional_recalibration_plot:
-                cmd_analyse_covariates = Command.Command(str_cur_command = " ".join(["java -Xmx4g -jar GenomeAnalysisTK.jar -T AnalyzeCovariates -R",
-                                                                            args_call.str_genome_fa, "-BQSR", str_recalibrated_alignment_file,
+                cmd_analyse_covariates = Command.Command(str_cur_command = " ".join(["java -Xmx4g -jar gatk-package-4.0.1.2-local.jar AnalyzeCovariates -R",
+                                                                            args_call.str_genome_fa, "-bqsr", str_recalibrated_alignment_file,
                                                                             "-plots", str_recalibration_plots_pdf]),
                                                   lstr_cur_dependencies = [args_call.str_genome_fa, str_recalibrated_alignment_file],
                                                   lstr_cur_products = [str_recalibration_plots_pdf])
@@ -454,13 +468,13 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
             lcmd_gatk_rna_calling.append(cmd_depth)
 
         # Variant calling
-        str_hap_call = " ".join(["java", "-jar", "GenomeAnalysisTK.jar",
-                                 "-T", "HaplotypeCaller", "-R",
+        str_hap_call = " ".join(["java", "-jar", "gatk-package-4.0.1.2-local.jar",
+                                 "HaplotypeCaller", "-R",
                                  args_call.str_genome_fa, "-I", str_input_bam,
-                                 "-dontUseSoftClippedBases","-stand_call_conf",
-                                 "20.0", "-stand_emit_conf", "20.0",
-                                 "--out", str_variants_file])
-        #removed recoverDangling head option from above , option not required above GATK3.3
+                                 "--recover-dangling-heads","true",
+                                 "--dont-use-soft-clipped-bases","-stand-call-conf",
+                                 "20.0",
+                                 "-O", str_variants_file])
         cmd_haplotype_caller = Command.Command(str_cur_command=str_hap_call,
                                                lstr_cur_dependencies=[args_call.str_genome_fa,
                                                                       str_input_bam,
@@ -601,10 +615,11 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
                                                 lstr_cur_dependencies = [str_dedup_bam],
                                                 lstr_cur_products = [str_replace_bam, str_replace_bai])
         ## Indel Realignment
+        '''
         # java -jar GenomeAnalysisTK.jar -T RealignerTargetCreator -R human.fasta -I original.bam -known indels.vcf -o religner.intervals
         cmd_create_target = Command.Command(str_cur_command = " ".join(["java -jar GenomeAnalysisTK.jar -T RealignerTargetCreator -R",
                                                                     args_call.str_genome_fa, "-I", str_replace_bam, "--out", str_intervals,
-                                                                    "-known", args_call.str_vcf_file]),
+                                                                    "--known-sites", args_call.str_vcf_file]),
                                     lstr_cur_dependencies = [str_replace_bam, args_call.str_vcf_file],
                                     lstr_cur_products = [str_intervals])
 
@@ -614,44 +629,55 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
                                                     str_intervals, "--out", str_realigned_bam, "-known", args_call.str_vcf_file]),
                                     lstr_cur_dependencies = [args_call.str_genome_fa, str_replace_bam, str_intervals],
                                     lstr_cur_products = [str_realigned_bam, str_realigned_bai])
-
+        
+       
         ## Base Recalibration
         # java -jar GenomeAnalysisTK.jar -T BaseRecalibrator -R human.fasta -I realigned.bam -knownSites x.vcf -o recal.table
-        cmd_recalibrate = Command.Command(str_cur_command = " ".join(["java -jar GenomeAnalysisTK.jar -T BaseRecalibrator -R",
-                                                    args_call.str_genome_fa, "-I", str_realigned_bam, "--out", str_recal_table,
-                                                    "-knownSites", args_call.str_vcf_file]),
+        cmd_recalibrate = Command.Command(str_cur_command = " ".join(["java -jar gatk-package-4.0.1.2-local.jar BaseRecalibrator -R",
+                                                    args_call.str_genome_fa, "-I", str_realigned_bam, "-O", str_recal_table,
+                                                    "--known-sites", args_call.str_vcf_file]),
                                     lstr_cur_dependencies = [args_call.str_genome_fa, args_call.str_vcf_file, str_realigned_bam],
                                     lstr_cur_products = [str_recal_table])
 
         # java -jar GenomeAnalysisTK.jar -T PrintReads -R human.fasta -I realigned.bam -BQSR recal.table -o recal.bam
-        cmd_print = Command.Command(str_cur_command = " ".join(["java -jar GenomeAnalysisTK.jar -T PrintReads -R",
-                                                    args_call.str_genome_fa, "-I", str_realigned_bam, "--out", str_recal_snp_bam,
-                                                    "-BQSR", str_recal_table]),
+        cmd_print = Command.Command(str_cur_command = " ".join(["java -jar gatk-package-4.0.1.2-local.jar PrintReads -R",
+                                                    args_call.str_genome_fa, "-I", str_realigned_bam, "-O", str_recal_snp_bam,
+                                                    "-bqsr", str_recal_table]),
                                     lstr_cur_dependencies = [args_call.str_genome_fa, str_realigned_bam, str_realigned_bai, str_recal_table],
                                     lstr_cur_products = [str_recal_snp_bam, str_recal_snp_bai])
+        
+        # java -jar GenomeAnalysisTK.jar ApplyBQSR -I recal.bam -bqsr recal.table -O recal.bam
+        cmd_print = Command.Command(str_cur_command = " ".join(["java -jar gatk-package-4.0.1.2-local.jar ApplyBQSR",
+                                                    "-I", str_realigned_bam, "-O", str_recal_snp_bam,
+                                                    "-bqsr", str_recal_table]),
+                                    lstr_cur_dependencies = [args_call.str_genome_fa, str_realigned_bam, str_realigned_bai, str_recal_table],
+                                    lstr_cur_products = [str_recal_snp_bam, str_recal_snp_bai])
+    
 
         ### Make plots
         # java -jar GenomeAnalysisTK.jar -T BaseRecalibrator -R human.fasta -I realigned.bam -knownSites x.vcf -BQSR recal.table -o after_recal.table
-        cmd_recalibrate_2 = Command.Command(str_cur_command = " ".join(["java -jar GenomeAnalysisTK.jar -T BaseRecalibrator -R",
-                                            args_call.str_genome_fa, "-I", str_realigned_bam, "--out", str_recal_table_2,
-                                            "-knownSites", args_call.str_vcf_file, "-BQSR", str_recal_table]),
+        cmd_recalibrate_2 = Command.Command(str_cur_command = " ".join(["java -jar gatk-package-4.0.1.2-local.jar BaseRecalibrator -R",
+                                            args_call.str_genome_fa, "-I", str_realigned_bam, "-O", str_recal_table_2,
+                                            "--known-sites", args_call.str_vcf_file, "-bqsr", str_recal_table]),
                                     lstr_cur_dependencies = [args_call.str_genome_fa, str_realigned_bam, str_realigned_bai,
                                                              args_call.str_vcf_file, str_recal_table],
                                     lstr_cur_products = [str_recal_table_2])
+        '''
 
         # Commands so far
         ls_cmds = [cmd_sort_bam, cmd_sort_index_bam, cmd_dedup, cmd_replace, cmd_create_target, cmd_realign, cmd_recalibrate, cmd_print, cmd_recalibrate_2]
 
+        '''
         # Optional plotting of recalibration
         if args_call.f_optional_recalibration_plot:
             # java -jar GenomeAnalysisTK.jar -T AnalyzeCovariates -R human.fasta -before recal.table -after after_recal.tale -plots recal_plots.pdf
-            cmd_covariates = Command.Command(str_cur_command = " ".join(["java -jar GenomeAnalysisTK.jar -T AnalyzeCovariates -R",
+            cmd_covariates = Command.Command(str_cur_command = " ".join(["java -jar gatk-package-4.0.1.2-local.jar AnalyzeCovariates -R",
                                             args_call.str_genome_fa, "-before", str_recal_table, "-after", str_recal_table_2,
                                             "-plots", str_recal_plot]),
                                     lstr_cur_dependencies = [args_call.str_genome_fa, str_recal_table, str_recal_table_2],
                                     lstr_cur_products = [str_recal_plot])
             ls_cmds.append(cmd_covariates)
-
+        '''
         # Create depth file
         if args_call.f_calculate_base_coverage:
     #        str_depth_compressed_file = os.path.basename(args_call.str_out_dir) + ".depth.gz"
@@ -665,8 +691,8 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
         # Call mutations - Single File, variant only calling in DNA-seq.
         # https://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php
         # java -jar GenomeAnalysisTk.jar -T HaplotypeCaller -R reference/file.fasta -I recal.bam -stand_call_conf 30 -stand_emit_conf -o output.vcf
-        cmd_haplotype_caller = Command.Command(str_cur_command = " ".join(["java -jar GenomeAnalysisTK.jar -T HaplotypeCaller -R", args_call.str_genome_fa,
-                                                               "-I", str_recal_snp_bam, "-stand_call_conf 30.0 -stand_emit_conf 10.0 -o", str_raw_vcf]),
+        cmd_haplotype_caller = Command.Command(str_cur_command = " ".join(["java -jar gatk-package-4.0.1.2-local.jar HaplotypeCaller -R", args_call.str_genome_fa,
+                                                               "-I", str_recal_snp_bam, "-stand-call-conf 30.0 -O", str_raw_vcf]),
                                                 lstr_cur_dependencies = [args_call.str_genome_fa, str_recal_snp_bam, str_recal_snp_bai],
                                                 lstr_cur_products = [str_raw_vcf])
         cmd_haplotype_caller.func_set_dependency_clean_level([str_recal_snp_bam, str_recal_snp_bai], Command.CLEAN_NEVER)
@@ -835,14 +861,14 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
                                                   C_STR_INIT_FILTER)
         str_filtered_variants_index_file = str_filtered_variants_file + ".csi"
         # Filter variants
-        str_filter_command = " ".join(["java -jar GenomeAnalysisTK.jar",
-                                       "-T VariantFiltration -R",
+        str_filter_command = " ".join(["java -jar gatk-package-4.0.1.2-local.jar",
+                                       "VariantFiltration -R",
                                        args_call.str_genome_fa, "-V",
                                        str_variants_file, "-window 35",
-                                       "-cluster 3 -filterName FS",
+                                       "-cluster 3 --filter-name FS",
                                        "-filter \"FS > 30.0\"",
-                                       "-filterName QD","-filter \"QD < 2.0\"",
-                                       "--out", str_filtered_variants_file])
+                                       "--filter-name QD","-filter \"QD < 2.0\"",
+                                       "-O", str_filtered_variants_file])
         cmd_variant_filteration = Command.Command(str_cur_command=str_filter_command,
                                                    lstr_cur_dependencies=[args_call.str_genome_fa] + lstr_dependencies,
                                                    lstr_cur_products=[str_filtered_variants_file])
@@ -936,7 +962,7 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
         lcmd_cancer_filter.append(cmd_cancer_filter)
 
         # Annotate non-common with CRAVAT
-        str_cmd_make_cravat_tab = " ".join(["java -jar GenomeAnalysisTK.jar", "-R", args_call.str_genome_fa, "-T", "VariantsToTable", "-V", str_cravat_filtered_groom_vcf,
+        str_cmd_make_cravat_tab = " ".join(["java -jar gatk-package-4.0.1.2-local.jar", "VariantsToTable", "-R", args_call.str_genome_fa,"-V", str_cravat_filtered_groom_vcf,
                                            "-F", "CHROM", "-F", "POS", "-F", "REF", "-F", "ALT", "-F", "GENE",
                                            "-F", "DP", "-F", "QUAL", "-F", "MQ",
                                            "-F", "SAO", "-F", "NSF", "-F", "NSM", "-F", "NSN", "-F", "TUMOR", "-F", "TISSUE",
@@ -1055,10 +1081,7 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
 
         # Convert filtered VCF file to tab file.
         str_cmd_make_cravat_tab = " ".join([str_cmd_make_cravat_tab,
-                                            "--allowMissingData",
-                                            "--unsafe",
-                                            "LENIENT_VCF_PROCESSING",
-                                            "-o", str_cancer_tab])
+                                            "-O", str_cancer_tab])
         cmd_cravat_table = Command.Command(str_cur_command = str_cmd_make_cravat_tab,
                                            lstr_cur_dependencies = [str_cravat_filtered_groom_vcf],
                                            lstr_cur_products = [str_cancer_tab])
@@ -1241,7 +1264,6 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
                 # Filter results to just SNPs
                 str_snp_filtered_vcf = self.func_switch_ext(str_annotated_vcf_file, "_snp.vcf")
                 str_cmd_filter_snps = " ".join(["reduce_vcf_to_snps.py", str_annotated_vcf_file, str_snp_filtered_vcf])
-                #changed above command
                 cmd_snp_filter = Command.Command(str_cur_command = str_cmd_filter_snps,
                                               lstr_cur_dependencies = [str_annotated_vcf_file],
                                               lstr_cur_products = [str_snp_filtered_vcf])
@@ -1253,7 +1275,6 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
                 if args_parsed.str_darned_data or args_parsed.str_radar_data:
                     str_rna_edit_filtered_vcf = self.func_switch_ext(str_annotated_vcf_file, "_RNAedit.vcf")
                     lstr_cmd_rna_editing_filter = ["filter_snps_rna_editing.py"]
-                    #changed above command
                     if args_parsed.str_darned_data:
                         lstr_cmd_rna_editing_filter.extend(["--darned", args_parsed.str_darned_data])
                     if args_parsed.str_radar_data:
