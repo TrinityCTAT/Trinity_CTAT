@@ -1081,6 +1081,7 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
 
         # Convert filtered VCF file to tab file.
         str_cmd_make_cravat_tab = " ".join([str_cmd_make_cravat_tab,
+                                            "--lenient",
                                             "-O", str_cancer_tab])
         cmd_cravat_table = Command.Command(str_cur_command = str_cmd_make_cravat_tab,
                                            lstr_cur_dependencies = [str_cravat_filtered_groom_vcf],
