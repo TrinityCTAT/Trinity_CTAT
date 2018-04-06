@@ -4,8 +4,8 @@
 import argparse
 import datetime
 import os,sys
-sys.path.append(os.path.sep.join([os.path.dirname(os.path.realpath(__file__)), "SciEDPipeR"]))
-sys.path.append(os.path.sep.join([os.path.dirname(os.path.realpath(__file__)), "SciEDPipeR", "sciedpiper"]))
+sys.path.insert(0, os.path.sep.join([os.path.dirname(os.path.abspath(__file__)), "SciEDPipeR"]))
+sys.path.insert(0, os.path.sep.join([os.path.dirname(os.path.abspath(__file__)), "SciEDPipeR", "sciedpiper"]))
 import sciedpiper.Command as Command
 import sciedpiper.PipelineRunner as PipelineRunner
 import sciedpiper.Pipeline as Pipeline
