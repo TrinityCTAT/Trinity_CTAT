@@ -4,8 +4,8 @@
 import argparse
 import datetime
 import os,sys
-sys.path.insert(0, os.path.sep.join([os.path.dirname(os.path.abspath(__file__)), "SciEDPipeR"]))
-sys.path.insert(0, os.path.sep.join([os.path.dirname(os.path.abspath(__file__)), "SciEDPipeR", "sciedpiper"]))
+sys.path.append(os.path.sep.join([os.path.dirname(os.path.realpath(__file__)), "SciEDPipeR"]))
+sys.path.append(os.path.sep.join([os.path.dirname(os.path.realpath(__file__)), "SciEDPipeR", "sciedpiper"]))
 import sciedpiper.Command as Command
 import sciedpiper.PipelineRunner as PipelineRunner
 import sciedpiper.Pipeline as Pipeline
@@ -614,70 +614,9 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
                                                                     args_call.str_sequencing_platform, " RGPU=machine RGSM=", str_unique_id, " CREATE_INDEX=TRUE"]),
                                                 lstr_cur_dependencies = [str_dedup_bam],
                                                 lstr_cur_products = [str_replace_bam, str_replace_bai])
-        ## Indel Realignment
-        '''
-        # java -jar GenomeAnalysisTK.jar -T RealignerTargetCreator -R human.fasta -I original.bam -known indels.vcf -o religner.intervals
-        cmd_create_target = Command.Command(str_cur_command = " ".join(["java -jar GenomeAnalysisTK.jar -T RealignerTargetCreator -R",
-                                                                    args_call.str_genome_fa, "-I", str_replace_bam, "--out", str_intervals,
-                                                                    "--known-sites", args_call.str_vcf_file]),
-                                    lstr_cur_dependencies = [str_replace_bam, args_call.str_vcf_file],
-                                    lstr_cur_products = [str_intervals])
-
-        # java -jar GenomeAnalysisTK.jar -T IndelRealigner -R human.fasta -I orginal.bam -known indels.vcf -targetIntervals realigner.intervals -o realigned.bam
-        cmd_realign = Command.Command(str_cur_command = " ".join(["java -jar GenomeAnalysisTK.jar -T IndelRealigner -R",
-                                                    args_call.str_genome_fa, "-I", str_replace_bam, "-targetIntervals",
-                                                    str_intervals, "--out", str_realigned_bam, "-known", args_call.str_vcf_file]),
-                                    lstr_cur_dependencies = [args_call.str_genome_fa, str_replace_bam, str_intervals],
-                                    lstr_cur_products = [str_realigned_bam, str_realigned_bai])
-        
-       
-        ## Base Recalibration
-        # java -jar GenomeAnalysisTK.jar -T BaseRecalibrator -R human.fasta -I realigned.bam -knownSites x.vcf -o recal.table
-        cmd_recalibrate = Command.Command(str_cur_command = " ".join(["java -jar gatk-package-4.0.1.2-local.jar BaseRecalibrator -R",
-                                                    args_call.str_genome_fa, "-I", str_realigned_bam, "-O", str_recal_table,
-                                                    "--known-sites", args_call.str_vcf_file]),
-                                    lstr_cur_dependencies = [args_call.str_genome_fa, args_call.str_vcf_file, str_realigned_bam],
-                                    lstr_cur_products = [str_recal_table])
-
-        # java -jar GenomeAnalysisTK.jar -T PrintReads -R human.fasta -I realigned.bam -BQSR recal.table -o recal.bam
-        cmd_print = Command.Command(str_cur_command = " ".join(["java -jar gatk-package-4.0.1.2-local.jar PrintReads -R",
-                                                    args_call.str_genome_fa, "-I", str_realigned_bam, "-O", str_recal_snp_bam,
-                                                    "-bqsr", str_recal_table]),
-                                    lstr_cur_dependencies = [args_call.str_genome_fa, str_realigned_bam, str_realigned_bai, str_recal_table],
-                                    lstr_cur_products = [str_recal_snp_bam, str_recal_snp_bai])
-        
-        # java -jar GenomeAnalysisTK.jar ApplyBQSR -I recal.bam -bqsr recal.table -O recal.bam
-        cmd_print = Command.Command(str_cur_command = " ".join(["java -jar gatk-package-4.0.1.2-local.jar ApplyBQSR",
-                                                    "-I", str_realigned_bam, "-O", str_recal_snp_bam,
-                                                    "-bqsr", str_recal_table]),
-                                    lstr_cur_dependencies = [args_call.str_genome_fa, str_realigned_bam, str_realigned_bai, str_recal_table],
-                                    lstr_cur_products = [str_recal_snp_bam, str_recal_snp_bai])
-    
-
-        ### Make plots
-        # java -jar GenomeAnalysisTK.jar -T BaseRecalibrator -R human.fasta -I realigned.bam -knownSites x.vcf -BQSR recal.table -o after_recal.table
-        cmd_recalibrate_2 = Command.Command(str_cur_command = " ".join(["java -jar gatk-package-4.0.1.2-local.jar BaseRecalibrator -R",
-                                            args_call.str_genome_fa, "-I", str_realigned_bam, "-O", str_recal_table_2,
-                                            "--known-sites", args_call.str_vcf_file, "-bqsr", str_recal_table]),
-                                    lstr_cur_dependencies = [args_call.str_genome_fa, str_realigned_bam, str_realigned_bai,
-                                                             args_call.str_vcf_file, str_recal_table],
-                                    lstr_cur_products = [str_recal_table_2])
-        '''
 
         # Commands so far
         ls_cmds = [cmd_sort_bam, cmd_sort_index_bam, cmd_dedup, cmd_replace, cmd_create_target, cmd_realign, cmd_recalibrate, cmd_print, cmd_recalibrate_2]
-
-        '''
-        # Optional plotting of recalibration
-        if args_call.f_optional_recalibration_plot:
-            # java -jar GenomeAnalysisTK.jar -T AnalyzeCovariates -R human.fasta -before recal.table -after after_recal.tale -plots recal_plots.pdf
-            cmd_covariates = Command.Command(str_cur_command = " ".join(["java -jar gatk-package-4.0.1.2-local.jar AnalyzeCovariates -R",
-                                            args_call.str_genome_fa, "-before", str_recal_table, "-after", str_recal_table_2,
-                                            "-plots", str_recal_plot]),
-                                    lstr_cur_dependencies = [args_call.str_genome_fa, str_recal_table, str_recal_table_2],
-                                    lstr_cur_products = [str_recal_plot])
-            ls_cmds.append(cmd_covariates)
-        '''
         # Create depth file
         if args_call.f_calculate_base_coverage:
     #        str_depth_compressed_file = os.path.basename(args_call.str_out_dir) + ".depth.gz"
@@ -1389,14 +1328,6 @@ class RnaseqSnp(PipelineRunner.PipelineRunner):
 
         # Run commands including variant calling
         return(lcmd_commands)
-        #if not pline_cur.func_run_commands(lcmd_commands = lcmd_commands,
-        #                                    str_output_dir = args_parsed.str_out_dir,
-        #                                    lstr_copy = args_parsed.lstr_copy if args_parsed.lstr_copy else None,
-        #                                    str_move = args_parsed.str_move_dir if args_parsed.str_move_dir else None,
-        #                                    str_compression_mode = args_parsed.str_compress,
-        #                                    f_clean = args_parsed.f_clean):
-        #    exit(5)
-        #exit(0)
 
     def func_gz(self, str_vcf, str_output_dir = ""):
       """
