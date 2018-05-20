@@ -34,3 +34,6 @@
 [submodule "metagenomics/SciEDPipeR"]
 	path = metagenomics/SciEDPipeR
 	url = https://github.com/SciEDPipeR/SciEDPipeR.git
+[submodule "Trinity_CTAT.wiki"]
+	path = Trinity_CTAT.wiki
+	url = https://github.com/NCIP/Trinity_CTAT.wiki.git
