@@ -124,7 +124,7 @@ task CTAT_FUSION_TASK_FQPAIRTARGZ {
 	left_fq="*_1.fastq"
     right_fq="*_2.fastq"
 
-	if [ -z left_fq ] || [ -z right_fq ]; then
+	if [ -z $left_fq ] || [ -z $right_fq ]; then
     	ls -l *
         echo "ERROR, could not identify left and right fastq files"
         exit 1
