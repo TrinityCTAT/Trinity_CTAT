@@ -49,7 +49,7 @@ task CTAT_FUSION_TASK_BAM {
     }
     
     output {
-      File star_fusion_results="${sample_name}.${sample_name}.Chimeric.out.junction.gz"
+      File star_fusion_results="${sample_name}.Chimeric.out.junction.gz"
     }
 
     runtime {
@@ -94,7 +94,7 @@ task CTAT_FUSION_TASK_FASTQ {
     }
     
     output {
-      File star_fusion_results="${sample_name}.${sample_name}.Chimeric.out.junction.gz"
+      File star_fusion_results="${sample_name}.Chimeric.out.junction.gz"
     }
 
 
@@ -151,7 +151,7 @@ task CTAT_FUSION_TASK_FQPAIRTARGZ {
     }
     
     output {
-      File star_fusion_results="${sample_name}.${sample_name}.Chimeric.out.junction.gz"
+      File star_fusion_results="${sample_name}.Chimeric.out.junction.gz"
     }
      
     runtime {
