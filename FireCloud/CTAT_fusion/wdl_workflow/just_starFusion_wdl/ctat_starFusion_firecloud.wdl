@@ -1,7 +1,7 @@
 
 task CTAT_FUSION_TASK_BAM {
 
-    File genome_lib_tar_gz
+    File genome_lib_tar
     String sample_name
     File input_bam
     
@@ -31,7 +31,7 @@ task CTAT_FUSION_TASK_BAM {
         CLIPPING_ATTRIBUTE=XT CLIPPING_ACTION=2
 
     # untar the genome lib
-    tar xvf ${genome_lib_tar_gz}
+    tar xvf ${genome_lib_tar}
 
     # starFusion
 
@@ -39,7 +39,7 @@ task CTAT_FUSION_TASK_BAM {
          --left_fq ${sample_name}_1.fastq \
          --right_fq ${sample_name}_2.fastq \
      --CPU 16 \
-         --genome_lib_dir $(echo $(basename ${genome_lib_tar_gz}) | sed s/.plug-n-play.tar.gz//)/ctat_genome_lib_build_dir \
+         --genome_lib_dir ctat_genome_lib_build_dir \
          --output_dir ${sample_name} --run_STAR_only
      
     cp ${sample_name}/std.Chimeric.out.junction ${sample_name}.Chimeric.out.junction
@@ -66,7 +66,7 @@ task CTAT_FUSION_TASK_BAM {
 
 task CTAT_FUSION_TASK_FASTQ {
 
-    File genome_lib_tar_gz
+    File genome_lib_tar
     String sample_name
     File left_fq
     File right_fq
@@ -76,7 +76,7 @@ task CTAT_FUSION_TASK_FASTQ {
     set -e
 
     # untar the genome lib
-    tar xvf ${genome_lib_tar_gz}
+    tar xvf ${genome_lib_tar}
 
     # starFusion
 
@@ -84,7 +84,7 @@ task CTAT_FUSION_TASK_FASTQ {
          --left_fq ${left_fq} \
          --right_fq ${right_fq} \
      --CPU 16 \
-         --genome_lib_dir $(echo $(basename ${genome_lib_tar_gz}) | sed s/.plug-n-play.tar.gz//)/ctat_genome_lib_build_dir \
+         --genome_lib_dir ctat_genome_lib_build_dir \
          --output_dir ${sample_name} --run_STAR_only
      
     cp ${sample_name}/std.Chimeric.out.junction ${sample_name}.Chimeric.out.junction
@@ -111,7 +111,7 @@ task CTAT_FUSION_TASK_FASTQ {
 
 task CTAT_FUSION_TASK_FQPAIRTARGZ {
 
-    File genome_lib_tar_gz
+    File genome_lib_tar
     String sample_name
     File fastq_pair_tar_gz
     
@@ -133,15 +133,15 @@ task CTAT_FUSION_TASK_FQPAIRTARGZ {
 
     
     # untar the genome lib
-    tar xvf ${genome_lib_tar_gz}
+    tar xvf ${genome_lib_tar}
 
     # starFusion
 
     /usr/local/bin/STAR-Fusion \
          --left_fq $left_fq \
          --right_fq $right_fq \
-     --CPU 16 \
-         --genome_lib_dir $(echo $(basename ${genome_lib_tar_gz}) | sed s/.plug-n-play.tar.gz//)/ctat_genome_lib_build_dir \
+         --CPU 16 \
+         --genome_lib_dir ctat_genome_lib_build_dir \
          --output_dir ${sample_name}  --run_STAR_only
      
     cp ${sample_name}/std.Chimeric.out.junction ${sample_name}.Chimeric.out.junction
@@ -170,7 +170,7 @@ task CTAT_FUSION_TASK_FQPAIRTARGZ {
 workflow ctat_fusion_wf {
 
     String sample_name
-    File genome_lib_tar_gz
+    File genome_lib_tar
     File? rnaseq_aligned_bam
     File? left_fq
     File? right_fq
@@ -181,7 +181,7 @@ workflow ctat_fusion_wf {
             input:
               input_bam=rnaseq_aligned_bam,
                  sample_name=sample_name,
-                 genome_lib_tar_gz=genome_lib_tar_gz
+                 genome_lib_tar=genome_lib_tar
         }
     }
 
@@ -189,8 +189,8 @@ workflow ctat_fusion_wf {
         call CTAT_FUSION_TASK_FASTQ {
                input:
               sample_name=sample_name,
-              genome_lib_tar_gz=genome_lib_tar_gz,
-                 left_fq=left_fq,
+              genome_lib_tar=genome_lib_tar,
+              left_fq=left_fq,
               right_fq=right_fq
         }
     }
@@ -199,8 +199,8 @@ workflow ctat_fusion_wf {
         call CTAT_FUSION_TASK_FQPAIRTARGZ {
             input:
               sample_name=sample_name,
-              genome_lib_tar_gz=genome_lib_tar_gz,
-                 fastq_pair_tar_gz=fastq_pair_tar_gz
+              genome_lib_tar=genome_lib_tar,
+              fastq_pair_tar_gz=fastq_pair_tar_gz
         }
 
     }
