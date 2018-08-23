@@ -1,4 +1,4 @@
-FROM trinityctat/ctatfusion:1.1.0
+FROM trinityctat/ctatfusion:1.5.0preA
 
 RUN apt-get update && apt-get install -y gcc g++ perl python automake make \
                                        wget git curl libdb-dev \
@@ -24,19 +24,6 @@ WORKDIR /usr/local/bin
 RUN wget "https://github.com/broadinstitute/picard/releases/download/2.10.6/picard.jar"
 
 #############################
-
-## samtools
-
-WORKDIR /usr/local/src
-
-RUN wget https://github.com/samtools/samtools/releases/download/1.5/samtools-1.5.tar.bz2 && \
-    tar xvf samtools-1.5.tar.bz2  && \
-    cd samtools-1.5 && \
-    ./configure && make && make install
-
-
-
-###################
 
 COPY util/* /usr/local/bin/
 

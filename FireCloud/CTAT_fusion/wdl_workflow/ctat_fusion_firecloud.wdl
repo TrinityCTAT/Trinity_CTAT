@@ -47,7 +47,7 @@ task CTAT_FUSION_TASK {
     }
 
     runtime {
-            docker: "trinityctat/firecloud_ctatfusion:0.0.2"
+            docker: "trinityctat/firecloud_ctatfusion:0.0.3"
             disks: "local-disk 200 SSD"
             memory: "50G"
             cpu: "16"

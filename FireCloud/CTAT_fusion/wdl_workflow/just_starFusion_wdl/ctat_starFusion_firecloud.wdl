@@ -1,10 +1,10 @@
 
-task CTAT_FUSION_TASK {
+task CTAT_FUSION_TASK_BAM {
 
-    File input_bam
     File genome_lib_tar_gz
     String sample_name
-
+    File input_bam
+	
     command {
 
     set -e
@@ -53,7 +53,7 @@ task CTAT_FUSION_TASK {
     }
 
     runtime {
-            docker: "trinityctat/firecloud_ctatfusion:0.0.2"
+            docker: "trinityctat/firecloud_ctatfusion:0.0.3"
             disks: "local-disk 200 SSD"
             memory: "50G"
             cpu: "16"
@@ -62,20 +62,149 @@ task CTAT_FUSION_TASK {
 
 }
 
+
+
+task CTAT_FUSION_TASK_FASTQ {
+
+    File genome_lib_tar_gz
+    String sample_name
+    File left_fq
+    File right_fq
+	
+    command {
+
+    set -e
+
+    # untar the genome lib
+    tar xvf ${genome_lib_tar_gz}
+
+    # starFusion
+
+    /usr/local/bin/STAR-Fusion \
+         --left_fq ${left_fq} \
+         --right_fq ${right_fq} \
+	 --CPU 16 \
+         --genome_lib_dir $(echo $(basename ${genome_lib_tar_gz}) | sed s/.plug-n-play.tar.gz//)/ctat_genome_lib_build_dir \
+         --output_dir ${sample_name}
+	 
+
+	cp ${sample_name}/star-fusion.fusion_predictions.abridged.tsv  ${sample_name}.star-fusion.fusion_predictions.abridged.tsv
+	
+
+    }
+    
+    output {
+      File star_fusion_results="${sample_name}.star-fusion.fusion_predictions.abridged.tsv"
+    }
+
+    runtime {
+            docker: "trinityctat/firecloud_ctatfusion:0.0.3"
+            disks: "local-disk 200 SSD"
+            memory: "50G"
+            cpu: "16"
+    }
+
+
+}
+
+
+task CTAT_FUSION_TASK_FQPAIRTARGZ {
+
+    File genome_lib_tar_gz
+    String sample_name
+	File fastq_pair_tar_gz
+	
+    command {
+
+    set -e
+	
+	# untar the fq pair
+    tar xvf ${fastq_pair_tar_gz}
+
+	left_fq="*_1.fastq"
+    right_fq="*_2.fastq"
+
+	if [ -z left_fq ] || [ -z right_fq ]; then
+    	ls -l *
+        echo "ERROR, could not identify left and right fastq files"
+        exit 1
+    fi
+
+	
+    # untar the genome lib
+    tar xvf ${genome_lib_tar_gz}
+
+    # starFusion
+
+    /usr/local/bin/STAR-Fusion \
+         --left_fq $left_fq \
+         --right_fq $right_fq \
+	 --CPU 16 \
+         --genome_lib_dir $(echo $(basename ${genome_lib_tar_gz}) | sed s/.plug-n-play.tar.gz//)/ctat_genome_lib_build_dir \
+         --output_dir ${sample_name}
+	 
+
+	cp ${sample_name}/star-fusion.fusion_predictions.abridged.tsv  ${sample_name}.star-fusion.fusion_predictions.abridged.tsv
+	
+
+    }
+    
+    output {
+      File star_fusion_results="${sample_name}.star-fusion.fusion_predictions.abridged.tsv"
+    }
+
+    runtime {
+            docker: "trinityctat/firecloud_ctatfusion:0.0.3"
+            disks: "local-disk 200 SSD"
+            memory: "50G"
+            cpu: "16"
+    }
+
+
+}
+
+
+
+
 workflow ctat_fusion_wf {
 
     String sample_name
-    File rnaseq_aligned_bam
     File genome_lib_tar_gz
+    File? rnaseq_aligned_bam
+	File? left_fq
+    File? right_fq
+    File? fastq_pair_tar_gz
 
-    call CTAT_FUSION_TASK {
-        input: input_bam=rnaseq_aligned_bam,
-	       sample_name=sample_name,
-               genome_lib_tar_gz=genome_lib_tar_gz
+	if (defined(rnaseq_aligned_bam)) {
+    	call CTAT_FUSION_TASK_BAM {
+        	input:
+              input_bam=rnaseq_aligned_bam,
+	       	  sample_name=sample_name,
+           	  genome_lib_tar_gz=genome_lib_tar_gz
+        }
     }
 
-    
+    if (defined(left_fq)) {
+        call CTAT_FUSION_TASK_FASTQ {
+	       	input:
+              sample_name=sample_name,
+              genome_lib_tar_gz=genome_lib_tar_gz,
+           	  left_fq=left_fq,
+              right_fq=right_fq
+        }
+    }
 
+
+	if (defined(fastq_pair_tar_gz)) {
+        call CTAT_FUSION_TASK_FQPAIRTARGZ {
+        	input:
+              sample_name=sample_name,
+              genome_lib_tar_gz=genome_lib_tar_gz,
+           	  fastq_pair_tar_gz=fastq_pair_tar_gz
+        }
+
+    }
+	
 }
 
 
