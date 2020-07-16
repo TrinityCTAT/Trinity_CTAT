@@ -37,3 +37,6 @@
 [submodule "Trinity_CTAT.wiki"]
 	path = Trinity_CTAT.wiki
 	url = https://github.com/NCIP/Trinity_CTAT.wiki.git
+[submodule "Fusion-Transcript-Prediction/STAR-Fusion"]
+	path = Fusion-Transcript-Prediction/STAR-Fusion
+	url = https://github.com/STAR-Fusion/STAR-Fusion.git
