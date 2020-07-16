@@ -40,3 +40,6 @@
 [submodule "Fusion-Transcript-Prediction/STAR-Fusion"]
 	path = Fusion-Transcript-Prediction/STAR-Fusion
 	url = https://github.com/STAR-Fusion/STAR-Fusion.git
+[submodule "Fusion-Transcript-Prediction/TrinityFusion"]
+	path = Fusion-Transcript-Prediction/TrinityFusion
+	url = https://github.com/trinityrnaseq/TrinityFusion.git
