@@ -1,6 +1,0 @@
-{
-  "CTAT_FUSION_WORKFOW.STAR_FUSION_TASK.sample_name": "String",
-  "CTAT_FUSION_WORKFOW.input_left_fq_gz": "File",
-  "CTAT_FUSION_WORKFOW.input_right_fq_gz": "File",
-  "CTAT_FUSION_WORKFOW.genome_lib_dir": "File"
-}

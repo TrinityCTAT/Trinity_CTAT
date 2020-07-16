@@ -1,9 +1,0 @@
-Requires 
-
-         PASA_Lite: https://github.com/PASApipeline/PASA_Lite/releases
-
-         and environmental variable PASA_LITE_HOME pointing to the installation directory.
-
-
-
-         Cufflinks: http://cole-trapnell-lab.github.io/cufflinks/
