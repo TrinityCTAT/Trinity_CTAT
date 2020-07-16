@@ -58,3 +58,6 @@
 [submodule "Tumor-Copy-Number-Aberrations/infercnv"]
 	path = Tumor-Copy-Number-Aberrations/infercnv
 	url = https://github.com/broadinstitute/infercnv.git
+[submodule "RNAseq-Assembly/DISCASM"]
+	path = RNAseq-Assembly/DISCASM
+	url = https://github.com/DISCASM/DISCASM.git
