@@ -43,3 +43,9 @@
 [submodule "Fusion-Transcript-Prediction/TrinityFusion"]
 	path = Fusion-Transcript-Prediction/TrinityFusion
 	url = https://github.com/trinityrnaseq/TrinityFusion.git
+[submodule "Mutations-via-RNAseq/ctat-mutations"]
+	path = Mutations-via-RNAseq/ctat-mutations
+	url = https://github.com/NCIP/ctat-mutations.git
+[submodule "Cancer-Splicing-Aberrations/CTAT-SPLICING"]
+	path = Cancer-Splicing-Aberrations/CTAT-SPLICING
+	url = https://github.com/NCIP/CTAT-SPLICING.git
