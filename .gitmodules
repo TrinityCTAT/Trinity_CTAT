@@ -61,3 +61,6 @@
 [submodule "RNAseq-Assembly/DISCASM"]
 	path = RNAseq-Assembly/DISCASM
 	url = https://github.com/DISCASM/DISCASM.git
+[submodule "Fusion-Transcript-Prediction/FusionInspector"]
+	path = Fusion-Transcript-Prediction/FusionInspector
+	url = https://github.com/FusionInspector/FusionInspector.git
