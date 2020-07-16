@@ -55,3 +55,6 @@
 [submodule "Wiki/Trinity_CTAT.wiki"]
 	path = Wiki/Trinity_CTAT.wiki
 	url = https://github.com/NCIP/Trinity_CTAT.wiki.git
+[submodule "Tumor-Copy-Number-Aberrations/infercnv"]
+	path = Tumor-Copy-Number-Aberrations/infercnv
+	url = https://github.com/broadinstitute/infercnv.git
