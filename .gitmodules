@@ -52,3 +52,6 @@
 [submodule "RNAseq-Assembly/trinityrnaseq"]
 	path = RNAseq-Assembly/trinityrnaseq
 	url = https://github.com/trinityrnaseq/trinityrnaseq.git
+[submodule "Wiki/Trinity_CTAT.wiki"]
+	path = Wiki/Trinity_CTAT.wiki
+	url = https://github.com/NCIP/Trinity_CTAT.wiki.git
