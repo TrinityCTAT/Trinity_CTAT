@@ -49,3 +49,6 @@
 [submodule "Cancer-Splicing-Aberrations/CTAT-SPLICING"]
 	path = Cancer-Splicing-Aberrations/CTAT-SPLICING
 	url = https://github.com/NCIP/CTAT-SPLICING.git
+[submodule "RNAseq-Assembly/trinityrnaseq"]
+	path = RNAseq-Assembly/trinityrnaseq
+	url = https://github.com/trinityrnaseq/trinityrnaseq.git
