@@ -64,3 +64,6 @@
 [submodule "Fusion-Transcript-Prediction/FusionInspector"]
 	path = Fusion-Transcript-Prediction/FusionInspector
 	url = https://github.com/FusionInspector/FusionInspector.git
+[submodule "Virus-Integration-Sites/CTAT-VirusIntegrationFinder"]
+	path = Virus-Integration-Sites/CTAT-VirusIntegrationFinder
+	url = https://github.com/broadinstitute/CTAT-VirusIntegrationFinder.git
