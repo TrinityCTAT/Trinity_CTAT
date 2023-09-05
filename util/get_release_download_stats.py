@@ -21,7 +21,7 @@ def main():
 
     for repo in repos:
         report_download_stats(repo)
-    
+        print() # spacer between progs.
 
 
     sys.exit(0)

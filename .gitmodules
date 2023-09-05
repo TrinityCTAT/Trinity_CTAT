@@ -67,3 +67,6 @@
 [submodule "Virus-Integration-Sites/CTAT-VirusIntegrationFinder"]
 	path = Virus-Integration-Sites/CTAT-VirusIntegrationFinder
 	url = https://github.com/broadinstitute/CTAT-VirusIntegrationFinder.git
+[submodule "Fusion-Transcript-Prediction/CTAT-LR-fusion"]
+	path = Fusion-Transcript-Prediction/CTAT-LR-fusion
+	url = https://github.com/TrinityCTAT/CTAT-LR-fusion.git
